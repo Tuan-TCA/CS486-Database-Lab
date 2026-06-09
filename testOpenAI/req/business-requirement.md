@@ -9,33 +9,43 @@ As the number of classes, student projects, workshops, seminars, and academic ev
 ## Functional Requirements
 
 ### Users
+
 Each user must have a university account. The system stores basic user information, including user ID, full name, email, phone number, role, department, and account status. A user may be a student, lecturer, teaching assistant, facility staff, department administrator, or facility manager.
 
 ### Spaces
+
 The School manages many bookable spaces. For each space, the system stores a unique space code, space name, space type, building, floor, room number, capacity, current status, and usage policy. A space may be available, in use, under maintenance, temporarily closed, or retired.
 
 ### Facilities
+
 Each space may have several facilities, such as a projector, whiteboard, microphone, computer, livestreaming equipment, or air conditioner. The system should store the list of facilities available in each space.
 
 ### Booking Requests
+
 Users can submit booking requests by selecting a space, requested start time, requested end time, purpose of use, and expected number of participants. A booking may be for a lecture, examination, seminar, workshop, meeting, student activity, or administrative event.
 
 Each booking request has a status, such as pending, approved, rejected, cancelled, checked in, completed, or no-show. The system must prevent conflicting bookings. The same space cannot have two approved bookings with overlapping time periods. A space that is under maintenance, closed, or retired cannot be booked.
 
 ### Approval Process
+
 A booking request may require approval from a facility staff member or manager. When a booking is approved or rejected, the system records the staff member who made the decision, the decision time, and a decision note. If the booking is rejected, the rejection reason should be stored.
 
 ### Check-in Process
+
 When the requester arrives, facility staff can check in the booking. The system records the actual start time, the person who checked in the booking, and the initial condition of the space.
 
 ### Completion Process
+
 When the session ends, facility staff can complete the booking by recording the actual end time, the final condition of the space, and any usage notes.
 
 ### Maintenance Management
+
 The system also supports basic maintenance management. A space may have maintenance records for problems such as broken projectors, air-conditioning failure, damaged furniture, cleaning issues, or network problems. Each maintenance record stores the related space, reporter, assigned staff member, problem description, start time, completion time, status, and result note. A space under maintenance cannot be booked.
 
 ### Historical Records
+
 The system should keep historical records of bookings and maintenance activities. Staff should be able to view booking history, upcoming bookings, spaces under maintenance, and no-show bookings.
 
 ## Main Goal
+
 The main goal of the system is to help the School manage shared campus spaces fairly, avoid overlapping bookings, prevent the use of unavailable spaces, and preserve usage history.

@@ -2,11 +2,6 @@
 *.mdf
 *.ldf
 
-# OS files
-.DS_Store
-Thumbs.db
-__MACOSX/
-
 # Credentials
 .env
 *.key
