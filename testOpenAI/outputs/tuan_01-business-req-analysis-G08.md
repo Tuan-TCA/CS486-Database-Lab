@@ -51,6 +51,7 @@ The purpose of the Campus Space Management System is to help the School of Compu
   - Facility Manager
 - Department
 - AccountStatus
+
     ---
 
 ## 3.2 Space
@@ -70,6 +71,7 @@ The purpose of the Campus Space Management System is to help the School of Compu
   - Temporarily Closed
   - Retired
 - UsagePolicy
+  
     ---
 
 ## 3.3 Facility
@@ -90,7 +92,21 @@ The purpose of the Campus Space Management System is to help the School of Compu
 - PurposeOfUse
 - ExpectedParticipants
 - BookingType
+  - Lecture
+  - Examination
+  - Seminar
+  - Workshop
+  - Meeting
+  - Student Activity
+  - Administrative Event
 - BookingStatus
+  - Pending
+  - Approved
+  - Rejected
+  - Cancelled
+  - Checked In
+  - Completed
+  - No-show
 
 ---
 
@@ -99,6 +115,8 @@ The purpose of the Campus Space Management System is to help the School of Compu
 **Attributes**
 - ApprovalID (PK)
 - Decision
+  - Approved
+  - Rejected
 - DecisionTime
 - DecisionNote
 - RejectionReason
@@ -130,6 +148,16 @@ The purpose of the Campus Space Management System is to help the School of Compu
 ---
 
 # 4. Relationships and Cardinalities
+
+
+## Space contains Facility
+
+- Space (M) —— (N) Facility
+
+A space may contain multiple facilities.
+A facility type may exist in multiple spaces.
+
+---
 
 ## User submits BookingRequest
 
@@ -171,6 +199,24 @@ Only approved bookings may result in actual usage sessions.
 
 ---
 
+
+## Facility Staff checks in UsageSession
+
+- User (1) —— (N) UsageSession 
+
+The system records the staff member who checks in the booking. 
+
+---
+
+
+## Space has MaintenanceRecord 
+
+- Space (1) —— (N) MaintenanceRecord 
+
+A space may have multiple maintenance records. 
+
+---
+
 ## User checks in UsageSession
 
 - User (1) —— (N) UsageSession
@@ -179,14 +225,6 @@ Facility staff perform check-in and completion operations.
 
 ---
 
-## Space contains Facility
-
-- Space (M) —— (N) Facility
-
-A space may contain multiple facilities.
-A facility type may exist in multiple spaces.
-
----
 
 ## Space has MaintenanceRecord
 
