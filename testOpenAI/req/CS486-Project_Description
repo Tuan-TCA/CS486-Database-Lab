@@ -284,13 +284,13 @@ outputs/
 The `outputs` folder must contain the following deliverables:
 
 ```text
-01-business-req-analysis-G<Group number>.md
-02-erd-design-G<Group number>.md
-03-logical-design-G<Group number>.md
-04-design-validation-G<Group number>.md
-05-db-definition-G<Group number>.sql
-06-sample-data-G<Group number>.sql
-07-query-design-G<Group number>.sql
+01-business-req-analysis-G08.md
+02-erd-design-G08.md
+03-logical-design-G08.md
+04-design-validation-G08.md
+05-db-definition-G08.sql
+06-sample-data-G08.sql
+07-query-design-G08.sql
 ```
 
 Example for Group 01:
