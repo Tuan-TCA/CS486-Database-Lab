@@ -1,22 +1,6 @@
-# CS486 – Introduction to Database System
+# PROJECT: Campus Space Management System
 
-**Lecturer:** Lê Thị Nhàn, PhD.
-
-**TA:**
-- Nguyễn Ngọc Toàn, MSc.
-- Nguyễn Ngọc Minh Châu, MSc.
-
-**Lab Instructor:**
-- Nguyễn Ngọc Toàn, MSc.
-- Nguyễn Ngọc Minh Châu, MSc.
-
-# PROJECT
-
-# Campus Space Management System
-
----
-
-# 1. Business Requirement Description
+## 1. Business Requirement Description
 
 The School of Computer Science manages several shared physical spaces used for teaching, seminars, examinations, workshops, student projects, research activities, and academic events. These spaces include auditoriums, classrooms, computer laboratories, project laboratories, meeting rooms, and student workspaces.
 
@@ -107,13 +91,9 @@ Each booking request has a status, such as:
 - No-show
 
 The system must prevent conflicting bookings.
-
 The same space cannot have two approved bookings with overlapping time periods.
-
 A space that is under maintenance, closed, or retired cannot be booked.
-
 A booking request may require approval from a facility staff member or manager.
-
 When a booking is approved or rejected, the system records:
 
 - Staff Member Who Made the Decision
@@ -121,7 +101,6 @@ When a booking is approved or rejected, the system records:
 - Decision Note
 
 If the booking is rejected, the rejection reason should be stored.
-
 When the requester arrives, facility staff can check in the booking. The system records:
 
 - Actual Start Time
@@ -135,7 +114,6 @@ When the session ends, facility staff can complete the booking by recording:
 - Usage Notes
 
 The system also supports basic maintenance management.
-
 A space may have maintenance records for problems such as:
 
 - Broken Projectors
@@ -156,9 +134,7 @@ Each maintenance record stores:
 - Result Note
 
 A space under maintenance cannot be booked.
-
 The system should keep historical records of bookings and maintenance activities.
-
 Staff should be able to view:
 
 - Booking History
@@ -170,9 +146,9 @@ The main goal of the system is to help the School manage shared campus spaces fa
 
 ---
 
-# 2. Phase 1
+## 2. Phase 1
 
-## 1. Business Requirement Analysis
+### 1. Business Requirement Analysis
 
 Analyze the requirements to identify:
 
@@ -184,7 +160,7 @@ Analyze the requirements to identify:
 - Cardinalities
 - Business Rules
 
-## 2. Conceptual Database Design
+### 2. Conceptual Database Design
 
 Design an ERD showing:
 
@@ -194,7 +170,7 @@ Design an ERD showing:
 - Cardinalities
 - Participation Constraints
 
-## 3. Logical Database Design
+### 3. Logical Database Design
 
 Convert the ERD into a relational schema with:
 
@@ -205,7 +181,7 @@ Convert the ERD into a relational schema with:
 - Candidate Keys
 - Key Constraints
 
-## 4. Database Design Validation
+### 4. Database Design Validation
 
 Evaluate whether the relational schema:
 
@@ -215,7 +191,7 @@ Evaluate whether the relational schema:
 - Uses Appropriate Relationships
 - Uses Appropriate Constraints
 
-## 5. Database Implementation
+### 5. Database Implementation
 
 Implement the database using SQL DDL with:
 
@@ -225,14 +201,14 @@ Implement the database using SQL DDL with:
 - Checks
 - Default Values (where appropriate)
 
-## 6. Sample Data Preparation
+### 6. Sample Data Preparation
 
 Insert realistic sample data to support testing of:
 
 - Normal Operations
 - Important Exceptional Cases
 
-## 7. Query Design
+### 7. Query Design
 
 Each student must design and execute at least **5 meaningful SQL queries** that are valid for the database and useful for answering business questions in the given context.
 
@@ -245,11 +221,11 @@ Each query must include:
 
 ---
 
-# 3. Required Documents
+## 3. Required Documents
 
 Each group must submit the following artifacts.
 
-## 3.1 Group Report
+### 3.1 Group Report
 
 A PDF report named:
 
@@ -271,7 +247,7 @@ The report must include:
   - How the Agent’s Performance Was Evaluated at Each Step.
   - How the Group Refined or Improved the Agent Based on the Evaluation Results.
 
-## 3.2 Group Agent Git Repository
+### 3.2 Group Agent Git Repository
 
 The group Git repository must include, but is not limited to, the following files and folders:
 

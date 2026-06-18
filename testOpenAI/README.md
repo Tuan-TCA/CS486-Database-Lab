@@ -204,4 +204,3 @@ Each group must be able to explain:
 - How the agent was improved.
 - Why the final database design is valid.
 - How the SQL scripts and queries work.
-

@@ -123,6 +123,7 @@ USER ||--o{ MAINTENANCE_RECORD : assigned_to
 | Space has Maintenance_Record          | 1 : N       |
 | User reports Maintenance_Record       | 1 : N       |
 | User assigned to Maintenance_Record   | 1 : N       |
+
 # Participation Constraints
 
 ## Total Participation
