@@ -1,0 +1,33 @@
+## Logical Database Design
+
+### Task
+
+Convert the ERD into a relational schema with relations, attributes, keys, and key constraints.
+
+### Evaluation Method
+
+The logical design was cross-checked against:
+
+- project_description.md
+- 01-business-req-analysis-G08.md
+- 02-erd-design-G08.md
+
+The schema was validated for consistency between entities, relationships, and key constraints.
+
+### Issues Found
+
+- Some relationship descriptions incorrectly referred to 1:1 relationships.
+- The composite candidate key of SPACE was represented unclearly.
+- There were formatting inconsistencies in the relational schema.
+
+### Improvement
+
+The prompt was refined to:
+
+- Validate the mapping from ERD to relational schema
+- Distinguish between 1:0..1 and 1:1 relationships
+- Standardize the representation of candidate keys and key constraints
+
+### Result
+
+The logical schema became fully aligned with the ERD and clearly documented all primary keys, foreign keys, candidate keys, and key constraints.
