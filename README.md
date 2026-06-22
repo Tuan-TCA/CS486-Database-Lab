@@ -14,7 +14,7 @@ The agent improvement process is conducted separately to evaluate and improve th
 ---
 
 # Project Structure
-
+```text
 project/
 
 ├── report/
@@ -62,7 +62,7 @@ project/
 └── prompts/
     ├── generation_prompt.md
     └── evaluation_prompt.md
-
+```
 ---
 
 # Folder Description
