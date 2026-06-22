@@ -13,7 +13,9 @@ CS486 database systems teaching demo. Repository is empty; expect code to be add
 This project transforms business requirements into database design artifacts.
 
 <!---YOU COULD CHANGE THE FOLLOW SECTIONS --->
+
 ## Workflow Order
+
 Always follow this order:
 
 1. Analyze business requirements.
@@ -23,8 +25,13 @@ Do not jump directly to DDL. The documents from the prior steps should be follow
 
 ## Required Outputs
 
-- `docs/01-business-requirement-analysis.md`
-- `docs/02-conceptual-design-erd.md`
+- `outputs/01-business-req-analysis-G08.md`
+- `outputs/02-erd-design-G08.md`
+- `outputs/03-logical-design-G08.md`
+- `outputs/04-design-validation-G08.md`
+- `outputs/05-db-definition-G08.sql`
+- `outputs/06-sample-data-G08.sql`
+- `outputs/07-query-design-G08.sql`
 
 ## DBMS
 

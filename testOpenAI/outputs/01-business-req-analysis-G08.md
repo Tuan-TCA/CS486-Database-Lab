@@ -1,3 +1,5 @@
+# 01-business-req-analysis-G08.md
+
 # 1. Business Purpose
 
 The database system manages the booking and usage of shared campus spaces (auditoriums, classrooms, laboratories, meeting rooms, workspaces) for the School of Computer Science. It replaces a manual spreadsheet/email process with a structured system that handles booking requests, approvals, check-in/check-out, maintenance tracking, and historical reporting. The system ensures fair allocation, prevents overlapping bookings, blocks unavailable spaces, and preserves complete usage history.
