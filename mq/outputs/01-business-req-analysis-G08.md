@@ -93,6 +93,7 @@ The School of Computer Science needs a database system to manage the booking, ap
 - `reporter_id` — person who reported the problem
 - `assigned_staff_id` — staff assigned to resolve it
 - `problem_description` — description of the issue
+- `problem_type` — category: Broken Projector, AC Failure, Damaged Furniture, Cleaning Issue, Network Problem
 - `start_time` — when the problem was reported
 - `completion_time` — when resolved
 - `status` — Open, In Progress, Resolved, or Closed

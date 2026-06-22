@@ -22,15 +22,15 @@ GO
 --              upcoming bookings."
 -- ============================================================
 SELECT
-    b.booking_id,
-    u.full_name        AS requester,
-    b.purpose,
-    b.requested_start,
-    b.requested_end,
-    b.expected_participants,
-    b.status
+  b.booking_id,
+  u.full_name        AS requester,
+  b.purpose,
+  b.requested_start,
+  b.requested_end,
+  b.expected_participants,
+  b.status
 FROM Booking b
-JOIN [User] u ON b.requester_id = u.user_id
+  JOIN [User] u ON b.requester_id = u.user_id
 WHERE b.space_code = 'A101'
   AND b.status IN ('Approved', 'Checked In')
   AND b.requested_start >= GETDATE()
@@ -50,21 +50,22 @@ GO
 --              to view spaces under maintenance."
 -- ============================================================
 SELECT
-    s.space_code,
-    s.space_name,
-    s.building,
-    s.room_number,
-    m.maintenance_id,
-    m.problem_description,
-    m.status          AS maintenance_status,
-    m.start_time,
-    m.completion_time,
-    assigned.full_name AS assigned_staff
+  s.space_code,
+  s.space_name,
+  s.building,
+  s.room_number,
+  m.maintenance_id,
+  m.problem_description,
+  m.problem_type,
+  m.status          AS maintenance_status,
+  m.start_time,
+  m.completion_time,
+  assigned.full_name AS assigned_staff
 FROM Space s
-JOIN Maintenance m ON s.space_code = m.space_code
-LEFT JOIN [User] assigned ON m.assigned_staff_id = assigned.user_id
+  JOIN Maintenance m ON s.space_code = m.space_code
+  LEFT JOIN [User] assigned ON m.assigned_staff_id = assigned.user_id
 WHERE s.current_status = 'Under Maintenance'
-   OR m.status IN ('Open', 'In Progress')
+  OR m.status IN ('Open', 'In Progress')
 ORDER BY m.start_time DESC;
 GO
 
@@ -81,18 +82,18 @@ GO
 --              able to view no-show bookings."
 -- ============================================================
 SELECT
-    b.booking_id,
-    u.full_name        AS requester,
-    u.email,
-    u.role,
-    s.space_code,
-    s.space_name,
-    b.requested_start,
-    b.requested_end,
-    b.purpose
+  b.booking_id,
+  u.full_name        AS requester,
+  u.email,
+  u.role,
+  s.space_code,
+  s.space_name,
+  b.requested_start,
+  b.requested_end,
+  b.purpose
 FROM Booking b
-JOIN [User] u ON b.requester_id = u.user_id
-JOIN Space s ON b.space_code = s.space_code
+  JOIN [User] u ON b.requester_id = u.user_id
+  JOIN Space s ON b.space_code = s.space_code
 WHERE b.status = 'No-Show'
   AND b.requested_start >= DATEADD(DAY, -30, GETDATE())
 ORDER BY b.requested_start DESC;
@@ -110,23 +111,23 @@ GO
 --              history."
 -- ============================================================
 SELECT
-    b.booking_id,
-    s.space_name,
-    s.space_code,
-    b.purpose,
-    b.requested_start,
-    b.requested_end,
-    b.status,
-    b.booking_time,
-    ba.decision,
-    ba.decision_time,
-    ba.rejection_reason,
-    b.actual_start_time,
-    b.actual_end_time,
-    b.usage_notes
+  b.booking_id,
+  s.space_name,
+  s.space_code,
+  b.purpose,
+  b.requested_start,
+  b.requested_end,
+  b.status,
+  b.booking_time,
+  ba.decision,
+  ba.decision_time,
+  ba.rejection_reason,
+  b.actual_start_time,
+  b.actual_end_time,
+  b.usage_notes
 FROM Booking b
-JOIN Space s ON b.space_code = s.space_code
-LEFT JOIN Booking_Approval ba ON b.booking_id = ba.booking_id
+  JOIN Space s ON b.space_code = s.space_code
+  LEFT JOIN Booking_Approval ba ON b.booking_id = ba.booking_id
 WHERE b.requester_id = 2
 ORDER BY b.requested_start DESC;
 GO
@@ -145,15 +146,15 @@ GO
 --              campus spaces fairly and efficiently.
 -- ============================================================
 SELECT
-    s.space_code,
-    s.space_name,
-    s.space_type,
-    COUNT(b.booking_id)                                      AS total_bookings,
-    SUM(DATEDIFF(HOUR, b.actual_start_time, b.actual_end_time)) AS total_usage_hours,
-    AVG(b.expected_participants)                             AS avg_expected_participants,
-    AVG(1.0 * b.expected_participants / NULLIF(s.capacity, 0)) * 100 AS avg_capacity_util_pct
+  s.space_code,
+  s.space_name,
+  s.space_type,
+  COUNT(b.booking_id)                                      AS total_bookings,
+  SUM(DATEDIFF(HOUR, b.actual_start_time, b.actual_end_time)) AS total_usage_hours,
+  AVG(b.expected_participants)                             AS avg_expected_participants,
+  AVG(1.0 * b.expected_participants / NULLIF(s.capacity, 0)) * 100 AS avg_capacity_util_pct
 FROM Space s
-LEFT JOIN Booking b ON s.space_code = b.space_code
+  LEFT JOIN Booking b ON s.space_code = b.space_code
     AND b.status = 'Completed'
     AND b.actual_start_time >= DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()) - 1, 1)
     AND b.actual_start_time < DATEFROMPARTS(YEAR(GETDATE()), MONTH(GETDATE()), 1)
@@ -173,20 +174,20 @@ GO
 --              responses to space requests.
 -- ============================================================
 SELECT
-    b.booking_id,
-    u.full_name        AS requester,
-    u.department,
-    s.space_name,
-    s.space_code,
-    b.purpose,
-    b.requested_start,
-    b.requested_end,
-    b.expected_participants,
-    b.booking_time,
-    DATEDIFF(HOUR, b.booking_time, GETDATE()) AS hours_since_submission
+  b.booking_id,
+  u.full_name        AS requester,
+  u.department,
+  s.space_name,
+  s.space_code,
+  b.purpose,
+  b.requested_start,
+  b.requested_end,
+  b.expected_participants,
+  b.booking_time,
+  DATEDIFF(HOUR, b.booking_time, GETDATE()) AS hours_since_submission
 FROM Booking b
-JOIN [User] u ON b.requester_id = u.user_id
-JOIN Space s ON b.space_code = s.space_code
+  JOIN [User] u ON b.requester_id = u.user_id
+  JOIN Space s ON b.space_code = s.space_code
 WHERE b.status = 'Pending'
 ORDER BY b.booking_time ASC;
 GO
@@ -203,14 +204,14 @@ GO
 --              audit equipment distribution across spaces.
 -- ============================================================
 SELECT
-    s.space_code,
-    s.space_name,
-    s.space_type,
-    COUNT(sf.facility_id)                        AS facility_count,
-    STRING_AGG(f.facility_name, ', ')            AS facility_list
+  s.space_code,
+  s.space_name,
+  s.space_type,
+  COUNT(sf.facility_id)                        AS facility_count,
+  STRING_AGG(f.facility_name, ', ')            AS facility_list
 FROM Space s
-LEFT JOIN Space_Facility sf ON s.space_code = sf.space_code
-LEFT JOIN Facility f ON sf.facility_id = f.facility_id
+  LEFT JOIN Space_Facility sf ON s.space_code = sf.space_code
+  LEFT JOIN Facility f ON sf.facility_id = f.facility_id
 GROUP BY s.space_code, s.space_name, s.space_type
 ORDER BY facility_count DESC;
 GO

@@ -61,7 +61,7 @@ Instructions: Implement the database using SQL DDL with tables, keys, constraint
 # Step 6: Sample Data Preparation
 
 Save to: `outputs/06-sample-data-G08.sql`
-Instructions: Insert realistic sample data to support testing of normal operations and important exceptional cases.
+Instructions: Insert realistic sample data to support testing of normal operations and important exceptional cases. CRITICAL: The generated SQL script must be idempotent. You must include commands to clear existing data from the tables (e.g., DELETE FROM TableName;) in the correct order to respect foreign key constraints before running your INSERT statements. This ensures the script can be run multiple times safely without duplicating data.
 
 # Step 7: Query Design
 

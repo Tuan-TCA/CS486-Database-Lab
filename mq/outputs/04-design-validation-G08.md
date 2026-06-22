@@ -26,11 +26,11 @@ Every business concept from the requirements maps to an entity in the ERD:
 | Rule | Enforcement Mechanism |
 |------|----------------------|
 | User must have active account | `account_status` CHECK constraint; application logic checks for 'Active' before booking |
-| Space only bookable if available | Application checks `current_status` before INSERT; FK ensures space exists |
-| No overlapping approved bookings | Application-level check or trigger on `(space_code, requested_start, requested_end)` where status IN ('Approved','Checked In','Completed') |
+| Space only bookable if available | AFTER trigger `trg_CheckSpaceAvailability` blocks INSERT/UPDATE when space status is 'Under Maintenance', 'Temporarily Closed', or 'Retired' |
+| No overlapping approved bookings | AFTER trigger `trg_PreventOverlappingBooking` checks for time overlaps among Approved/Checked In/Completed bookings on the same space |
 | Booking must be approved/rejected by staff | Booking_Approval table with FK to User; staff role validated at application layer |
-| Rejection reason required if rejected | Application enforces `rejection_reason IS NOT NULL` when `decision = 'Rejected'`; can be reinforced via trigger |
-| Space under maintenance/closed/retired cannot be booked | Application checks `current_status` before INSERT |
+| Rejection reason required if rejected | AFTER trigger `trg_RequireRejectionReason` enforces `rejection_reason IS NOT NULL` when `decision = 'Rejected'` |
+| Space under maintenance/closed/retired cannot be booked | AFTER trigger `trg_CheckSpaceAvailability` (same as above) |
 | Check-in records actual start, staff, condition | Columns on Booking table |
 | Check-out records actual end, condition, notes | Columns on Booking table |
 | Historical records preserved | No DELETE operations on historical data; all rows retained with status tracking |
@@ -61,7 +61,7 @@ No denormalization was necessary. All repeating groups, partial dependencies, an
 
 ## 5. Data Integrity
 
-- CHECK constraints enforce domain values for all enumerated attributes (role, space_type, current_status, purpose, status, decision, maintenance status, account_status).
+- CHECK constraints enforce domain values for all enumerated attributes (role, space_type, current_status, purpose, status, decision, maintenance status, maintenance problem_type, account_status).
 - NOT NULL constraints on all essential attributes.
 - DEFAULT values (booking_time = GETDATE(), status = 'Pending', etc.) reduce nullable columns in new rows.
 - FK constraints ensure referential integrity; no orphaned records.
@@ -82,7 +82,7 @@ No denormalization was necessary. All repeating groups, partial dependencies, an
 | Approval/rejection by staff | `project_description.md:96-103`, `business-requirement.md:15` → Booking_Approval |
 | Check-in process | `project_description.md:104-108`, `business-requirement.md:16` → Booking (check-in fields) |
 | Check-out process | `project_description.md:110-114`, `business-requirement.md:16` → Booking (check-out fields) |
-| Maintenance management | `project_description.md:116-136`, `business-requirement.md:17` → Maintenance |
+| Maintenance management (incl. problem types) | `project_description.md:116-136`, `business-requirement.md:17` → Maintenance (problem_type, problem_description etc.) |
 | Historical records | `project_description.md:137`, `business-requirement.md:18` → All tables |
 | Staff view capabilities | `project_description.md:138-143`, `business-requirement.md:18` → Queries in 07 |
 
@@ -90,8 +90,8 @@ No denormalization was necessary. All repeating groups, partial dependencies, an
 
 | Limitation | Description | Mitigation |
 |------------|-------------|------------|
-| Overlap detection | SQL Server has no native exclusion constraint; overlapping time ranges cannot be enforced declaratively. | Use a filtered index + application check or an AFTER INSERT/UPDATE trigger. |
-| Rejection reason enforcement | CHECK constraint cannot reference another column in the same row in standard SQL Server. | Enforce via trigger or application logic. |
+| Overlap detection | SQL Server has no native exclusion constraint; overlapping time ranges cannot be enforced declaratively. | AFTER INSERT/UPDATE trigger `trg_PreventOverlappingBooking` enforces this at the database level. |
+| Rejection reason enforcement | CHECK constraint cannot reference another column in the same row in standard SQL Server. | AFTER INSERT/UPDATE trigger `trg_RequireRejectionReason` enforces this. |
 | No separate audit log | Historical tracking relies on row retention in existing tables rather than a dedicated audit table. | Acceptable for scope; can add audit table in future. |
 | Indexing for large datasets | The index on `(space_code, requested_start, requested_end)` with filtered WHERE status IN (...) needs periodic maintenance. | Covered by the filtered index in DDL; monitor fragmentation. |
 | Check-in by unauthorized staff | `checkin_staff_id` FK allows any user, not just facility staff. | Enforce role check at application layer. |

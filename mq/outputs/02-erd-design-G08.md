@@ -74,6 +74,7 @@ erDiagram
         int reporter_id FK
         int assigned_staff_id FK
         text problem_description
+        string problem_type
         datetime start_time
         datetime completion_time
         string status
@@ -105,6 +106,7 @@ erDiagram
 | Booking.status | Pending, Approved, Rejected, Cancelled, Checked In, Completed, No-Show |
 | Booking_Approval.decision | Approved, Rejected |
 | Maintenance.status | Open, In Progress, Resolved, Closed |
+| Maintenance.problem_type | Broken Projector, AC Failure, Damaged Furniture, Cleaning Issue, Network Problem |
 
 ## Relationship Summary
 

@@ -5,7 +5,17 @@
 -- Sources: project_description.md, req/business-requirement.md
 -- ============================================================
 
--- Create the database
+-- Idempotent: drop existing database objects before creation
+USE master;
+GO
+
+IF DB_ID('CampusSpaceBooking') IS NOT NULL
+BEGIN
+    ALTER DATABASE CampusSpaceBooking SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE CampusSpaceBooking;
+END
+GO
+
 CREATE DATABASE CampusSpaceBooking;
 GO
 
@@ -86,26 +96,26 @@ GO
 -- ============================================================
 -- TABLE: Booking
 -- Records space booking requests and usage sessions.
--- Tracks full lifecycle: submission → approval → check-in → completion.
+-- Tracks full lifecycle: submission -> approval -> check-in -> completion.
 -- ============================================================
 CREATE TABLE Booking (
-    booking_id          INT             NOT NULL IDENTITY(1,1),
-    requester_id        INT             NOT NULL,
-    space_code          NVARCHAR(20)    NOT NULL,
-    requested_start     DATETIME2       NOT NULL,
-    requested_end       DATETIME2       NOT NULL,
-    purpose             NVARCHAR(30)    NOT NULL
+    booking_id            INT             NOT NULL IDENTITY(1,1),
+    requester_id          INT             NOT NULL,
+    space_code            NVARCHAR(20)    NOT NULL,
+    requested_start       DATETIME2       NOT NULL,
+    requested_end         DATETIME2       NOT NULL,
+    purpose               NVARCHAR(30)    NOT NULL
         CHECK (purpose IN ('Lecture','Examination','Seminar','Workshop','Meeting','Student Activity','Administrative Event')),
-    expected_participants INT           NOT NULL CHECK (expected_participants > 0),
-    status              NVARCHAR(20)    NOT NULL DEFAULT 'Pending'
+    expected_participants INT             NOT NULL CHECK (expected_participants > 0),
+    status                NVARCHAR(20)    NOT NULL DEFAULT 'Pending'
         CHECK (status IN ('Pending','Approved','Rejected','Cancelled','Checked In','Completed','No-Show')),
-    booking_time        DATETIME2       NOT NULL DEFAULT GETDATE(),
-    actual_start_time   DATETIME2       NULL,
-    checkin_staff_id    INT             NULL,
-    initial_condition   NVARCHAR(MAX)   NULL,
-    actual_end_time     DATETIME2       NULL,
-    final_condition     NVARCHAR(MAX)   NULL,
-    usage_notes         NVARCHAR(MAX)   NULL,
+    booking_time          DATETIME2       NOT NULL DEFAULT GETDATE(),
+    actual_start_time     DATETIME2       NULL,
+    checkin_staff_id      INT             NULL,
+    initial_condition     NVARCHAR(MAX)   NULL,
+    actual_end_time       DATETIME2       NULL,
+    final_condition       NVARCHAR(MAX)   NULL,
+    usage_notes           NVARCHAR(MAX)   NULL,
     CONSTRAINT PK_Booking PRIMARY KEY (booking_id),
     CONSTRAINT FK_Booking_Requester FOREIGN KEY (requester_id)
         REFERENCES [User](user_id),
@@ -145,16 +155,18 @@ GO
 -- Records maintenance issues reported for spaces.
 -- ============================================================
 CREATE TABLE Maintenance (
-    maintenance_id      INT             NOT NULL IDENTITY(1,1),
-    space_code          NVARCHAR(20)    NOT NULL,
-    reporter_id         INT             NOT NULL,
-    assigned_staff_id   INT             NULL,
-    problem_description NVARCHAR(MAX)   NOT NULL,
-    start_time          DATETIME2       NOT NULL DEFAULT GETDATE(),
-    completion_time     DATETIME2       NULL,
-    status              NVARCHAR(20)    NOT NULL DEFAULT 'Open'
+    maintenance_id        INT             NOT NULL IDENTITY(1,1),
+    space_code            NVARCHAR(20)    NOT NULL,
+    reporter_id           INT             NOT NULL,
+    assigned_staff_id     INT             NULL,
+    problem_description   NVARCHAR(MAX)   NOT NULL,
+    problem_type          NVARCHAR(30)    NULL
+        CHECK (problem_type IN ('Broken Projector','AC Failure','Damaged Furniture','Cleaning Issue','Network Problem')),
+    start_time            DATETIME2       NOT NULL DEFAULT GETDATE(),
+    completion_time       DATETIME2       NULL,
+    status                NVARCHAR(20)    NOT NULL DEFAULT 'Open'
         CHECK (status IN ('Open','In Progress','Resolved','Closed')),
-    result_note         NVARCHAR(MAX)   NULL,
+    result_note           NVARCHAR(MAX)   NULL,
     CONSTRAINT PK_Maintenance PRIMARY KEY (maintenance_id),
     CONSTRAINT FK_Maintenance_Space FOREIGN KEY (space_code)
         REFERENCES Space(space_code),
@@ -167,7 +179,6 @@ GO
 
 -- ============================================================
 -- INDEXES
--- Support common query patterns and enforce business rules.
 -- ============================================================
 
 -- Index for overlap detection queries
@@ -189,6 +200,85 @@ GO
 
 -- Index for maintenance by assigned staff
 CREATE INDEX IX_Maintenance_AssignedStaff ON Maintenance (assigned_staff_id);
+GO
+
+-- ============================================================
+-- TRIGGERS
+-- Enforce business rules at the database level.
+-- ============================================================
+
+-- Trigger 1: Prevent overlapping approved/active bookings
+CREATE TRIGGER trg_PreventOverlappingBooking
+ON Booking
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        WHERE i.status IN ('Approved', 'Checked In', 'Completed')
+          AND EXISTS (
+              SELECT 1
+              FROM Booking b
+              WHERE b.space_code = i.space_code
+                AND b.booking_id <> i.booking_id
+                AND b.status IN ('Approved', 'Checked In', 'Completed')
+                AND i.requested_start < b.requested_end
+                AND i.requested_end > b.requested_start
+          )
+    )
+    BEGIN
+        RAISERROR('Overlapping booking: the selected time period conflicts with an existing active booking for this space.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+GO
+
+-- Trigger 2: Prevent booking when space is unavailable
+CREATE TRIGGER trg_CheckSpaceAvailability
+ON Booking
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        INNER JOIN Space s ON i.space_code = s.space_code
+        WHERE s.current_status IN ('Under Maintenance', 'Temporarily Closed', 'Retired')
+    )
+    BEGIN
+        RAISERROR('Cannot book this space: it is currently under maintenance, temporarily closed, or retired.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
+GO
+
+-- Trigger 3: Require rejection reason when decision is Rejected
+CREATE TRIGGER trg_RequireRejectionReason
+ON Booking_Approval
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inserted i
+        WHERE i.decision = 'Rejected'
+          AND (i.rejection_reason IS NULL OR i.rejection_reason = '')
+    )
+    BEGIN
+        RAISERROR('A rejection reason is required when the booking decision is Rejected.', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+END;
 GO
 
 PRINT 'CampusSpaceBooking database schema created successfully.';

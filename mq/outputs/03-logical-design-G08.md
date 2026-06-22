@@ -88,8 +88,9 @@ PK = (space_code, facility_id)
 | space_code | NVARCHAR(20) | NOT NULL, FK → Space(space_code) | Affected space |
 | reporter_id | INT | NOT NULL, FK → User(user_id) | Person who reported the issue |
 | assigned_staff_id | INT | NULL, FK → User(user_id) | Staff assigned to fix the issue |
-| problem_description | NVARCHAR(MAX) | NOT NULL | Description of the problem |
-| start_time | DATETIME2 | NOT NULL, DEFAULT GETDATE() | When the problem was reported |
+| problem_description | NVARCHAR(MAX)   | NOT NULL | Description of the problem |
+| problem_type        | NVARCHAR(30)    | NULL, CHECK IN (Broken Projector, AC Failure, Damaged Furniture, Cleaning Issue, Network Problem) | Category of the problem |
+| start_time          | DATETIME2       | NOT NULL, DEFAULT GETDATE() | When the problem was reported |
 | completion_time | DATETIME2 | NULL | When the issue was resolved |
 | status | NVARCHAR(20) | NOT NULL, DEFAULT 'Open', CHECK IN (Open, In Progress, Resolved, Closed) | Maintenance status |
 | result_note | NVARCHAR(MAX) | NULL | Resolution notes |

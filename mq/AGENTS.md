@@ -37,3 +37,4 @@ All generated artifacts must be saved to the `outputs/` folder exactly as named:
 - **Traceability:** Preserve explicit traceability: requirement → entity → relationship → table → constraint.
 - **Assumptions:** Record assumptions and open questions explicitly in the documents.
 - **Strict Adherence:** Do not silently invent business rules, features, or tables not present in the requirements.
+- **Write Idempotent SQL:** All data insertion scripts must be safe to execute multiple times. Use pre-insertion cleanup (e.g., DELETE FROM or TRUNCATE) or IF NOT EXISTS checks to prevent duplicate records on re-execution.

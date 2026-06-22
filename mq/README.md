@@ -23,7 +23,7 @@ During setup, choose the LLM provider and model that your group will use.
 
 After installing OpenCode, each group must connect OpenCode to at least one LLM provider before running the database design agent.
 
-OpenCode provider guide: [https://opencode.ai/docs/providers/](https://opencode.ai/docs/providers/)  
+OpenCode provider guide: [https://opencode.ai/docs/providers/](https://opencode.ai/docs/providers/)
 OpenCode model guide: [https://opencode.ai/docs/models/](https://opencode.ai/docs/models/)
 
 #### Step 1: Start OpenCode
@@ -100,17 +100,17 @@ The demo Git repository include the following files and folders, your group coul
 
 ## 4. Main Files and Folders
 
-| File / Folder | Purpose |
-|---|---|
-| `.opencode/` | Stores OpenCode commands, skills, and related configuration. |
-| `.opencode/commands/design-db.md` | Defines the custom command used to run the database design pipeline. |
-| `.opencode/skills/db-design-pipeline/SKILL.md` | Defines the agent workflow, rules, design steps, and output requirements. |
-| `.opencode/skills/db-design-pipeline/templates/` | Stores templates used by the agent to generate consistent outputs. |
-| `req/business-requirement.md` | Contains the input business requirement. |
-| `outputs/` | Stores all generated project artifacts. |
-| `AGENTS.md` | Contains project-level instructions for the agent. |
-| `README.md` | Explains how to install, run, and evaluate the project. |
-| `.gitignore` | Excludes private or unnecessary files from Git. |
+| File / Folder                                    | Purpose                                                                   |
+| ------------------------------------------------ | ------------------------------------------------------------------------- |
+| `.opencode/`                                     | Stores OpenCode commands, skills, and related configuration.              |
+| `.opencode/commands/design-db.md`                | Defines the custom command used to run the database design pipeline.      |
+| `.opencode/skills/db-design-pipeline/SKILL.md`   | Defines the agent workflow, rules, design steps, and output requirements. |
+| `.opencode/skills/db-design-pipeline/templates/` | Stores templates used by the agent to generate consistent outputs.        |
+| `req/business-requirement.md`                    | Contains the input business requirement.                                  |
+| `outputs/`                                       | Stores all generated project artifacts.                                   |
+| `AGENTS.md`                                      | Contains project-level instructions for the agent.                        |
+| `README.md`                                      | Explains how to install, run, and evaluate the project.                   |
+| `.gitignore`                                     | Excludes private or unnecessary files from Git.                           |
 
 ---
 
@@ -159,7 +159,6 @@ Example for Group 01:
 07-query-design-G01.sql
 ```
 
-
 ## 7. Notes on LLM Model Usage and Cost Control
 
 Using LLM models may consume tokens and API credits. To avoid unnecessary cost:
@@ -205,3 +204,4 @@ Each group must be able to explain:
 - How the agent was improved.
 - Why the final database design is valid.
 - How the SQL scripts and queries work.
+
