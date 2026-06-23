@@ -17,7 +17,7 @@ USER {
     string account_status
 }
 
-SPACE {
+SPACES {
     string space_code PK
     string space_name
     string space_type
@@ -83,11 +83,11 @@ MAINTENANCE_RECORD {
 
 %% Relationships
 
-SPACE ||--o{ FACILITY : contains
+SPACES ||--o{ FACILITY : contains
 
 USER ||--o{ BOOKING_REQUEST : submits
 
-SPACE ||--o{ BOOKING_REQUEST : receives
+SPACES ||--o{ BOOKING_REQUEST : receives
 
 BOOKING_REQUEST ||--o| BOOKING_APPROVAL : has
 
@@ -99,7 +99,7 @@ USER ||--o{ USAGE_SESSION : checks_in
 
 USER ||--o{ USAGE_SESSION : completes
 
-SPACE ||--o{ MAINTENANCE_RECORD : has
+SPACES ||--o{ MAINTENANCE_RECORD : has
 
 USER ||--o{ MAINTENANCE_RECORD : reports
 

@@ -68,10 +68,10 @@ CREATE TABLE USERS (
 
 
 -- =====================================================
--- SPACE
+-- SPACES
 -- =====================================================
 
-CREATE TABLE SPACE (
+CREATE TABLE SPACES (
 
     space_code VARCHAR(20),
 
@@ -129,7 +129,7 @@ CREATE TABLE FACILITY (
     PRIMARY KEY (facility_id),
 
     FOREIGN KEY (space_code)
-        REFERENCES SPACE(space_code)
+        REFERENCES SPACES(space_code)
 
 );
 
@@ -167,7 +167,7 @@ CREATE TABLE BOOKING_REQUEST (
         REFERENCES USERS(user_id),
 
     FOREIGN KEY (space_code)
-        REFERENCES SPACE(space_code),
+        REFERENCES SPACES(space_code),
 
     CHECK (
         requested_end_time > requested_start_time
@@ -312,7 +312,7 @@ CREATE TABLE MAINTENANCE_RECORD (
     PRIMARY KEY (maintenance_id),
 
     FOREIGN KEY (space_code)
-        REFERENCES SPACE(space_code),
+        REFERENCES SPACES(space_code),
 
     FOREIGN KEY (reporter_user_id)
         REFERENCES USERS(user_id),
@@ -383,7 +383,7 @@ against other rows in the BOOKING_REQUEST table.
 Reason:
 
 This rule requires checking the current
-status stored in another table (SPACE)
+status stored in another table (SPACES)
 before allowing insertion or approval
 of a booking request.
 

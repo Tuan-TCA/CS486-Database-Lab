@@ -6,7 +6,7 @@
 --
 -- TABLES:
 -- USERS
--- SPACE
+-- SPACES
 -- FACILITY
 -- BOOKING_REQUEST
 -- BOOKING_APPROVAL
@@ -62,10 +62,10 @@ INSERT INTO USERS VALUES
 
 
 -- =====================================================
--- SPACE
+-- SPACES
 -- =====================================================
 
-INSERT INTO SPACE VALUES
+INSERT INTO SPACES VALUES
 
 ('SP001','classroom_a101','classroom','A',1,'101',60,'available','general_teaching'),
 
