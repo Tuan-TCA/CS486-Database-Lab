@@ -3,6 +3,21 @@
 -- Campus Space Management System
 -- Database Implementation (SQL Server)
 -- =====================================================
+USE master;
+
+IF DB_ID('campus_space_management') IS NOT NULL
+BEGIN
+    ALTER DATABASE campus_space_management
+    SET SINGLE_USER
+    WITH ROLLBACK IMMEDIATE;
+
+    DROP DATABASE campus_space_management;
+END
+
+CREATE DATABASE campus_space_management;
+
+USE campus_space_management;
+
 
 -- =====================================================
 -- USERS
