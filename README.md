@@ -182,6 +182,34 @@ This file summarizes the entire improvement process for the section.
 
 This file will later be used to write the report.
 
+**What to log per round**
+```
+## Round N — YYYY-MM-DD
+
+### Input: Evaluation Source
+Which evaluation file was read, and a one-sentence summary of the main finding.
+
+### Issues Identified
+Bulleted list of specific problems found (not paraphrased — copy the issue label
+from the evaluation, e.g., "🔴 trg_CheckSpaceAvailability fires on historical rows").
+
+### Root Cause
+For each issue: why did the previous round produce this error? Was it a skill gap,
+a context loading gap, or an execution mistake?
+
+### Changes Made
+- **Skill updated:** [yes/no] — if yes, what was changed in `skills/skill_NN_*.md`
+  and why (so the skill improves for future rounds, not just this one)
+- **Approach changed:** what the agent did differently in this round's execution
+- **Assumption added:** any new assumption made explicit
+
+### Verification Result
+What checks from §8 were run, and whether they passed or failed.
+
+### Summary
+One sentence: what improved and what (if anything) remains unresolved.
+```
+
 ---
 
 ## prompts/
