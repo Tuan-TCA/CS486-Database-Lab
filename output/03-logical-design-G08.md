@@ -305,5 +305,4 @@ The following constraints cannot be fully represented in the relational schema a
 - Prevent overlapping approved bookings for the same space.
 - Prevent booking a space with status `under_maintenance`, `temporarily_closed`, or `retired`.
 - Prevent booking a space with an active maintenance record.
-- Ensure requested_end_time > requested_start_time.
 - Preserve historical booking and maintenance records.
