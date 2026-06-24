@@ -86,12 +86,12 @@ Continue from any ⏳ To Do or 🔄 Experimenting item. Never silently redesign 
 
 Table names and column names must match these **byte-for-byte** across all files:
 
-- **USER** (user_id PK, full_name, email _candidate key_, phone, role, department, account_status)
+- **USER** (user_id PK, full_name, email candidate key, phone, role, department [Optional], account_status)
 - **SPACE** (space_code PK, space_name, space_type, building, floor, room_number, capacity, current_status, usage_policy)
 - **FACILITY** (facility_id PK, space_code FK→SPACE, facility_name, description)
 - **BOOKING_REQUEST** (booking_id PK, user_id FK→USER, space_code FK→SPACE, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status)
-- **BOOKING_APPROVAL** (approval_id PK, booking_id FK→BOOKING_REQUEST _unique_, decided_by_user_id FK→USER, decision_time, decision_note, rejection_reason)
-- **USAGE_SESSION** (session_id PK, booking_id FK→BOOKING_REQUEST _unique_, actual_start_time, actual_end_time, checked_in_by_user_id FK→USER, completed_by_user_id FK→USER, initial_condition, final_condition, usage_notes)
+- **BOOKING_APPROVAL** (approval_id PK, booking_id FK→BOOKING_REQUEST unique, decided_by_user_id FK→USER, decision_time, decision_note, rejection_reason)
+- **USAGE_SESSION** (session_id PK, booking_id FK→BOOKING_REQUEST unique, actual_start_time, actual_end_time, checked_in_by_user_id FK→USER, completed_by_user_id FK→USER, initial_condition, final_condition, usage_notes, session_status)
 - **MAINTENANCE_RECORD** (maintenance_id PK, space_code FK→SPACE, reporter_user_id FK→USER, assigned_staff_user_id FK→USER, problem_description, start_time, completion_time, status, result_note)
 
 ---
@@ -109,6 +109,11 @@ Every output must respect these. Steps 5–7 must enforce or demonstrate them:
 7. Check-in records: actual_start_time, checked_in_by_user_id, initial_condition.
 8. Completion records: actual_end_time, completed_by_user_id, final_condition, usage_notes.
 9. No hard deletes — all history is preserved via status fields.
+10. Every user must have a university account.
+11. A user is not strictly required to belong to an academic department (e.g., administrative roles).
+12. A space may contain zero or more facilities, but a facility must belong to exactly one space.
+13. BOOKING_REQUEST statuses are strictly for the approval lifecycle (e.g., pending, approved, rejected, cancelled). Usage lifecycle statuses (e.g., checked_in, completed, no-show) belong exclusively to the USAGE_SESSION entity.
+14. ID generation standards (e.g., prefixes like 'USR-', 'SPC-') must be explicitly defined and explained in the Logical Database Design output.
 
 ---
 
@@ -118,6 +123,7 @@ Every output must respect these. Steps 5–7 must enforce or demonstrate them:
 - Markdown tables for dictionaries; Mermaid `erDiagram` for the ER diagram only.
 - **Bold** = PK, _italic_ = FK in any schema notation in prose.
 - Do not invent requirements; state every assumption explicitly inside the deliverable.
+- Standardized System Actors: Student, Lecturer, Teaching Assistant, Facility Staff, Department Administrator, Facility Manager. Do not invent new roles (e.g., System Administrators) unless explicitly requested.
 
 ---
 
