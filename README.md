@@ -14,6 +14,7 @@ The agent improvement process is conducted separately to evaluate and improve th
 ---
 
 # Project Structure
+
 ```text
 project/
 
@@ -52,7 +53,7 @@ project/
 │   │   ├── result_round1.md
 │   │   ├── result_round2.md
 │   │   ├── result_round3.md
-│   │   └── Improve.md
+│   │   └── improve.md
 │   │
 │   ├── section_02/
 │   │   └── ...
@@ -63,6 +64,7 @@ project/
     ├── generation_prompt.md
     └── evaluation_prompt.md
 ```
+
 ---
 
 # Folder Description
@@ -168,7 +170,7 @@ Do NOT put evaluation results here.
 
 ---
 
-### Improve.md
+### improve.md
 
 Stores:
 
@@ -239,7 +241,7 @@ Step 4
 
 Record observations inside:
 
-experiments/section_xx/Improve.md
+experiments/section_xx/improve.md
 
 ↓
 
@@ -267,7 +269,7 @@ Evaluate again.
 
 Step 8
 
-Update Improve.md.
+Update improve.md.
 
 ↓
 
@@ -295,7 +297,7 @@ Evaluate again.
 
 Step 12
 
-Update Improve.md.
+Update improve.md.
 
 ---
 
@@ -360,10 +362,11 @@ result_roundX
 
 = Agent-generated outputs
 
-Improve.md
+improve.md
 
 = Evaluation and improvement history
 
 The experiment process is used to refine the agent.
 
 The final submitted files remain the human-made outputs.
+

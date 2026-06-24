@@ -18,21 +18,21 @@ Score: x/10
 
 Strengths
 
-* ...
+- ...
 
 Issues
 
-* ...
+- ...
 
 ### Improvements
 
 Agent Updates
 
-* ...
+- ...
 
 Skill Updates
 
-* ...
+- ...
 
 ---
 
@@ -44,21 +44,21 @@ Score: x/10
 
 Strengths
 
-* ...
+- ...
 
 Issues
 
-* ...
+- ...
 
 ### Improvements
 
 Agent Updates
 
-* ...
+- ...
 
 Skill Updates
 
-* ...
+- ...
 
 ---
 
@@ -70,21 +70,21 @@ Score: x/10
 
 Strengths
 
-* ...
+- ...
 
 Issues
 
-* ...
+- ...
 
 ### Improvements
 
 Agent Updates
 
-* ...
+- ...
 
 Skill Updates
 
-* ...
+- ...
 
 ---
 
@@ -92,15 +92,15 @@ Skill Updates
 
 Initial weaknesses
 
-* ...
+- ...
 
 Major improvements
 
-* ...
+- ...
 
 Final observations
 
-* ...
+- ...
 
 Final score: x/10
 
@@ -110,19 +110,19 @@ Final score: x/10
 
 Agent Updates
 
-* Hallucination
-* Requirement traceability
-* Naming consistency
-* Output formatting
-* Reasoning process
-* Verification behavior
+- Hallucination
+- Requirement traceability
+- Naming consistency
+- Output formatting
+- Reasoning process
+- Verification behavior
 
 Skill Updates
 
-* Missing entities
-* Missing relationships
-* Missing cardinalities
-* Missing participation constraints
-* Missing keys
-* Incorrect SQL
-* Missing edge cases
+- Missing entities
+- Missing relationships
+- Missing cardinalities
+- Missing participation constraints
+- Missing keys
+- Incorrect SQL
+- Missing edge cases

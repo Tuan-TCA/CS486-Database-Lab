@@ -171,7 +171,7 @@ Scoring:
 
 # Suggested Evaluation Template
 
-Score: __ / 10
+Score: \_\_ / 10
 
 ## Strengths
 
@@ -196,3 +196,4 @@ Score: __ / 10
 ## Overall Observation
 
 ...
+
