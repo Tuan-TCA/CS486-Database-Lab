@@ -87,7 +87,7 @@ Continue from any ⏳ To Do or 🔄 Experimenting item. Never silently redesign 
 Table names and column names must match these **byte-for-byte** across all files:
 
 - **USER** (user_id PK, full_name, email candidate key, phone, role, department [Optional], account_status)
-- **SPACE** (space_code PK, space_name, space_type, building, floor, room_number, capacity, current_status, usage_policy)
+- **SPACE** (space_code PK, space_name, space_type, building candidate key, floor, room_number candidate key, capacity, current_status, usage_policy)
 - **FACILITY** (facility_id PK, space_code FK→SPACE, facility_name, description)
 - **BOOKING_REQUEST** (booking_id PK, user_id FK→USER, space_code FK→SPACE, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status)
 - **BOOKING_APPROVAL** (approval_id PK, booking_id FK→BOOKING_REQUEST unique, decided_by_user_id FK→USER, decision_time, decision_note, rejection_reason)
@@ -114,6 +114,7 @@ Every output must respect these. Steps 5–7 must enforce or demonstrate them:
 12. A space may contain zero or more facilities, but a facility must belong to exactly one space.
 13. BOOKING_REQUEST statuses are strictly for the approval lifecycle (e.g., pending, approved, rejected, cancelled). Usage lifecycle statuses (e.g., checked_in, completed, no-show) belong exclusively to the USAGE_SESSION entity.
 14. ID generation standards (e.g., prefixes like 'USR-', 'SPC-') must be explicitly defined and explained in the Logical Database Design output.
+15. The combination of building and room_number must be unique for every space to prevent physical duplicates in the system.
 
 ---
 
