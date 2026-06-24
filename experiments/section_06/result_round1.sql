@@ -3,7 +3,7 @@
 -- Idempotent: safe to run multiple times.
 -- ============================================================
 
-USE campus_space_management;
+USE CampusSpaceBooking;
 GO
 
 -- Idempotent cleanup: delete in reverse FK dependency order
@@ -12,90 +12,207 @@ DELETE FROM BOOKING_APPROVAL;
 DELETE FROM BOOKING_REQUEST;
 DELETE FROM MAINTENANCE_RECORD;
 DELETE FROM FACILITY;
-DELETE FROM SPACES;
-DELETE FROM USERS;
+DELETE FROM SPACE;
+DELETE FROM [USER];
 GO
 
 -- ============================================================
--- USERS (N records — all roles + one suspended account)
+-- USERS (7 records — all 6 roles + one suspended account)
 -- ============================================================
-INSERT INTO USERS (user_id, full_name, email, phone_number, role, department, account_status) VALUES
-('U01', 'Alice Student', 'alice@university.edu', '1234567890', 'student', 'Computer Science', 'active'),
-('U02', 'Bob Lecturer', 'bob@university.edu', '1234567891', 'lecturer', 'Computer Science', 'active'),
-('U03', 'Charlie TA', 'charlie@university.edu', '1234567892', 'teaching_assistant', 'Computer Science', 'active'),
-('U04', 'David Staff', 'david@university.edu', '1234567893', 'facility_staff', 'Facilities', 'active'),
-('U05', 'Eve Manager', 'eve@university.edu', '1234567894', 'facility_manager', 'Facilities', 'active'),
-('U06', 'Frank Admin', 'frank@university.edu', '1234567895', 'department_administrator', 'Computer Science', 'active'),
-('U07', 'Grace Suspended', 'grace@university.edu', '1234567896', 'student', 'Computer Science', 'suspended');
+SET IDENTITY_INSERT [USER] ON;
+GO
+
+INSERT INTO [USER] (user_id, full_name, email, phone, role, department, account_status) VALUES
+(1, 'Somchai Phanarak',      'somchai.p@university.ac.th',   '081-234-5678', 'Student',                    'Computer Science',     'Active'),
+(2, 'Dr. Ananya Wongkham',   'ananya.w@university.ac.th',    '089-876-5432', 'Lecturer',                   'Computer Science',     'Active'),
+(3, 'Nattapong Srisuk',      'nattapong.s@university.ac.th', '082-111-2233', 'Teaching Assistant',          'Computer Science',     'Active'),
+(4, 'Ploy Rattanaporn',      'ploy.r@university.ac.th',      '083-444-5566', 'Facility Staff',             'Facility Management',  'Active'),
+(5, 'Kittisak Chaiyaporn',   'kittisak.c@university.ac.th',  '084-777-8899', 'Facility Manager',           'Facility Management',  'Active'),
+(6, 'Wipada Thongchai',      'wipada.t@university.ac.th',    '085-222-3344', 'Department Administrator',   'Computer Science',     'Active'),
+(7, 'Thanakorn Meesuk',      'thanakorn.m@university.ac.th', '086-999-0011', 'Student',                    'Computer Science',     'Suspended');
+GO
+
+SET IDENTITY_INSERT [USER] OFF;
 GO
 
 -- ============================================================
--- SPACES (N records — all types + all statuses)
+-- SPACES (7 records — all 6 types + all 5 statuses)
 -- ============================================================
-INSERT INTO SPACES (space_code, space_name, space_type, building, floor, room_number, capacity, current_status, usage_policy) VALUES
-('SP01', 'Classroom 101', 'Classroom', 'Building A', 1, '101', 30, 'available', 'Standard classroom policy'),
-('SP02', 'Computer Lab A', 'Computer Lab', 'Building A', 1, '102', 40, 'available', 'No food or drink'),
-('SP03', 'Meeting Room 1', 'Meeting Room', 'Building B', 2, '201', 10, 'available', 'Bookings max 2 hours'),
-('SP04', 'Main Auditorium', 'Auditorium', 'Building B', 1, '100', 200, 'available', 'Events only'),
-('SP05', 'Project Lab X', 'Project Lab', 'Building C', 3, '301', 20, 'under_maintenance', 'Hardware projects only'),
-('SP06', 'Meeting Room 2', 'Meeting Room', 'Building B', 2, '202', 12, 'temporarily_closed', 'Closed for cleaning'),
-('SP07', 'Study Space Z', 'Student Workspace', 'Building A', 2, '205', 50, 'retired', 'No longer available');
+INSERT INTO SPACE (space_code, space_name, space_type, building, floor, room_number, capacity, current_status, usage_policy) VALUES
+('SP01', 'Room 301',               'Classroom',         'Building A', 3, 'A301', 40,  'Available',           'Available for lectures and seminars during office hours'),
+('SP02', 'Computer Lab 1',         'Computer Lab',      'Building B', 2, 'B201', 30,  'Available',           'Supervised use only; no food or drink allowed'),
+('SP03', 'Executive Meeting Room', 'Meeting Room',      'Building A', 5, 'A501', 12,  'Available',           'Priority for department meetings; book 24 hours in advance'),
+('SP04', 'Main Auditorium',        'Auditorium',        'Building C', 1, 'C101', 300, 'In Use',              'Events require approval from the Dean office'),
+('SP05', 'Robotics Lab',           'Project Lab',       'Building B', 3, 'B301', 20,  'Under Maintenance',   'Currently closed for electrical system upgrade'),
+('SP06', 'Small Meeting Room',     'Meeting Room',      'Building A', 2, 'A202', 8,   'Temporarily Closed',  'Closed for renovation until further notice'),
+('SP07', 'Old Study Corner',       'Student Workspace', 'Building D', 1, 'D101', 15,  'Retired',             'Permanently decommissioned; replaced by new student hub');
 GO
 
 -- ============================================================
--- FACILITIES (N records)
+-- FACILITIES (10 records — including facilities for unavailable spaces)
 -- ============================================================
-INSERT INTO FACILITY (facility_id, space_code, facility_name, description) VALUES
-('F01', 'SP01', 'Projector', 'Standard 1080p projector'),
-('F02', 'SP02', 'Computers', '40 Desktop workstations'),
-('F03', 'SP03', 'Whiteboard', 'Large magnetic whiteboard'),
-('F04', 'SP04', 'PA System', 'Full auditorium sound system'),
-('F05', 'SP05', '3D Printer', 'MakerBot Replicator'),
-('F06', 'SP06', 'Video Conf', 'Polycom video conferencing'),
-('F07', 'SP07', 'Desks', 'Study desks with power outlets');
+-- Available spaces
+INSERT INTO FACILITY (space_code, facility_name, description) VALUES
+('SP01', 'Projector',          'Epson EB-X51 ceiling-mounted projector'),
+('SP01', 'Whiteboard',         'Wall-mounted magnetic whiteboard 120x180cm'),
+('SP02', 'Desktop Computer',   '30 Dell OptiPlex workstations with dual monitors'),
+('SP02', 'Network Switch',     'Cisco Catalyst 48-port managed switch'),
+('SP03', 'Video Conference',   'Logitech Rally Plus conference system'),
+('SP03', 'Smart TV',           'Samsung 65-inch 4K display'),
+('SP04', 'Sound System',       'JBL Professional line array speaker system'),
+('SP04', 'Stage Lighting',     'LED stage lighting rig with DMX controller');
+GO
+
+-- Unavailable spaces still have physical facilities (Common Mistake #6)
+INSERT INTO FACILITY (space_code, facility_name, description) VALUES
+('SP05', '3D Printer',         'Ultimaker S5 Pro — currently offline for maintenance'),
+('SP06', 'Whiteboard',         'Glass whiteboard 90x120cm');
 GO
 
 -- ============================================================
--- BOOKING REQUESTS (N records — all statuses covered)
+-- BOOKING REQUESTS (8 records — all 7 statuses covered)
+-- Dates: May 2026 = historical, June 2026 = current, July 2026 = future
+-- All bookings target Available/In Use spaces to avoid trigger conflicts.
 -- ============================================================
+SET IDENTITY_INSERT BOOKING_REQUEST ON;
+GO
+
+-- BK01: Completed (happy path #1 — classroom lecture, last month)
 INSERT INTO BOOKING_REQUEST (booking_id, user_id, space_code, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status) VALUES
-('BK01', 'U01', 'SP01', '2026-05-10 10:00:00', '2026-05-10 12:00:00', 'Student meeting', 15, 'student_activity', 'completed'),
-('BK02', 'U02', 'SP01', '2026-05-11 10:00:00', '2026-05-11 12:00:00', 'Database Lecture', 25, 'lecture', 'completed'),
-('BK03', 'U03', 'SP02', '2026-06-24 18:00:00', '2026-06-24 20:00:00', 'SQL Workshop', 30, 'workshop', 'checked_in'),
-('BK04', 'U02', 'SP03', '2026-06-26 10:00:00', '2026-06-26 12:00:00', 'Faculty Meeting', 8, 'meeting', 'approved'),
-('BK05', 'U01', 'SP04', '2026-06-27 10:00:00', '2026-06-27 14:00:00', 'Tech Symposium', 150, 'student_activity', 'pending'),
-('BK06', 'U01', 'SP01', '2026-05-15 10:00:00', '2026-05-15 12:00:00', 'Club Meeting', 20, 'student_activity', 'rejected'),
-('BK07', 'U02', 'SP02', '2026-05-20 10:00:00', '2026-05-20 12:00:00', 'Extra Lecture', 35, 'lecture', 'cancelled'),
-('BK08', 'U01', 'SP03', '2026-05-25 10:00:00', '2026-05-25 12:00:00', 'Group Study', 5, 'student_activity', 'no_show');
+(1, 2, 'SP01', '2026-05-18 09:00:00', '2026-05-18 12:00:00', 'CS486 Database Systems lecture — midterm review session', 35, 'Lecture', 'Completed');
+
+-- BK02: Completed (happy path #2 — same space, different time slot, last month)
+INSERT INTO BOOKING_REQUEST (booking_id, user_id, space_code, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status) VALUES
+(2, 2, 'SP01', '2026-05-25 13:00:00', '2026-05-25 16:00:00', 'CS486 Database Systems lab — ER diagram workshop', 35, 'Workshop', 'Completed');
+
+-- BK03: Checked In (in-progress session — computer lab, today)
+INSERT INTO BOOKING_REQUEST (booking_id, user_id, space_code, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status) VALUES
+(3, 3, 'SP02', '2026-06-24 13:00:00', '2026-06-24 16:00:00', 'Programming fundamentals lab session — Python exercises', 28, 'Lecture', 'Checked In');
+
+-- BK04: Approved (future booking awaiting check-in)
+INSERT INTO BOOKING_REQUEST (booking_id, user_id, space_code, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status) VALUES
+(4, 6, 'SP04', '2026-07-10 09:00:00', '2026-07-10 12:00:00', 'Department annual planning meeting and budget review', 50, 'Administrative Event', 'Approved');
+
+-- BK05: Pending (awaiting approval decision)
+INSERT INTO BOOKING_REQUEST (booking_id, user_id, space_code, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status) VALUES
+(5, 1, 'SP03', '2026-07-15 14:00:00', '2026-07-15 16:00:00', 'Student club meeting — CS Society semester planning', 10, 'Student Activity', 'Pending');
+
+-- BK06: Rejected (with rejection reason — must insert before approval row)
+INSERT INTO BOOKING_REQUEST (booking_id, user_id, space_code, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status) VALUES
+(6, 1, 'SP04', '2026-05-20 09:00:00', '2026-05-20 17:00:00', 'Student gaming tournament — full day event', 200, 'Student Activity', 'Rejected');
+
+-- BK07: Cancelled (user-cancelled before any decision)
+INSERT INTO BOOKING_REQUEST (booking_id, user_id, space_code, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status) VALUES
+(7, 3, 'SP03', '2026-06-20 10:00:00', '2026-06-20 11:00:00', 'TA weekly sync meeting — cancelled due to schedule conflict', 5, 'Meeting', 'Cancelled');
+
+-- BK08: No-Show (was approved but user never showed up — needs approval record)
+INSERT INTO BOOKING_REQUEST (booking_id, user_id, space_code, requested_start_time, requested_end_time, purpose, expected_participants, booking_type, status) VALUES
+(8, 1, 'SP02', '2026-05-22 09:00:00', '2026-05-22 11:00:00', 'Examination preparation — individual study session', 1, 'Seminar', 'No-Show');
+GO
+
+SET IDENTITY_INSERT BOOKING_REQUEST OFF;
 GO
 
 -- ============================================================
--- BOOKING APPROVALS (N records — Approved + Rejected decisions)
+-- BOOKING APPROVALS (5 records — for Completed×2, Checked In, 
+-- Approved, Rejected, and No-Show bookings)
 -- ============================================================
+SET IDENTITY_INSERT BOOKING_APPROVAL ON;
+GO
+
+-- Approval for BK01 (Completed)
 INSERT INTO BOOKING_APPROVAL (approval_id, booking_id, decided_by_user_id, decision_time, decision_note, rejection_reason) VALUES
-('AP01', 'BK01', 'U04', '2026-05-09 10:00:00', 'Approved for student group.', NULL),
-('AP02', 'BK02', 'U05', '2026-05-09 10:00:00', 'Approved for lecture series.', NULL),
-('AP03', 'BK03', 'U04', '2026-06-23 10:00:00', 'Approved for TA workshop.', NULL),
-('AP04', 'BK04', 'U04', '2026-06-25 10:00:00', 'Approved meeting.', NULL),
-('AP06', 'BK06', 'U05', '2026-05-14 10:00:00', 'Rejected request.', 'Space is unavailable due to conflicting exams.'),
-('AP08', 'BK08', 'U04', '2026-05-24 10:00:00', 'Approved study group.', NULL);
+(1, 1, 5, '2026-05-15 10:30:00', 'Approved — regular lecture slot for CS486', NULL);
+
+-- Approval for BK02 (Completed)
+INSERT INTO BOOKING_APPROVAL (approval_id, booking_id, decided_by_user_id, decision_time, decision_note, rejection_reason) VALUES
+(2, 2, 5, '2026-05-22 09:15:00', 'Approved — workshop follows the regular lecture schedule', NULL);
+
+-- Approval for BK03 (Checked In)
+INSERT INTO BOOKING_APPROVAL (approval_id, booking_id, decided_by_user_id, decision_time, decision_note, rejection_reason) VALUES
+(3, 3, 4, '2026-06-22 14:00:00', 'Approved — lab confirmed available with all workstations operational', NULL);
+
+-- Approval for BK04 (Approved, future)
+INSERT INTO BOOKING_APPROVAL (approval_id, booking_id, decided_by_user_id, decision_time, decision_note, rejection_reason) VALUES
+(4, 4, 5, '2026-07-01 11:00:00', 'Approved — auditorium reserved for department annual event', NULL);
+
+-- Rejection for BK06 (Rejected — requires non-empty, meaningful rejection_reason)
+INSERT INTO BOOKING_APPROVAL (approval_id, booking_id, decided_by_user_id, decision_time, decision_note, rejection_reason) VALUES
+(5, 6, 5, '2026-05-17 16:45:00', 'Rejected — see rejection reason', 'The auditorium is reserved for academic events only. Student gaming tournaments do not meet the usage policy requirements. Please consider booking an off-campus venue.');
+
+-- Approval for BK08 (No-Show — MUST have a prior approved record)
+INSERT INTO BOOKING_APPROVAL (approval_id, booking_id, decided_by_user_id, decision_time, decision_note, rejection_reason) VALUES
+(6, 8, 4, '2026-05-20 08:30:00', 'Approved — study session in computer lab', NULL);
+GO
+
+SET IDENTITY_INSERT BOOKING_APPROVAL OFF;
 GO
 
 -- ============================================================
--- USAGE SESSIONS (N records — Completed + Checked In)
+-- USAGE SESSIONS (3 records — Completed×2 + Checked In×1)
 -- ============================================================
+SET IDENTITY_INSERT USAGE_SESSION ON;
+GO
+
+-- Session for BK01 (Completed — full check-in and check-out)
 INSERT INTO USAGE_SESSION (session_id, booking_id, actual_start_time, actual_end_time, checked_in_by_user_id, completed_by_user_id, initial_condition, final_condition, usage_notes) VALUES
-('US01', 'BK01', '2026-05-10 09:55:00', '2026-05-10 12:05:00', 'U04', 'U04', 'Clean and ready', 'Clean', 'No issues during session.'),
-('US02', 'BK02', '2026-05-11 09:50:00', '2026-05-11 12:10:00', 'U04', 'U04', 'Clean', 'Clean', 'Lecture proceeded normally.'),
-('US03', 'BK03', '2026-06-24 17:55:00', NULL, 'U04', NULL, 'Clean', NULL, NULL);
+(1, 1, '2026-05-18 08:55:00', '2026-05-18 11:50:00', 4, 4,
+ 'Room clean and ready. Projector operational. 35 chairs arranged in lecture format.',
+ 'Room left in good condition. Whiteboard erased. All equipment powered off.',
+ 'Lecture ran smoothly. Midterm review covered chapters 5-8. Full attendance.');
+
+-- Session for BK02 (Completed — full check-in and check-out)
+INSERT INTO USAGE_SESSION (session_id, booking_id, actual_start_time, actual_end_time, checked_in_by_user_id, completed_by_user_id, initial_condition, final_condition, usage_notes) VALUES
+(2, 2, '2026-05-25 13:05:00', '2026-05-25 15:45:00', 4, 4,
+ 'Room in standard condition. Tables rearranged for group work.',
+ 'Room restored to lecture layout. Minor whiteboard marker residue noted.',
+ 'Workshop completed. Students worked in groups of 4 on ER diagram exercises.');
+
+-- Session for BK03 (Checked In — in progress, no check-out yet)
+INSERT INTO USAGE_SESSION (session_id, booking_id, actual_start_time, actual_end_time, checked_in_by_user_id, completed_by_user_id, initial_condition, final_condition, usage_notes) VALUES
+(3, 3, '2026-06-24 13:10:00', NULL, 4, NULL,
+ 'All 30 workstations powered on and logged into lab image. Network connectivity verified.',
+ NULL,
+ NULL);
+GO
+
+SET IDENTITY_INSERT USAGE_SESSION OFF;
 GO
 
 -- ============================================================
--- MAINTENANCE RECORDS (N records — all statuses covered)
+-- MAINTENANCE RECORDS (4 records — all 4 statuses covered)
 -- ============================================================
--- Note: 'assigned_staff_user_id' is NOT NULL in DDL, so it cannot be NULL despite requirements suggesting an unassigned test case.
+SET IDENTITY_INSERT MAINTENANCE_RECORD ON;
+GO
+
+-- M01: Resolved — completed maintenance for SP01
 INSERT INTO MAINTENANCE_RECORD (maintenance_id, space_code, reporter_user_id, assigned_staff_user_id, problem_description, start_time, completion_time, status, result_note) VALUES
-('M01', 'SP05', 'U01', 'U04', 'Projector bulb burned out', '2026-05-01 10:00:00', '2026-05-02 10:00:00', 'completed', 'Replaced bulb'),
-('M02', 'SP05', 'U02', 'U04', 'AC unit leaking water', '2026-06-20 10:00:00', NULL, 'in_progress', NULL),
-('M03', 'SP06', 'U03', 'U04', 'Broken chair', '2026-06-24 10:00:00', NULL, 'pending', NULL);
+(1, 'SP01', 2, 4,
+ 'Ceiling projector displaying intermittent color artifacts on the right side of the projected image.',
+ '2026-05-10 09:00:00', '2026-05-12 14:00:00', 'Resolved',
+ 'Replaced the projector lamp and cleaned the color wheel. Test projection confirmed normal operation.');
+
+-- M02: In Progress — active maintenance on SP05 (Under Maintenance space)
+INSERT INTO MAINTENANCE_RECORD (maintenance_id, space_code, reporter_user_id, assigned_staff_user_id, problem_description, start_time, completion_time, status, result_note) VALUES
+(2, 'SP05', 5, 4,
+ 'Electrical system upgrade required — multiple power outlets showing voltage irregularities affecting 3D printer and workstation equipment.',
+ '2026-06-15 08:00:00', NULL, 'In Progress',
+ NULL);
+
+-- M03: Open — unassigned issue (NULL assigned_staff_user_id)
+INSERT INTO MAINTENANCE_RECORD (maintenance_id, space_code, reporter_user_id, assigned_staff_user_id, problem_description, start_time, completion_time, status, result_note) VALUES
+(3, 'SP06', 3, NULL,
+ 'Water stain observed on ceiling tiles near the air conditioning unit. Possible leak from the floor above.',
+ '2026-06-20 11:30:00', NULL, 'Open',
+ NULL);
+
+-- M04: Closed — fully resolved and closed out
+INSERT INTO MAINTENANCE_RECORD (maintenance_id, space_code, reporter_user_id, assigned_staff_user_id, problem_description, start_time, completion_time, status, result_note) VALUES
+(4, 'SP02', 4, 4,
+ 'Network switch in server rack showing intermittent port failures on ports 12-16.',
+ '2026-04-01 10:00:00', '2026-04-05 16:30:00', 'Closed',
+ 'Replaced faulty Cisco switch with new unit. All 48 ports tested and confirmed operational. Old switch sent for warranty claim.');
+GO
+
+SET IDENTITY_INSERT MAINTENANCE_RECORD OFF;
 GO

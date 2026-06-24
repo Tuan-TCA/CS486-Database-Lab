@@ -11,7 +11,7 @@ description: >
 
 # Skill: Database Implementation (SQL DDL)
 
-This skill governs how to produce `05-db-definition-G08.sql`. It is scoped to
+This skill governs how to produce `result_roundN.sql`. It is scoped to
 this project's schema — seven tables, three business-rule triggers, and a set of
 filtered indexes. Read this file in full before writing a single line of SQL.
 
@@ -21,18 +21,14 @@ filtered indexes. Read this file in full before writing a single line of SQL.
 
 Read **only** these files — loading more wastes context with no accuracy gain:
 
-1. `outputs/01-business-req-analysis-G08.md` — §6 Business Rules, §4 Attributes
-   (for exact status value sets used in CHECK constraints)
-2. `outputs/03-logical-design-G08.md` — Table definitions, FK Constraints Summary,
-   Referential Integrity Rules (ON DELETE actions)
-3. `outputs/04-design-validation-G08.md` — §7 Limitations (flags which rules need
-   triggers vs. CHECK constraints) and §5 Data Integrity
-4. `evaluation/evaluation-05.md` — if it exists, read it first; it lists known
-   issues from prior rounds that must be fixed in this round
+1. `experiments/section_01/result_round2.md`
+2. `experiments/section_02/result_round1.md`
+3. `experiments/section_03/result_round2.md`
+4. `experiments/section_04/result_round3.md`
 
 YOU MUST NOT CHANGE ANYTHING INSIDE `evaluation/` or `output/`
-YOUR OUTPUT MUST BE IN THE `experiments/section_05`
-Do not load `02-erd-design-G08.md` for DDL work — the logical design (03) is the
+YOUR OUTPUT MUST BE IN THE `experiments/section_05` with the name `result_roundN.sql` 
+Do not load `experiments/section_02/result_round1.md` for DDL work — the logical design (03) is the
 direct source; the ERD is already abstracted away.
 
 ---

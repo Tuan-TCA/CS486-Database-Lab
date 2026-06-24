@@ -13,21 +13,7 @@ IF OBJECT_ID('dbo.trg_PreventOverlappingBooking', 'TR') IS NOT NULL
     DROP TRIGGER dbo.trg_PreventOverlappingBooking;
 GO
 
--- Drop indexes (will be dropped with tables, but explicit for clarity)
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_BookingRequest_Space_Time' AND object_id = OBJECT_ID('dbo.BOOKING_REQUEST'))
-    DROP INDEX IX_BookingRequest_Space_Time ON dbo.BOOKING_REQUEST;
-GO
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_BookingRequest_User' AND object_id = OBJECT_ID('dbo.BOOKING_REQUEST'))
-    DROP INDEX IX_BookingRequest_User ON dbo.BOOKING_REQUEST;
-GO
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_BookingApproval_Decider' AND object_id = OBJECT_ID('dbo.BOOKING_APPROVAL'))
-    DROP INDEX IX_BookingApproval_Decider ON dbo.BOOKING_APPROVAL;
-GO
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Maintenance_Space' AND object_id = OBJECT_ID('dbo.MAINTENANCE_RECORD'))
-    DROP INDEX IX_Maintenance_Space ON dbo.MAINTENANCE_RECORD;
-GO
-
--- Drop tables in reverse dependency order
+-- Drop tables in reverse dependency order (indexes drop automatically)
 DROP TABLE IF EXISTS dbo.MAINTENANCE_RECORD;
 GO
 DROP TABLE IF EXISTS dbo.USAGE_SESSION;
@@ -257,6 +243,8 @@ GO
 -- trg_PreventOverlappingBooking
 -- Prevents two bookings from being approved for the same space
 -- with overlapping time ranges.
+-- Inserted-side scope: 'Approved', 'Checked In' (not 'Completed')
+-- Existing-side scope: 'Approved', 'Checked In', 'Completed'
 CREATE TRIGGER trg_PreventOverlappingBooking
 ON dbo.BOOKING_REQUEST
 AFTER INSERT, UPDATE
@@ -285,8 +273,10 @@ GO
 
 -- trg_CheckSpaceAvailability
 -- Prevents booking a space that is under maintenance, temporarily
--- closed, or retired. Scoped to Pending/Approved only so that
--- historical updates (e.g. completing a booking) are not blocked.
+-- closed, or retired.
+-- CRITICAL: Scoped to status IN ('Pending', 'Approved') ONLY so that
+-- historical updates (e.g. completing a booking, adding usage_notes)
+-- are NOT blocked when the space has since gone under maintenance.
 CREATE TRIGGER trg_CheckSpaceAvailability
 ON dbo.BOOKING_REQUEST
 AFTER INSERT, UPDATE
@@ -313,6 +303,11 @@ GO
 -- trg_RequireRejectionReason
 -- Ensures that when a booking is rejected, the corresponding
 -- approval record must include a non-empty rejection_reason.
+-- NOTE: BOOKING_APPROVAL has no 'decision' column. The rejection
+-- status is determined by BOOKING_REQUEST.status = 'Rejected'.
+-- The application must set BOOKING_REQUEST.status = 'Rejected'
+-- before or in the same transaction as inserting/updating the
+-- BOOKING_APPROVAL record for this trigger to enforce correctly.
 CREATE TRIGGER trg_RequireRejectionReason
 ON dbo.BOOKING_APPROVAL
 AFTER INSERT, UPDATE

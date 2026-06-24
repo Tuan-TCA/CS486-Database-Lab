@@ -22,18 +22,14 @@ before writing a single INSERT statement.
 
 Read **only** these files:
 
-1. `outputs/01-business-req-analysis-G08.md` — §7 Status Lifecycle (the flow
-   diagram), §6 Business Rules (what exceptional cases must be demonstrated)
-2. `outputs/03-logical-design-G08.md` — FK Constraints Summary and Referential
-   Integrity Rules (insert order and nullable columns)
-3. `outputs/05-db-definition-G08.sql` — the actual DDL; confirm exact column
-   names, types, and CHECK constraint values before inserting
-4. `evaluation/evaluation-06.md` — if it exists, read it first; it lists
-   known gaps from prior rounds (e.g., missing approval records for completed
-   bookings) that must be fixed in this round
+1. `experiments/section_01/result_round2.md`
+2. `experiments/section_02/result_round1.md`
+3. `experiments/section_03/result_round2.md`
+4. `experiments/section_04/result_round3.md`
+5. `experiments/section_05/result_round2.sql`
 
 YOU MUST NOT CHANGE ANYTHING INSIDE `evaluation/` or `output/`
-YOUR OUTPUT MUST BE IN THE `experiments/section_06`
+YOUR OUTPUT MUST BE IN THE `experiments/section_06` with the name `result_roundN.sql` 
 ---
 
 ## Phase 1 — Exploration
