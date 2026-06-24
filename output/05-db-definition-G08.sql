@@ -68,10 +68,10 @@ CREATE TABLE USERS (
 
 
 -- =====================================================
--- SPACE
+-- SPACES
 -- =====================================================
 
-CREATE TABLE SPACE (
+CREATE TABLE SPACES (
 
     space_code VARCHAR(20),
 
@@ -129,7 +129,7 @@ CREATE TABLE FACILITY (
     PRIMARY KEY (facility_id),
 
     FOREIGN KEY (space_code)
-        REFERENCES SPACE(space_code)
+        REFERENCES SPACES(space_code)
 
 );
 
@@ -167,7 +167,7 @@ CREATE TABLE BOOKING_REQUEST (
         REFERENCES USERS(user_id),
 
     FOREIGN KEY (space_code)
-        REFERENCES SPACE(space_code),
+        REFERENCES SPACES(space_code),
 
     CHECK (
         requested_end_time > requested_start_time
@@ -200,6 +200,8 @@ CREATE TABLE BOOKING_REQUEST (
             'no_show'
         )
     )
+
+
 );
 
 
@@ -310,7 +312,7 @@ CREATE TABLE MAINTENANCE_RECORD (
     PRIMARY KEY (maintenance_id),
 
     FOREIGN KEY (space_code)
-        REFERENCES SPACE(space_code),
+        REFERENCES SPACES(space_code),
 
     FOREIGN KEY (reporter_user_id)
         REFERENCES USERS(user_id),
@@ -339,19 +341,37 @@ CREATE TABLE MAINTENANCE_RECORD (
 -- BUSINESS RULES OUTSIDE DDL SCOPE
 -- =====================================================
 
+
 /*
 
 The following business rules cannot be enforced
-using SQL DDL constraints alone because they
-require comparisons across multiple rows,
-multiple tables, or dynamic system states.
+using standard SQL DDL constraints alone.
 
-These rules would require SQL triggers
-or application-level logic in a complete
-production system.
+They require comparisons across multiple rows,
+multiple tables, dynamic system states,
+or application-level policies.
+
+These rules would require SQL triggers,
+stored procedures, or application logic
+in a complete production system.
+
+--------------------------------------------------
 
 1. Prevent overlapping approved bookings
    for the same space.
+
+Reason:
+
+The system must compare a new booking's
+requested_start_time and requested_end_time
+against ALL existing approved bookings
+for the same space.
+
+CHECK constraints only validate values
+within the current row and cannot compare
+against other rows in the BOOKING_REQUEST table.
+
+--------------------------------------------------
 
 2. Prevent booking spaces whose
    current_status is:
@@ -360,20 +380,109 @@ production system.
    - temporarily_closed
    - retired
 
+Reason:
+
+This rule requires checking the current
+status stored in another table (SPACES)
+before allowing insertion or approval
+of a booking request.
+
+Standard CHECK constraints cannot
+reference values from another table.
+
+--------------------------------------------------
+
 3. Prevent booking spaces that have
    active maintenance records.
+
+Reason:
+
+The system must search the
+MAINTENANCE_RECORD table to determine
+whether an active maintenance task exists
+for the requested space.
+
+This requires cross-table lookups and
+possibly checking multiple rows.
+
+Standard DDL cannot perform such checks.
+
+--------------------------------------------------
 
 4. Ensure only Facility Staff
    or Facility Managers
    can approve bookings.
 
+Reason:
+
+The system must verify the role
+of decided_by_user_id by looking up
+the USERS table.
+
+This is a cross-table validation.
+
+Standard DDL cannot restrict a foreign key
+based on another column's value.
+
+--------------------------------------------------
+
 5. Ensure only approved bookings
    can create usage sessions.
+
+Reason:
+
+The system must verify that the
+associated BOOKING_REQUEST has:
+
+status = 'approved'
+
+before allowing insertion into
+USAGE_SESSION.
+
+This requires checking another table.
+
+Standard DDL cannot enforce this rule.
+
+--------------------------------------------------
 
 6. Ensure a rejected booking
    contains a rejection reason.
 
+Reason:
+
+With the current design, booking status
+is stored in BOOKING_REQUEST, while
+rejection_reason is stored in
+BOOKING_APPROVAL.
+
+This is a cross-table business rule.
+
+Standard CHECK constraints cannot
+reference columns from another table.
+
+This rule would require triggers
+or application logic.
+
+--------------------------------------------------
+
 7. Preserve historical booking
    and maintenance records.
+
+Reason:
+
+This is a data retention policy,
+not a database constraint.
+
+The system must prevent accidental
+deletion or overwriting of historical data.
+
+This is usually implemented using:
+
+- application rules
+- soft delete mechanisms
+- access control policies
+- audit logging
+
+It cannot be enforced by standard DDL alone.
 
 */

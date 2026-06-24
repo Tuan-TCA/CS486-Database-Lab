@@ -207,30 +207,135 @@ overwrite it. Each round appends a new dated entry.
 ### What to log per round
 
 ```
-## Round N — YYYY-MM-DD
+# Improve - Section XX: <Section Name>
 
-### Input: Evaluation Source
-Which evaluation file was read, and a one-sentence summary of the main finding.
+## Round Summary
 
-### Issues Identified
-Bulleted list of specific problems found (not paraphrased — copy the issue label
-from the evaluation, e.g., "🔴 trg_CheckSpaceAvailability fires on historical rows").
+| Round | Score | Main Issues | Agent Updates | Skill Updates |
+| ----- | ----- | ----------- | ------------- | ------------- |
+| 1     | x/10  | ...         | ...           | ...           |
+| 2     | x/10  | ...         | ...           | ...           |
+| 3     | x/10  | ...         | ...           | ...           |
 
-### Root Cause
-For each issue: why did the previous round produce this error? Was it a skill gap,
-a context loading gap, or an execution mistake?
+---
 
-### Changes Made
-- **Skill updated:** [yes/no] — if yes, what was changed in `skills/skill_NN_*.md`
-  and why (so the skill improves for future rounds, not just this one)
-- **Approach changed:** what the agent did differently in this round's execution
-- **Assumption added:** any new assumption made explicit
+## Round 1
 
-### Verification Result
-What checks from §8 were run, and whether they passed or failed.
+### Evaluation
 
-### Summary
-One sentence: what improved and what (if anything) remains unresolved.
+Score: x/10
+
+Strengths
+
+* ...
+
+Issues
+
+* ...
+
+### Improvements
+
+Agent Updates
+
+* ...
+
+Skill Updates
+
+* ...
+
+---
+
+## Round 2
+
+### Evaluation
+
+Score: x/10
+
+Strengths
+
+* ...
+
+Issues
+
+* ...
+
+### Improvements
+
+Agent Updates
+
+* ...
+
+Skill Updates
+
+* ...
+
+---
+
+## Round 3
+
+### Evaluation
+
+Score: x/10
+
+Strengths
+
+* ...
+
+Issues
+
+* ...
+
+### Improvements
+
+Agent Updates
+
+* ...
+
+Skill Updates
+
+* ...
+
+---
+
+## Overall Summary
+
+Initial weaknesses
+
+* ...
+
+Major improvements
+
+* ...
+
+Final observations
+
+* ...
+
+Final score: x/10
+
+---
+
+## Rules
+
+Agent Updates
+
+* Hallucination
+* Requirement traceability
+* Naming consistency
+* Output formatting
+* Reasoning process
+* Verification behavior
+
+Skill Updates
+
+* Missing entities
+* Missing relationships
+* Missing cardinalities
+* Missing participation constraints
+* Missing keys
+* Incorrect SQL
+* Missing edge cases
+
 ```
 
 ### Round result files

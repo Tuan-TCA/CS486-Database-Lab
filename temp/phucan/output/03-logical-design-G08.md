@@ -11,7 +11,7 @@ This document converts the ERD into a relational schema by defining relations, a
 | Relation | Primary Key | Foreign Key(s) | Candidate Key(s) |
 |----------|-------------|----------------|------------------|
 | USER | user_id | - | user_id, email |
-| SPACES | space_code | - | space_code, (building, room_number) |
+| SPACE | space_code | - | space_code, (building, room_number) |
 | FACILITY | facility_id | space_code | facility_id |
 | BOOKING_REQUEST | booking_id | user_id, space_code | booking_id |
 | BOOKING_APPROVAL | approval_id | booking_id, decided_by_user_id | approval_id, booking_id |
@@ -56,10 +56,10 @@ USER(
 
 ---
 
-## SPACES
+## SPACE
 
 ```text
-SPACES(
+SPACE(
     space_code VARCHAR(20),
     space_name VARCHAR(100),
     space_type VARCHAR(50),
@@ -113,7 +113,7 @@ FACILITY(
 
 ### Foreign Keys
 
-- space_code → SPACES(space_code)
+- space_code → SPACE(space_code)
 
 ### Key Constraints
 
@@ -149,7 +149,7 @@ BOOKING_REQUEST(
 ### Foreign Keys
 
 - user_id → USER(user_id)
-- space_code → SPACES(space_code)
+- space_code → SPACE(space_code)
 
 ### Key Constraints
 
@@ -267,7 +267,7 @@ MAINTENANCE_RECORD(
 
 ### Foreign Keys
 
-- space_code → SPACES(space_code)
+- space_code → SPACE(space_code)
 - reporter_user_id → USER(user_id)
 - assigned_staff_user_id → USER(user_id)
 
@@ -285,14 +285,14 @@ MAINTENANCE_RECORD(
 | Relationship | Cardinality | Implementation |
 |--------------|-------------|----------------|
 | USER → BOOKING_REQUEST | 1:N | FK user_id in BOOKING_REQUEST |
-| SPACES → BOOKING_REQUEST | 1:N | FK space_code in BOOKING_REQUEST |
-| SPACES → FACILITY | 1:N | FK space_code in FACILITY |
+| SPACE → BOOKING_REQUEST | 1:N | FK space_code in BOOKING_REQUEST |
+| SPACE → FACILITY | 1:N | FK space_code in FACILITY |
 | BOOKING_REQUEST → BOOKING_APPROVAL | 1:0..1 | UNIQUE FK booking_id |
 | USER → BOOKING_APPROVAL | 1:N | FK decided_by_user_id |
 | BOOKING_REQUEST → USAGE_SESSION | 1:0..1 | UNIQUE FK booking_id |
 | USER → USAGE_SESSION (check-in) | 1:N | FK checked_in_by_user_id |
 | USER → USAGE_SESSION (completion) | 1:N | FK completed_by_user_id |
-| SPACES → MAINTENANCE_RECORD | 1:N | FK space_code |
+| SPACE → MAINTENANCE_RECORD | 1:N | FK space_code |
 | USER → MAINTENANCE_RECORD (reporter) | 1:N | FK reporter_user_id |
 | USER → MAINTENANCE_RECORD (assigned staff) | 1:N | FK assigned_staff_user_id |
 
@@ -305,4 +305,5 @@ The following constraints cannot be fully represented in the relational schema a
 - Prevent overlapping approved bookings for the same space.
 - Prevent booking a space with status `under_maintenance`, `temporarily_closed`, or `retired`.
 - Prevent booking a space with an active maintenance record.
+- Ensure requested_end_time > requested_start_time.
 - Preserve historical booking and maintenance records.

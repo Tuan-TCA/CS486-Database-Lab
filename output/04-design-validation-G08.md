@@ -13,7 +13,7 @@ The relational schema correctly represents all entities, attributes, and relatio
 All seven entities from the ERD are preserved in the relational schema.
 
 - USER
-- SPACE
+- SPACES
 - FACILITY
 - BOOKING_REQUEST
 - BOOKING_APPROVAL
@@ -29,7 +29,7 @@ All attributes identified during the business requirement analysis are preserved
 Examples:
 
 - USER stores university account information.
-- SPACE stores information about physical spaces.
+- SPACES stores information about physical spaces.
 - BOOKING_REQUEST stores reservation information.
 - BOOKING_APPROVAL stores approval decisions.
 - USAGE_SESSION stores check-in and completion information.
@@ -42,14 +42,14 @@ All ERD relationships are implemented using foreign keys.
 | Relationship | Cardinality | Relational Implementation |
 |--------------|-------------|--------------------------|
 | USER → BOOKING_REQUEST | 1:N | user_id FK in BOOKING_REQUEST |
-| SPACE → BOOKING_REQUEST | 1:N | space_code FK in BOOKING_REQUEST |
-| SPACE → FACILITY | 1:N | space_code FK in FACILITY |
+| SPACES → BOOKING_REQUEST | 1:N | space_code FK in BOOKING_REQUEST |
+| SPACES → FACILITY | 1:N | space_code FK in FACILITY |
 | BOOKING_REQUEST → BOOKING_APPROVAL | 1:0..1 | UNIQUE booking_id FK |
 | USER → BOOKING_APPROVAL | 1:N | decided_by_user_id FK |
 | BOOKING_REQUEST → USAGE_SESSION | 1:0..1 | UNIQUE booking_id FK |
 | USER → USAGE_SESSION (check-in) | 1:N | checked_in_by_user_id FK |
 | USER → USAGE_SESSION (completion) | 1:N | completed_by_user_id FK |
-| SPACE → MAINTENANCE_RECORD | 1:N | space_code FK |
+| SPACES → MAINTENANCE_RECORD | 1:N | space_code FK |
 | USER → MAINTENANCE_RECORD (reporter) | 1:N | reporter_user_id FK |
 | USER → MAINTENANCE_RECORD (assigned staff) | 1:N | assigned_staff_user_id FK |
 
@@ -130,7 +130,7 @@ Every relation has a stable and unique primary key.
 | Relation | Primary Key |
 |----------|-------------|
 | USER | user_id |
-| SPACE | space_code |
+| SPACES | space_code |
 | FACILITY | facility_id |
 | BOOKING_REQUEST | booking_id |
 | BOOKING_APPROVAL | approval_id |
@@ -146,7 +146,7 @@ Additional candidate keys are defined where appropriate.
 | Relation | Candidate Key(s) |
 |----------|-----------------|
 | USER | user_id, email |
-| SPACE | space_code, (building, room_number) |
+| SPACES | space_code, (building, room_number) |
 | BOOKING_APPROVAL | approval_id, booking_id |
 | USAGE_SESSION | session_id, booking_id |
 
@@ -171,11 +171,11 @@ The relationship implementation is consistent with both the ERD and the business
 The following relationships are correctly implemented:
 
 - USER → BOOKING_REQUEST
-- SPACE → BOOKING_REQUEST
-- SPACE → FACILITY
+- SPACES → BOOKING_REQUEST
+- SPACES → FACILITY
 - USER → BOOKING_APPROVAL
 - USER → USAGE_SESSION
-- SPACE → MAINTENANCE_RECORD
+- SPACES → MAINTENANCE_RECORD
 - USER → MAINTENANCE_RECORD
 
 ## One-to-Zero-or-One Relationships
@@ -210,7 +210,7 @@ The following constraints are applied:
 Examples:
 
 - email is UNIQUE in USER.
-- (building, room_number) is UNIQUE in SPACE.
+- (building, room_number) is UNIQUE in SPACES.
 - booking_id is UNIQUE in BOOKING_APPROVAL.
 - booking_id is UNIQUE in USAGE_SESSION.
 - requested_end_time > requested_start_time.
