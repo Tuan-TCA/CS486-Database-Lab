@@ -10,7 +10,7 @@ This document converts the ERD into a relational schema by defining relations, a
 
 | Relation | Primary Key | Foreign Key(s) | Candidate Key(s) |
 |----------|-------------|----------------|------------------|
-| USER | user_id | - | user_id, email |
+| USERS | user_id | - | user_id, email |
 | SPACES | space_code | - | space_code, (building, room_number) |
 | FACILITY | facility_id | space_code | facility_id |
 | BOOKING_REQUEST | booking_id | user_id, space_code | booking_id |
@@ -22,10 +22,10 @@ This document converts the ERD into a relational schema by defining relations, a
 
 # 2. Relations
 
-## USER
+## USERS
 
 ```text
-USER(
+USERS(
     user_id VARCHAR(20),
     full_name VARCHAR(100),
     email VARCHAR(100),
@@ -148,7 +148,7 @@ BOOKING_REQUEST(
 
 ### Foreign Keys
 
-- user_id → USER(user_id)
+- user_id → USERS(user_id)
 - space_code → SPACES(space_code)
 
 ### Key Constraints
@@ -184,7 +184,7 @@ BOOKING_APPROVAL(
 ### Foreign Keys
 
 - booking_id → BOOKING_REQUEST(booking_id)
-- decided_by_user_id → USER(user_id)
+- decided_by_user_id → USERS(user_id)
 
 ### Key Constraints
 
@@ -226,8 +226,8 @@ USAGE_SESSION(
 ### Foreign Keys
 
 - booking_id → BOOKING_REQUEST(booking_id)
-- checked_in_by_user_id → USER(user_id)
-- completed_by_user_id → USER(user_id)
+- checked_in_by_user_id → USERS(user_id)
+- completed_by_user_id → USERS(user_id)
 
 ### Key Constraints
 
@@ -268,8 +268,8 @@ MAINTENANCE_RECORD(
 ### Foreign Keys
 
 - space_code → SPACES(space_code)
-- reporter_user_id → USER(user_id)
-- assigned_staff_user_id → USER(user_id)
+- reporter_user_id → USERS(user_id)
+- assigned_staff_user_id → USERS(user_id)
 
 ### Key Constraints
 
@@ -284,17 +284,17 @@ MAINTENANCE_RECORD(
 
 | Relationship | Cardinality | Implementation |
 |--------------|-------------|----------------|
-| USER → BOOKING_REQUEST | 1:N | FK user_id in BOOKING_REQUEST |
+| USERS → BOOKING_REQUEST | 1:N | FK user_id in BOOKING_REQUEST |
 | SPACES → BOOKING_REQUEST | 1:N | FK space_code in BOOKING_REQUEST |
 | SPACES → FACILITY | 1:N | FK space_code in FACILITY |
 | BOOKING_REQUEST → BOOKING_APPROVAL | 1:0..1 | UNIQUE FK booking_id |
-| USER → BOOKING_APPROVAL | 1:N | FK decided_by_user_id |
+| USERS → BOOKING_APPROVAL | 1:N | FK decided_by_user_id |
 | BOOKING_REQUEST → USAGE_SESSION | 1:0..1 | UNIQUE FK booking_id |
-| USER → USAGE_SESSION (check-in) | 1:N | FK checked_in_by_user_id |
-| USER → USAGE_SESSION (completion) | 1:N | FK completed_by_user_id |
+| USERS → USAGE_SESSION (check-in) | 1:N | FK checked_in_by_user_id |
+| USERS → USAGE_SESSION (completion) | 1:N | FK completed_by_user_id |
 | SPACES → MAINTENANCE_RECORD | 1:N | FK space_code |
-| USER → MAINTENANCE_RECORD (reporter) | 1:N | FK reporter_user_id |
-| USER → MAINTENANCE_RECORD (assigned staff) | 1:N | FK assigned_staff_user_id |
+| USERS → MAINTENANCE_RECORD (reporter) | 1:N | FK reporter_user_id |
+| USERS → MAINTENANCE_RECORD (assigned staff) | 1:N | FK assigned_staff_user_id |
 
 ---
 

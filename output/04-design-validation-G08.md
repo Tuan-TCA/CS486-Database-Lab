@@ -12,7 +12,7 @@ The relational schema correctly represents all entities, attributes, and relatio
 
 All seven entities from the ERD are preserved in the relational schema.
 
-- USER
+- USERS
 - SPACES
 - FACILITY
 - BOOKING_REQUEST
@@ -28,7 +28,7 @@ All attributes identified during the business requirement analysis are preserved
 
 Examples:
 
-- USER stores university account information.
+- USERS stores university account information.
 - SPACES stores information about physical spaces.
 - BOOKING_REQUEST stores reservation information.
 - BOOKING_APPROVAL stores approval decisions.
@@ -41,17 +41,17 @@ All ERD relationships are implemented using foreign keys.
 
 | Relationship | Cardinality | Relational Implementation |
 |--------------|-------------|--------------------------|
-| USER → BOOKING_REQUEST | 1:N | user_id FK in BOOKING_REQUEST |
+| USERS → BOOKING_REQUEST | 1:N | user_id FK in BOOKING_REQUEST |
 | SPACES → BOOKING_REQUEST | 1:N | space_code FK in BOOKING_REQUEST |
 | SPACES → FACILITY | 1:N | space_code FK in FACILITY |
 | BOOKING_REQUEST → BOOKING_APPROVAL | 1:0..1 | UNIQUE booking_id FK |
-| USER → BOOKING_APPROVAL | 1:N | decided_by_user_id FK |
+| USERS → BOOKING_APPROVAL | 1:N | decided_by_user_id FK |
 | BOOKING_REQUEST → USAGE_SESSION | 1:0..1 | UNIQUE booking_id FK |
-| USER → USAGE_SESSION (check-in) | 1:N | checked_in_by_user_id FK |
-| USER → USAGE_SESSION (completion) | 1:N | completed_by_user_id FK |
+| USERS → USAGE_SESSION (check-in) | 1:N | checked_in_by_user_id FK |
+| USERS → USAGE_SESSION (completion) | 1:N | completed_by_user_id FK |
 | SPACES → MAINTENANCE_RECORD | 1:N | space_code FK |
-| USER → MAINTENANCE_RECORD (reporter) | 1:N | reporter_user_id FK |
-| USER → MAINTENANCE_RECORD (assigned staff) | 1:N | assigned_staff_user_id FK |
+| USERS → MAINTENANCE_RECORD (reporter) | 1:N | reporter_user_id FK |
+| USERS → MAINTENANCE_RECORD (assigned staff) | 1:N | assigned_staff_user_id FK |
 
 ### Conclusion
 
@@ -69,7 +69,7 @@ The following requirements are directly represented in the relational schema and
 
 | Business Requirement | Implementation |
 |---------------------|----------------|
-| Every user must have a university account | USER relation with a primary key and required attributes |
+| Every user must have a university account | USERS relation with a primary key and required attributes |
 | Every booking request belongs to one user | FK user_id in BOOKING_REQUEST |
 | Every booking request belongs to one space | FK space_code in BOOKING_REQUEST |
 | Every facility belongs to one space | FK space_code in FACILITY |
@@ -129,7 +129,7 @@ Every relation has a stable and unique primary key.
 
 | Relation | Primary Key |
 |----------|-------------|
-| USER | user_id |
+| USERS | user_id |
 | SPACES | space_code |
 | FACILITY | facility_id |
 | BOOKING_REQUEST | booking_id |
@@ -145,7 +145,7 @@ Additional candidate keys are defined where appropriate.
 
 | Relation | Candidate Key(s) |
 |----------|-----------------|
-| USER | user_id, email |
+| USERS | user_id, email |
 | SPACES | space_code, (building, room_number) |
 | BOOKING_APPROVAL | approval_id, booking_id |
 | USAGE_SESSION | session_id, booking_id |
@@ -170,13 +170,13 @@ The relationship implementation is consistent with both the ERD and the business
 
 The following relationships are correctly implemented:
 
-- USER → BOOKING_REQUEST
+- USERS → BOOKING_REQUEST
 - SPACES → BOOKING_REQUEST
 - SPACES → FACILITY
-- USER → BOOKING_APPROVAL
-- USER → USAGE_SESSION
+- USERS → BOOKING_APPROVAL
+- USERS → USAGE_SESSION
 - SPACES → MAINTENANCE_RECORD
-- USER → MAINTENANCE_RECORD
+- USERS → MAINTENANCE_RECORD
 
 ## One-to-Zero-or-One Relationships
 
@@ -209,7 +209,7 @@ The following constraints are applied:
 
 Examples:
 
-- email is UNIQUE in USER.
+- email is UNIQUE in USERS.
 - (building, room_number) is UNIQUE in SPACES.
 - booking_id is UNIQUE in BOOKING_APPROVAL.
 - booking_id is UNIQUE in USAGE_SESSION.

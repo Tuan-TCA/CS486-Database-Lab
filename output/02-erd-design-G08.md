@@ -7,7 +7,7 @@
 ```mermaid
 erDiagram
 
-USER {
+USERS {
     string user_id PK
     string full_name
     string email
@@ -85,25 +85,25 @@ MAINTENANCE_RECORD {
 
 SPACES ||--o{ FACILITY : contains
 
-USER ||--o{ BOOKING_REQUEST : submits
+USERS ||--o{ BOOKING_REQUEST : submits
 
 SPACES ||--o{ BOOKING_REQUEST : receives
 
 BOOKING_REQUEST ||--o| BOOKING_APPROVAL : has
 
-USER ||--o{ BOOKING_APPROVAL : performs
+USERS ||--o{ BOOKING_APPROVAL : performs
 
 BOOKING_REQUEST ||--o| USAGE_SESSION : creates
 
-USER ||--o{ USAGE_SESSION : checks_in
+USERS ||--o{ USAGE_SESSION : checks_in
 
-USER ||--o{ USAGE_SESSION : completes
+USERS ||--o{ USAGE_SESSION : completes
 
 SPACES ||--o{ MAINTENANCE_RECORD : has
 
-USER ||--o{ MAINTENANCE_RECORD : reports
+USERS ||--o{ MAINTENANCE_RECORD : reports
 
-USER ||--o{ MAINTENANCE_RECORD : assigned_to
+USERS ||--o{ MAINTENANCE_RECORD : assigned_to
 ```
 
 # Main Entities
