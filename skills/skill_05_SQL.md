@@ -21,11 +21,15 @@ filtered indexes. Read this file in full before writing a single line of SQL.
 
 Read **only** these files — loading more wastes context with no accuracy gain:
 
-1. `experiments/section_01/result_round2.md`
-2. `experiments/section_02/result_round1.md`
-3. `experiments/section_03/result_round2.md`
-4. `experiments/section_04/result_round3.md`
+1. `doc/project_description.md`
+2. `experiments/section_01/result_round2.md`
+3. `experiments/section_02/result_round1.md`
+4. `experiments/section_03/result_round2.md`
+5. `experiments/section_04/result_round3.md`
+6. `evaluation/evaluation_05.md`
 
+YOU MUST READ THE `project_description.md` FIRST
+USE `evaluation_05.md` FOR SCORING AND EVALUATION IN `improve05.md`
 YOU MUST NOT CHANGE ANYTHING INSIDE `evaluation/` or `output/`
 YOUR OUTPUT MUST BE IN THE `experiments/section_05` with the name `result_roundN.sql` 
 Do not load `experiments/section_02/result_round1.md` for DDL work — the logical design (03) is the

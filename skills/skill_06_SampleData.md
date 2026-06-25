@@ -22,12 +22,16 @@ before writing a single INSERT statement.
 
 Read **only** these files:
 
-1. `experiments/section_01/result_round2.md`
-2. `experiments/section_02/result_round1.md`
-3. `experiments/section_03/result_round2.md`
-4. `experiments/section_04/result_round3.md`
-5. `experiments/section_05/result_round2.sql`
+1. `doc/project_description.md`
+2. `experiments/section_01/result_round2.md`
+3. `experiments/section_02/result_round1.md`
+4. `experiments/section_03/result_round2.md`
+5. `experiments/section_04/result_round3.md`
+6. `experiments/section_05/result_round2.sql`
+7. `evaluation/evaluation_06.md`
 
+YOU MUST READ THE `project_description.md` FIRST
+USE `evaluation_06.md` FOR SCORING AND EVALUATION IN `improve06.md`
 YOU MUST NOT CHANGE ANYTHING INSIDE `evaluation/` or `output/`
 YOUR OUTPUT MUST BE IN THE `experiments/section_06` with the name `result_roundN.sql` 
 ---
