@@ -197,7 +197,7 @@ INSERT INTO BOOKING_REQUEST VALUES
 
 ('B023','U005','SP009','2026-07-09 15:00','2026-07-09 17:00','startup meeting',15,'meeting','cancelled'),
 
-('B024','U010','SP011','2026-07-10 09:00','2026-07-10 12:00','deep learning seminar',170,'seminar','rejected'),
+('B024','U010','SP011','2026-07-10 09:00','2026-07-10 12:00','deep learning seminar',250,'seminar','rejected'),
 
 ('B025','U014','SP004','2026-07-11 13:00','2026-07-11 17:00','advanced python workshop',35,'workshop','rejected'),
 
@@ -267,6 +267,7 @@ INSERT INTO BOOKING_APPROVAL VALUES
 
 ('A024','B026','U018','2026-08-25 10:00','approved',NULL);
 
+('A025','B030','U017','2026-11-10 09:00','approved',NULL);
 
 -- =====================================================
 -- USAGE_SESSION

@@ -15,7 +15,7 @@ BEGIN
 END
 
 CREATE DATABASE campus_space_management;
-
+GO 
 USE campus_space_management;
 
 
