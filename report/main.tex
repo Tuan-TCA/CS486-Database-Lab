@@ -1,20 +1,17 @@
 \documentclass[12pt]{scrartcl}
 \usepackage[sexy,noasy]{evan}
+\usepackage[margin=0.5in]{geometry}
 
 \parindent 0pt
 \setcounter{secnumdepth}{4}
 
-% ==========================================
 % 1. Math and Formatting Packages
-% ==========================================
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{bm}
 
-% ==========================================
 % 2. Tables and Floats
-% ==========================================
 \usepackage{tabularx}
 \usepackage{array}
 \usepackage{float}        % gives you the [H] specifier
@@ -22,9 +19,7 @@
 \usepackage{caption}
 \captionsetup[table]{labelformat=empty}
 
-% ==========================================
 % 3. General Utilities
-% ==========================================
 \usepackage{tasks}
 \usepackage{indentfirst}
 \usepackage{appendix}
@@ -40,15 +35,13 @@
   tcbox raise=5pt,
 }
 
-% ==========================================
 % 4. Custom Styling (Colors and Listings)
-% ==========================================
 \usepackage{color}
 \usepackage{xcolor}
 \usepackage{listings}
 
 % Custom Colors
-\definecolor{blue}{RGB}{31,56,100} % Moved from title2.tex
+\definecolor{blue}{rgb}{31,56,100}
 \definecolor{dkgreen}{rgb}{0,0.6,0}
 \definecolor{gray}{rgb}{0.5,0.5,0.5}
 \definecolor{mauve}{rgb}{0.58,0,0.82}
@@ -78,35 +71,28 @@
 }
 \lstset{style=mystyle}
 
-% ==========================================
 % 5. Variables & Commands
-% ==========================================
 \newtheorem*{soln1}{Solution}
 
-\newcommand{\coursename}{}
+\newcommand{\coursename}{Introduction to Database Systems - CS486}
 \newcommand{\reportname}{}
 \newcommand{\reporttitle}{}
 
-\newcommand{\studentname}{Tran Canh Anh Tuan (24125048) \\ }
-\newcommand{\teachername}{Nguyen Ngoc Toan, MSc. \\ Nguyen Ngoc Minh Chau, MSc. \\ Le Thi Nhan, PhD}
+\newcommand{\studentname}{ Tran Canh Anh Tuan 24125048 \\ Le Dat Phuc An 24125052 \\ Vong Chi Van 24125041 \\ Pham Nguyen Minh Quan 24125041}
+\newcommand{\teachername}{ Nguyen Ngoc Toan, MSc. \\ Nguyen Ngoc Minh Chau, MSc. \\ Le Thi Nhan, PhD }
 
 \ihead{\textbf{}}
 
-% ==========================================
 % 6. Hyperref (Load Last)
-% ==========================================
 \usepackage{hyperref}
 
 \begin{document}
 
-% ==========================================
-% Title Page (Merged from title2.tex)
-% ==========================================
 \begin{titlepage}
 	\begin{center}
 		\begin{center}
-			\textsc{\Large University of Science, VNU-HCM}\\[0.5cm]
-			\textsc{\Large Faculty of Information Technology}
+			\textsc{\Large University of Science VNU-HCM} \\[0.5cm]
+			\textsc{\large Faculty of Information Technology} \\
 			\textsc{\large Advanced Program in Computer Science}
 		\end{center}
 
@@ -114,9 +100,9 @@
 		\includegraphics[scale=2]{img/hcmus_logo.png}
 		\vspace*{1cm}
 
-		{\huge \bfseries \uppercase{Introduction to Database Systems - CS486} \\[0.5cm] }
+		{\huge \bfseries \uppercase{ ??? } \\[0.5cm] }
 		{\large \bfseries Report}
-		\author{Nguyen Thi Yen Nhi}
+		\author{}
 		\textsc{\Large }\\[1.5cm]
 
 
@@ -147,9 +133,7 @@
 	\end{center}
 \end{titlepage}
 
-% ==========================================
 % Main Document Settings
-% ==========================================
 \renewcommand{\baselinestretch}{1}
 
 \title{Report - Group 08}
@@ -159,9 +143,7 @@
 \tableofcontents
 \newpage
 
-% ==========================================
 % Sections
-% ==========================================
 \input{src/10_introduction.tex}
 \input{src/20_db_design.tex}
 \input{src/30_db_implement.tex}
