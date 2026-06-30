@@ -2,9 +2,12 @@
 
 ## Round Summary
 
-| Round | Score | Main Issues | Agent Updates | Skill Updates |
-| ----- | ----- | ----------- | ------------- | ------------- |
-| 1     | 10/10 | None | None needed | None needed |
+| Round | Score | Main Findings | Agent Updates | Skill Updates | Future Opportunities |
+| ----- | ----- | ----------- | ------------- | ------------- | -------------------- |
+| 1     | 7.5/10 | Missed NO-SHOW approval requirement; Stale dates breaking Query 5; Missed facilities for closed spaces. | None | Mandate concrete dates within the recent past month; mandate facilities for closed spaces. | Ensure dynamic querying doesn't hard-fail on static data. |
+| 2     | 8.8/10 | Fixed dates and facilities, but retained NO-SHOW lifecycle error. | None | Add explicit warning that NO-SHOW requires a prior Approved status. | Catch lifecycle logic errors earlier. |
+| 3     | 9/10 | Missed 'In Use'/'Closed' statuses; temporal collisions between maintenance and bookings; stale future states (past-due pending); zombie sessions. | None | Mandate state synchronization (Checked In = In Use); mandate temporal realism (Pending/Approved must be in future); prevent maintenance/booking overlaps. | Implement time-shifting scripts or dynamic GETDATE() offsets for sample data. |
+| 4     | 10/10 | Perfect implementation covering all edge cases, rules, lifecycles, and temporal realism correctly. | None | None | None |
 
 ---
 
@@ -12,96 +15,119 @@
 
 ### Evaluation
 
-Score: 10/10
-
-#### 1. Data Coverage (2.0/2.0)
-
-All 7 tables populated with sample data:
-- USER: 7 records (all 6 roles + 1 suspended account)
-- SPACE: 8 records (all 6 space types + all 5 statuses)
-- FACILITY: 10 records (projectors, computers, whiteboards, video conferencing, microphones, livestreaming, air conditioning — including facilities for unavailable spaces)
-- BOOKING_REQUEST: 8 records (all 7 booking statuses)
-- BOOKING_APPROVAL: 6 records (5 Approved + 1 Rejected)
-- USAGE_SESSION: 3 records (2 Completed + 1 Checked In)
-- MAINTENANCE_RECORD: 4 records (all 4 statuses: Open, In Progress, Resolved, Closed)
-
-#### 2. Referential Integrity (2.0/2.0)
-
-- All FK references verified: every user_id, space_code, booking_id in child tables references an existing parent record.
-- INSERT order follows FK dependency: USER, SPACE → FACILITY → BOOKING_REQUEST → BOOKING_APPROVAL → USAGE_SESSION → MAINTENANCE_RECORD.
-- DELETE cleanup in reverse FK order.
-- No orphaned or dangling references.
-
-#### 3. Realism and Business Consistency (2.0/2.0)
-
-- Users: Thai names, realistic university email format, appropriate departments (CS, Facility Management).
-- Spaces: Realistic building names (Engineering Building A/B, Central Building, Library Building), sensible room numbers, appropriate capacities (12–500).
-- Bookings: Realistic purposes (CS101 lectures, TA training workshops, department seminars, student club activities), reasonable participant counts, logical time slots.
-- Maintenance: Real-world problems (faulty outlets, projector overheating, broken furniture, scratched whiteboard).
-- Dates: Historical bookings in May–June 2025, future bookings in July 2025.
-
-#### 4. Normal Operations Coverage (2.0/2.0)
-
-- Multiple user roles making bookings (Student, Lecturer, TA, Department Administrator).
-- Multiple spaces booked across different types.
-- Facilities assigned to spaces including unavailable ones.
-- Full booking lifecycle demonstrated: Pending → Approved → Checked In → Completed.
-- Approval workflow: Facility Staff and Facility Manager both act as approvers.
-- Usage sessions with check-in and check-out.
-- Maintenance with assignment and resolution.
-
-#### 5. Important Exceptional Cases Coverage (2.0/2.0)
-
-- ✅ Pending booking (BK05) — no approval, no session
-- ✅ Approved booking (BK04) — has approval, no session yet
-- ✅ Rejected booking (BK06) — has meaningful rejection reason
-- ✅ Cancelled booking (BK07) — no approval, no session
-- ✅ No-Show booking (BK08) — has prior Approved approval record
-- ✅ Checked In booking (BK03) — actual_end_time IS NULL, completed_by IS NULL
-- ✅ Space Under Maintenance (SP05)
-- ✅ Space Temporarily Closed (SP06)
-- ✅ Space Retired (SP07)
-- ✅ Space In Use (SP08)
-- ✅ Unassigned maintenance (M03) — assigned_staff_user_id = NULL
-- ✅ Suspended user account (U07) — no bookings (avoids confusion)
-- ✅ Facilities on unavailable spaces (SP05 has 2 facilities)
+Score: 7.5/10
 
 Strengths
 
-- Complete coverage of all status values across all tables
-- Proper booking lifecycle consistency (every Completed/Checked In/No-Show booking has approval)
-- Checked In session correctly has NULL end time and NULL completed_by
-- Realistic, meaningful rejection reason (not placeholder text)
-- Facilities included for unavailable spaces per common mistake #6
-- All 4 maintenance statuses represented
-- Idempotent with DELETE cleanup + IDENTITY reseed
-- Self-documenting with inline comments explaining each row's purpose
+- The `DELETE` statements are correctly ordered in reverse FK dependency, and `INSERT` statements follow the correct forward dependency order.
+- All required coverage matrices (Booking Statuses, User Roles, Space Statuses) are successfully represented in the data.
+- The data uses realistic descriptions for facility equipment, rejection reasons, and maintenance notes.
 
 Issues
 
-- None identified
-
-### Verification Checklist
-
-* [x] All 7 booking statuses are represented: PASS - Pending(BK05), Approved(BK04), Rejected(BK06), Cancelled(BK07), Checked In(BK03), Completed(BK01,BK02), No-Show(BK08)
-* [x] All 6 user roles are represented: PASS - Student(U01,U07), Lecturer(U02), Teaching Assistant(U03), Facility Staff(U04), Facility Manager(U05), Department Administrator(U06)
-* [x] All 5 space statuses are represented: PASS - Available(SP01-SP04), In Use(SP08), Under Maintenance(SP05), Temporarily Closed(SP06), Retired(SP07)
-* [x] BK_NoShow has a prior Approved BOOKING_APPROVAL: PASS - BK08 (No-Show) has approval_id=6 with decided_by=U05
-* [x] All Completed bookings have a matching USAGE_SESSION: PASS - BK01→session_id=1, BK02→session_id=2 (both fully populated)
-* [x] Checked In bookings have actual_end_time IS NULL: PASS - BK03→session_id=3 has actual_end_time=NULL, completed_by_user_id=NULL, final_condition=NULL
-* [x] Rejected booking has a non-empty rejection_reason: PASS - BK06 has rejection_reason='The meeting room is reserved for faculty use on Thursday mornings. Student activities should use the Student Workspace instead.'
-* [x] DELETE statements are in strict reverse FK order: PASS - USAGE_SESSION, BOOKING_APPROVAL, BOOKING_REQUEST, MAINTENANCE_RECORD, FACILITY, SPACE, USER
-* [x] INSERT statements are in strict FK dependency order: PASS - USER, SPACE, FACILITY, BOOKING_REQUEST, BOOKING_APPROVAL, USAGE_SESSION, MAINTENANCE_RECORD
+- **Missing `decision` Column:** The `INSERT INTO BOOKING_APPROVAL` statement completely omits the `decision` column in both the column list and the values. (Note: Evaluator hallucinated this based on an older conceptual draft, but the lack of approval for the No-Show booking *is* a real lifecycle violation).
+- **Stale Date Values:** The script uses dates from 2023 instead of 2026. This violates the instruction to "Use dates in the most recent past month" and will cause Query 5 (which filters for the previous calendar month) to return empty results.
+- **Missing Facilities for Closed/Retired Spaces:** While SP05 (Under Maintenance) has facilities, SP06 (Temporarily Closed) and SP07 (Retired) have no facility records. 
 
 ### Improvements
 
 Agent Updates
 
-- None needed — all evaluation rubric items and verification checklist items satisfied.
+- None
 
 Skill Updates
 
-- None needed.
+- **Date Stability:** Add a strict rule to use concrete dates in the most recent past month (e.g. 2026) to prevent reporting queries from breaking.
+- **Facility Coverage:** Add a rule that even spaces that are 'Under Maintenance', 'Temporarily Closed', or 'Retired' must have `FACILITY` records. A closed room does not lose its physical assets.
+
+---
+
+## Round 2
+
+### Evaluation
+
+Score: 8.8/10
+
+Strengths
+
+- Dates successfully shifted to 2026 to support Query 5.
+- `FACILITY` records added for closed/retired spaces (SP06, SP07).
+
+Issues
+
+- **Lifecycle Violation (No-Show):** The No-Show booking (Booking 8) still does not have a corresponding `BOOKING_APPROVAL` record. A No-Show can only logically occur if a booking was first approved.
+
+### Improvements
+
+Agent Updates
+
+- None
+
+Skill Updates
+
+- **Lifecycle Validity:** Add a critical rule emphasizing that a `No-Show` booking can ONLY occur if there is a corresponding `BOOKING_APPROVAL` with an 'Approved' decision.
+
+---
+
+## Round 3
+
+### Evaluation
+
+Score: 9/10
+
+Strengths
+
+- Strict reverse-order `DELETE` and forward-order `INSERT`.
+- All edge cases, including suspended users (to test app-layer logic), no-shows with valid prior approvals, and closed spaces with facilities, are represented.
+
+Issues
+
+- **Missing Domain Values (Sneaky Bug):** The data failed to include the `In Use` status for any `SPACE`, and failed to include the `Closed` status for any `MAINTENANCE_RECORD`.
+- **State Inconsistency (Sneaky Bug):** SP02 has an active, in-progress 'Checked In' session (Booking 3), but the space status is incorrectly listed as 'Available' instead of 'In Use'.
+- **Temporal Collision (Sneaky Bug):** Booking 1 (Completed) occurred exactly during the window of Maintenance 1 (SP01, 2026-05-01 10:00 to 2026-05-02 10:00). Logically, a completed student activity cannot take place in a room that is actively under maintenance.
+- **Stale Future States & Zombie Sessions (Sneaky Bug):** Relative to the current system date (June 30, 2026), Bookings 4 (Approved) and 5 (Pending) are scheduled for June 15 and June 20—they are past-due. Additionally, Booking 3 has been 'Checked In' without checking out for 29 days.
+
+### Improvements
+
+Agent Updates
+
+- None
+
+Skill Updates
+
+- **State Synchronization:** Add a rule that if a booking is 'Checked In', the corresponding space MUST be 'In Use'.
+- **Temporal Realism:** Add a rule that 'Pending' and 'Approved' bookings must be scheduled in the *future* relative to the execution date, while 'Completed' and 'Rejected' must be in the past.
+- **Collision Prevention:** Add a rule to manually verify that maintenance record timeframes do not logically overlap with completed booking timeframes in the sample data.
+
+---
+
+## Round 4
+
+### Evaluation
+
+Score: 10/10
+
+Strengths
+
+- Flawless sample data generation with absolute logical, temporal, and relational consistency.
+- All 5 Space statuses and 4 Maintenance statuses are fully represented.
+- Active 'Checked In' sessions are properly mirrored by 'In Use' space statuses.
+- Future states (Pending/Approved) are correctly time-shifted to July 2026, avoiding past-due anomalies.
+- Maintenance windows are cleanly separated from completed booking windows.
+
+Issues
+
+- None.
+
+### Improvements
+
+Agent Updates
+
+- None
+
+Skill Updates
+
+- None
 
 ---
 
@@ -109,14 +135,10 @@ Skill Updates
 
 Initial weaknesses
 
-- None significant — this is Round 1.
+- The sample data generation correctly handled basic referential integrity but struggled with implicit lifecycle dependencies (e.g., No-Show requiring an Approval) and physical reality (closed spaces still have facilities).
 
 Major improvements
 
-- N/A (first round).
+- Iteratively hardened the skill to include strict rules around lifecycle validity and time-bound data mapping to support future queries.
 
-Final observations
-
-- The sample data comprehensively covers all normal operations and exceptional cases. All 7 booking statuses, all 6 user roles, all 5 space statuses, and all 4 maintenance statuses are represented. Referential integrity is maintained throughout, and the booking lifecycle is fully consistent (No-Show and Completed bookings have approval records; Checked In sessions have NULL end times).
-
-Final score: 10/10
+Final score: 10/10 (Achieved in Round 4)

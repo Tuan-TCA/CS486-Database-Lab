@@ -506,7 +506,7 @@ ORDER BY avg_resolution_hours ASC;
 
 /*
 Business Question:
-Which maintenance issues have been open or in progress for more than 7 days without being resolved?
+Which maintenance issues have been pending or in progress for more than 7 days without being resolved?
 
 Target User(s):
 - Facility Manager
@@ -525,7 +525,7 @@ FROM MAINTENANCE_RECORD m
 JOIN SPACES s ON m.space_code = s.space_code
 JOIN USERS u_rep ON m.reporter_user_id = u_rep.user_id
 LEFT JOIN USERS u_asgn ON m.assigned_staff_user_id = u_asgn.user_id
-WHERE m.status IN ('open', 'in_progress') 
+WHERE m.status IN ('pending', 'in_progress') 
   AND DATEDIFF(DAY, m.start_time, GETDATE()) > 7;
 
 
