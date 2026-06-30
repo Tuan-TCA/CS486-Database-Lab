@@ -1,1 +1,7 @@
 build/
+report/main.aux
+report/main.fdb_latexmk
+report/main.fls
+report/main.log
+report/main.pdf
+report/main.toc
