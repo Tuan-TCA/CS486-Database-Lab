@@ -1,0 +1,255 @@
+% ==============================================================================
+% Section 2: Database Design
+% ==============================================================================
+
+\section{Database Design}
+
+% ------------------------------------------------------------------------------
+% 2.1 Business Requirement Analysis
+% ------------------------------------------------------------------------------
+
+\subsection{Business Requirement Analysis}
+
+\subsubsection{Business Purpose}
+
+The system manages the booking and usage of shared campus spaces for the School of Computer Science, replacing a manual spreadsheet/email process with a structured database that handles booking requests, approvals, check-in/check-out, maintenance tracking, and historical reporting.
+
+\subsubsection{Actors}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Role} & \textbf{Description} \\
+\hline
+Student & Submits booking requests for student activities; views own bookings \\
+\hline
+Lecturer & Submits booking requests for lectures and examinations \\
+\hline
+Teaching Assistant & Submits booking requests for workshops and tutorials \\
+\hline
+Facility Staff & Approves/rejects bookings, performs check-in/check-out, manages maintenance \\
+\hline
+Department Administrator & Views departmental booking history \\
+\hline
+Facility Manager & Oversees all spaces, bookings, maintenance, and facility statuses \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Core Entities}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Entity} & \textbf{Key Attributes} \\
+\hline
+\texttt{USER} & \texttt{user\_id} (PK), \texttt{full\_name}, \texttt{email}, \texttt{phone}, \texttt{role}, \texttt{department}, \texttt{account\_status} \\
+\hline
+\texttt{SPACE} & \texttt{space\_code} (PK), \texttt{space\_name}, \texttt{space\_type}, \texttt{building}, \texttt{floor}, \texttt{room\_number}, \texttt{capacity}, \texttt{current\_status}, \texttt{usage\_policy} \\
+\hline
+\texttt{FACILITY} & \texttt{facility\_id} (PK), \texttt{space\_code} (FK), \texttt{facility\_name}, \texttt{description} \\
+\hline
+\texttt{BOOKING\_REQUEST} & \texttt{booking\_id} (PK), \texttt{user\_id} (FK), \texttt{space\_code} (FK), \texttt{requested\_start\_time}, \texttt{requested\_end\_time}, \texttt{purpose}, \texttt{expected\_participants}, \texttt{booking\_type}, \texttt{status} \\
+\hline
+\texttt{BOOKING\_APPROVAL} & \texttt{approval\_id} (PK), \texttt{booking\_id} (FK, UNIQUE), \texttt{decided\_by\_user\_id} (FK), \texttt{decision\_time}, \texttt{decision\_note}, \texttt{rejection\_reason} \\
+\hline
+\texttt{USAGE\_SESSION} & \texttt{session\_id} (PK), \texttt{booking\_id} (FK, UNIQUE), \texttt{actual\_start\_time}, \texttt{actual\_end\_time}, \texttt{checked\_in\_by\_user\_id} (FK), \texttt{completed\_by\_user\_id} (FK), \texttt{initial\_condition}, \texttt{final\_condition}, \texttt{usage\_notes} \\
+\hline
+\texttt{MAINTENANCE\_RECORD} & \texttt{maintenance\_id} (PK), \texttt{space\_code} (FK), \texttt{reporter\_user\_id} (FK), \texttt{assigned\_staff\_user\_id} (FK), \texttt{problem\_description}, \texttt{start\_time}, \texttt{completion\_time}, \texttt{status}, \texttt{result\_note} \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Business Rules}
+
+\begin{enumerate}
+    \item No overlapping approved bookings for the same space.
+    \item Spaces with status \texttt{under\_maintenance}, \texttt{temporarily\_closed}, or \texttt{retired} cannot be booked.
+    \item Spaces with active maintenance records cannot be booked.
+    \item \texttt{requested\_end\_time} must be greater than \texttt{requested\_start\_time}.
+    \item \texttt{BOOKING\_APPROVAL} is optional, at most one per \texttt{BOOKING\_REQUEST} (1:0..1).
+    \item \texttt{USAGE\_SESSION} is optional, at most one per \texttt{BOOKING\_REQUEST} (1:0..1).
+    \item Rejected bookings must preserve \texttt{rejection\_reason}.
+    \item Check-in must record \texttt{actual\_start\_time}, \texttt{checked\_in\_by\_user\_id}, \texttt{initial\_condition}.
+    \item Completion must record \texttt{actual\_end\_time}, \texttt{completed\_by\_user\_id}, \texttt{final\_condition}, \texttt{usage\_notes}.
+    \item Historical data must be preserved (no hard deletes).
+\end{enumerate}
+
+\subsubsection{Requirement Summary}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Requirement} & \textbf{Database Support} \\
+\hline
+User management & \texttt{USER} with role and account status \\
+\hline
+Space inventory & \texttt{SPACE} with type, capacity, and status \\
+\hline
+Facility tracking & \texttt{FACILITY} linked to \texttt{SPACE} via FK \\
+\hline
+Booking workflow & \texttt{BOOKING\_REQUEST} with status lifecycle \\
+\hline
+Approval management & \texttt{BOOKING\_APPROVAL} (1:0..1 to request) \\
+\hline
+Usage tracking & \texttt{USAGE\_SESSION} for check-in/check-out \\
+\hline
+Maintenance management & \texttt{MAINTENANCE\_RECORD} from report to resolution \\
+\hline
+Conflict prevention & Triggers/application logic on approved bookings \\
+\hline
+History preservation & Soft-delete policy across all relations \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------------------------
+% 2.2 Conceptual Database Design
+% ------------------------------------------------------------------------------
+
+\subsection{Conceptual Database Design}
+
+\subsubsection{Entity Relationship Diagram}
+
+The ERD was developed using Mermaid notation, modeling seven entities with their attributes, relationships, cardinalities, and participation constraints. The complete diagram is provided in the project deliverables (\texttt{output/02-erd-design-G08.md}).
+
+\subsubsection{Design Decisions}
+
+\begin{itemize}
+    \item \textbf{Entity identification:} Seven entities map one-to-one to distinct real-world concepts---no merging or over-splitting.
+    \item \textbf{Relationship design:} \texttt{USER} participates in multiple relationships with distinct semantic roles (requester, approver, check-in staff, reporter, assigned staff), modeled via separate foreign keys.
+    \item \textbf{Cardinalities:} \texttt{BOOKING\_APPROVAL} and \texttt{USAGE\_SESSION} use 1:0..1 (not 1:N), reflecting at-most-one approval/session per booking.
+    \item \textbf{Participation:} Total participation for dependent entities (e.g., every \texttt{FACILITY} must belong to a \texttt{SPACE}); partial participation where entities may exist independently.
+\end{itemize}
+
+\subsubsection{Relationship Summary}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|X|l|}
+\hline
+\textbf{Relationship} & \textbf{Cardinality} \\
+\hline
+Space contains Facility & 1 : N \\
+\hline
+User submits Booking\_Request & 1 : N \\
+\hline
+Space receives Booking\_Request & 1 : N \\
+\hline
+Booking\_Request has Booking\_Approval & 1 : 0..1 \\
+\hline
+User performs Booking\_Approval & 1 : N \\
+\hline
+Booking\_Request creates Usage\_Session & 1 : 0..1 \\
+\hline
+User checks in Usage\_Session & 1 : N \\
+\hline
+User completes Usage\_Session & 1 : N \\
+\hline
+Space has Maintenance\_Record & 1 : N \\
+\hline
+User reports Maintenance\_Record & 1 : N \\
+\hline
+User assigned to Maintenance\_Record & 1 : N \\
+\hline
+\end{tabularx}
+\end{table}
+
+% ------------------------------------------------------------------------------
+% 2.3 Logical Database Design
+% ------------------------------------------------------------------------------
+
+\subsection{Logical Database Design}
+
+\subsubsection{Relational Schema}
+
+The ERD was converted into seven relations. The full schema definitions with data types are provided in the project deliverables (\texttt{output/03-logical-design-G08.md}).
+
+\subsubsection{Relation Summary}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|l|X|X|}
+\hline
+\textbf{Relation} & \textbf{PK} & \textbf{Foreign Keys} & \textbf{Candidate Keys} \\
+\hline
+USERS & user\_id & --- & email \\
+\hline
+SPACES & space\_code & --- & (building, room\_number) \\
+\hline
+FACILITY & facility\_id & space\_code & --- \\
+\hline
+BOOKING\_REQUEST & booking\_id & user\_id, space\_code & --- \\
+\hline
+BOOKING\_APPROVAL & approval\_id & booking\_id (UNIQUE), decided\_by\_user\_id & booking\_id \\
+\hline
+USAGE\_SESSION & session\_id & booking\_id (UNIQUE), checked\_in\_by\_user\_id, completed\_by\_user\_id & booking\_id \\
+\hline
+MAINTENANCE\_RECORD & maintenance\_id & space\_code, reporter\_user\_id, assigned\_staff\_user\_id & --- \\
+\hline
+\end{tabularx}
+\end{table}
+
+All eleven foreign keys implement the ERD relationships. The UNIQUE constraint on \texttt{booking\_id} in \texttt{BOOKING\_APPROVAL} and \texttt{USAGE\_SESSION} enforces the 1:0..1 cardinality.
+
+\subsubsection{Normalization}
+
+All relations satisfy Third Normal Form (3NF):
+
+\begin{itemize}
+    \item \textbf{1NF:} All attributes are atomic.
+    \item \textbf{2NF:} No partial dependencies (all PKs are single-attribute).
+    \item \textbf{3NF:} No transitive dependencies among non-key attributes.
+\end{itemize}
+
+% ------------------------------------------------------------------------------
+% 2.4 Database Validation
+% ------------------------------------------------------------------------------
+
+\subsection{Database Validation}
+
+\subsubsection{Requirement Traceability}
+
+Every business requirement maps to a database component: user management to \texttt{USERS}, space inventory to \texttt{SPACES}, facility tracking to \texttt{FACILITY}, booking workflow to \texttt{BOOKING\_REQUEST}, approval decisions to \texttt{BOOKING\_APPROVAL}, usage tracking to \texttt{USAGE\_SESSION}, and maintenance management to \texttt{MAINTENANCE\_RECORD}.
+
+\subsubsection{Constraint Analysis}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|X|X|X|}
+\hline
+\textbf{Business Rule} & \textbf{Schema Constraint} & \textbf{Additional Enforcement} \\
+\hline
+No overlapping bookings & --- & Trigger / application logic \\
+\hline
+Unavailable spaces not bookable & CHECK on \texttt{current\_status} & Application status check \\
+\hline
+Active maintenance blocks booking & --- & Application logic \\
+\hline
+End time > start time & CHECK constraint & --- \\
+\hline
+At most one approval per booking & UNIQUE on \texttt{booking\_id} & --- \\
+\hline
+At most one session per booking & UNIQUE on \texttt{booking\_id} & --- \\
+\hline
+Rejection reason preserved & --- & Application logic \\
+\hline
+Valid user roles & CHECK on \texttt{role} & --- \\
+\hline
+No hard deletes & --- & Application policy \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Design Limitations}
+
+The following constraints cannot be expressed as single-table CHECK constraints and require triggers or application logic:
+
+\begin{itemize}
+    \item \textbf{Overlapping booking prevention:} Requires querying existing approved bookings for time-range overlap detection.
+    \item \textbf{Maintenance-based booking blocks:} Requires cross-table join between \texttt{BOOKING\_REQUEST} and \texttt{MAINTENANCE\_RECORD}.
+    \item \textbf{Conditional NOT NULL:} Fields like \texttt{rejection\_reason} and completion fields are conditionally required based on booking status.
+\end{itemize}
