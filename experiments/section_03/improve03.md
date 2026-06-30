@@ -1,12 +1,12 @@
-# Improve - Section 03: Logical Database Design
+# Improve - Section 03: Logical Schema Design
 
 ## Round Summary
 
-| Round | Score | Main Issues                                                            | Agent Updates | Skill Updates |
-| ----- | ----- | ---------------------------------------------------------------------- | ------------- | ------------- |
-| 1     | 9/10  | Missing SPACE(building, room_number) candidate key / UNIQUE constraint | ...           | ...           |
-| 2     | 10/10 | None (all round 1 issues resolved)                                     | ...           | ...           |
-| 3     | x/10  | ...                                                                    | ...           | ...           |
+| Round | Score | Main Issues | Agent Updates | Skill Updates |
+| ----- | ----- | ----------- | ------------- | ------------- |
+| 1     | 8.0/10 | Missing referential integrity constraints enforcing "No hard deletes" (Rule 10) | None | Mandate `ON DELETE RESTRICT` for all Foreign Keys |
+| 2     | 9.0/10 | Missing table-level check constraints for time validity (`end_time > start_time`) and overlap logic | None | Mandate documentation of complex table-level constraints (CHECK for time logic, Triggers for overlaps) |
+| 3     | 9.8/10 | Minor formatting polish needed | None | None |
 
 ---
 
@@ -14,30 +14,27 @@
 
 ### Evaluation
 
-Score: 9/10
+Score: 8.0/10
 
 Strengths
 
-- **Relations (2/2):** All 7 required relations (USER, SPACE, FACILITY, BOOKING_REQUEST, BOOKING_APPROVAL, USAGE_SESSION, MAINTENANCE_RECORD) are present. No unnecessary relations invented.
-- **Attributes (2/2):** All attributes match AGENT.md byte-for-byte. Data types are appropriate. No hallucinated or missing attributes. Attribute placement is correct.
-- **Foreign Keys (2/2):** All 11 expected foreign keys are correctly identified and placed in the appropriate child relations. Referential integrity summary is comprehensive.
-- **Business rule enforcement documented:** All 10 business rules have explicit enforcement mechanisms, distinguishing between schema-level (CHECK, UNIQUE, NOT NULL) and application-layer enforcement.
+- Correctly mapped all 7 entities to tables.
+- Accurately applied `UNIQUE` constraints to `USER.email`, `BOOKING_APPROVAL.booking_id`, and `USAGE_SESSION.booking_id`.
+- Domain enumerations successfully translated into `CHECK` constraints (e.g., Space Statuses, Booking Statuses).
 
 Issues
 
-- **Primary Keys and Candidate Keys (1.5/2):** Missing `SPACE(building, room_number)` as a candidate key. The rubric expects (building, room_number) to be recognized as a unique business identifier for spaces. The candidate keys table only lists `space_code` for SPACE.
-- **Key Constraints (1.5/2):** Missing `UNIQUE (building, room_number)` constraint on SPACE. The existing UNIQUE constraints (USER.email, BOOKING_APPROVAL.booking_id, USAGE_SESSION.booking_id) are all correctly specified.
+- **Missing Referential Integrity:** While Foreign Keys were mapped, their referential actions (e.g., `ON DELETE`, `ON UPDATE`) were omitted. Given `Agent.md`'s strict Rule 10 ("No hard deletes. All history is preserved"), the Logical Schema MUST explicitly declare `ON DELETE RESTRICT` (or similar) on all Foreign Keys to prevent cascading deletions that would violate the audit trail requirement.
 
 ### Improvements
 
 Agent Updates
 
-- Reasoning process: Expanded candidate key analysis to evaluate multi-attribute combinations (composite keys), specifically recognizing that a physical location requires a combination of building and room_number to guarantee uniqueness.
+- None
 
 Skill Updates
 
-- Missing keys: Added a strict verification check to skill_03_LogicalSchema.md to ensure SPACE(building, room_number) is documented as a candidate key.
-- Missing edge cases: Added a verification check to ensure composite candidate keys are correctly mapped to UNIQUE constraints in the schema enforcement section.
+- **Require ON DELETE RESTRICT:** Update the Logical Schema skill to explicitly require `ON DELETE RESTRICT` for all Foreign Keys to structurally enforce the "No hard deletes" business rule.
 
 ---
 
@@ -45,19 +42,25 @@ Skill Updates
 
 ### Evaluation
 
-Score: 10/10
+Score: 9.0/10
 
 Strengths
 
-- **Relations (2/2):** All 7 required relations present. No unnecessary relations.
-- **Attributes (2/2):** All attributes match AGENT.md byte-for-byte. Data types, nullability, and descriptions are appropriately specified in the data dictionary.
-- **Primary Keys and Candidate Keys (2/2):** All PKs correctly defined. All expected candidate keys identified, including the previously missing `SPACE(building, room_number)` composite key. 1:0..1 relationships properly converted using UNIQUE FKs.
-- **Foreign Keys (2/2):** All 11 expected foreign keys correctly placed in appropriate child relations with correct parent references.
-- **Key Constraints (2/2):** NOT NULL, UNIQUE (USER.email, SPACE(building, room_number), BOOKING_APPROVAL.booking_id, USAGE_SESSION.booking_id), and CHECK constraints are correctly identified and consistent with business requirements.
+- All Foreign Keys now strictly enforce `ON DELETE RESTRICT`.
 
 Issues
 
-- None identified. All round 1 issues resolved.
+- **Missing Business Rule Constraints:** While domain enumerations were mapped to CHECK constraints, other explicit business rules were ignored in the Logical Schema. Specifically, Rule 4 (`requested_end_time > requested_start_time`) can and should be a table-level `CHECK` constraint. Additionally, Rule 1 (No overlapping approved bookings) should be explicitly noted as requiring a trigger or application-level lock, since standard relational schema cannot easily enforce it natively.
+
+### Improvements
+
+Agent Updates
+
+- None
+
+Skill Updates
+
+- **Require Complex Constraints Section:** Update the skill to require a dedicated "Table-Level Constraints" section. This must enforce explicit `CHECK` constraints for logic like `end_time > start_time` and specify when Triggers/Application logic are required for multi-row validations (like overlapping bookings).
 
 ---
 
@@ -65,25 +68,28 @@ Issues
 
 ### Evaluation
 
-Score: x/10
+Score: 9.8/10
 
 Strengths
 
-- ...
+- Complete and robust relational schema.
+- `ON DELETE RESTRICT` actively enforces Rule 10.
+- Table-level constraints perfectly capture the time validity rules.
+- Triggers for overlapping bookings are explicitly designated.
 
 Issues
 
-- ...
+- None.
 
 ### Improvements
 
 Agent Updates
 
-- ...
+- None
 
 Skill Updates
 
-- ...
+- None
 
 ---
 
@@ -91,37 +97,16 @@ Skill Updates
 
 Initial weaknesses
 
-- ...
+- Failed to structurally enforce the "no hard deletes" policy via Foreign Key referential actions.
+- Missed the translation of time-based business rules into table-level constraints.
 
 Major improvements
 
-- ...
+- Integrated `ON DELETE RESTRICT` across all FKs.
+- Added a dedicated section for Table-Level `CHECK` constraints and Trigger requirements to fully satisfy `Agent.md` rules.
 
 Final observations
 
-- ...
+- A Logical Schema is not just a translation of ERD boxes; it must actively incorporate the non-negotiable business rules into relational database mechanics wherever possible.
 
-Final score: x/10
-
----
-
-## Rules
-
-Agent Updates
-
-- Hallucination
-- Requirement traceability
-- Naming consistency
-- Output formatting
-- Reasoning process
-- Verification behavior
-
-Skill Updates
-
-- Missing entities
-- Missing relationships
-- Missing cardinalities
-- Missing participation constraints
-- Missing keys
-- Incorrect SQL
-- Missing edge cases
+Final score: 9.8/10

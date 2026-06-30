@@ -22,11 +22,12 @@ filtered indexes. Read this file in full before writing a single line of SQL.
 Read **only** these files — loading more wastes context with no accuracy gain:
 
 1. `doc/project_description.md`
-2. `experiments/section_01/result_round2.md`
-3. `experiments/section_02/result_round1.md`
-4. `experiments/section_03/result_round2.md`
+2. `experiments/section_01/result_round3.md`
+3. `experiments/section_02/result_round3.md`
+4. `experiments/section_03/result_round3.md`
 5. `experiments/section_04/result_round3.md`
 6. `evaluation/evaluation_05.md`
+7. `prompts/`
 
 YOU MUST READ THE `project_description.md` FIRST
 USE `evaluation_05.md` FOR SCORING AND EVALUATION IN `improve05.md`
@@ -207,10 +208,21 @@ most common bug in prior rounds.
 **trg_RequireRejectionReason**
 
 ```
-Fires: AFTER INSERT, UPDATE on BOOKING_APPROVAL
+Fires: AFTER INSERT, UPDATE on BOOKING_REQUEST
 Logic:
-  For each row in `inserted` where decision = 'Rejected':
-    Check if rejection_reason IS NULL OR LTRIM(RTRIM(rejection_reason)) = ''
+  For each row in `inserted` where status = 'Rejected':
+    Check if a corresponding record exists in BOOKING_APPROVAL where rejection_reason IS NULL OR empty
+  If so: RAISERROR and ROLLBACK.
+```
+*(Moved from BOOKING_APPROVAL to BOOKING_REQUEST to prevent transaction-ordering bypass vulnerabilities).*
+
+**trg_PreventMaintenanceWithActiveBookings**
+
+```
+Fires: AFTER UPDATE on SPACE
+Logic:
+  For each row in `inserted` where current_status IN ('Under Maintenance', 'Temporarily Closed', 'Retired'):
+    Check if any BOOKING_REQUEST exists for that space_code with status IN ('Approved', 'Checked In')
   If so: RAISERROR and ROLLBACK.
 ```
 

@@ -1,4 +1,4 @@
-# Skill 03: Logical Schema Design
+# Skill 03: Logical Schema Design (Round 3 Snapshot)
 
 # Purpose
 To generate a comprehensive, normalized Relational Logical Schema for the Campus Space Management System that translates the Conceptual ERD into strict relational database constructs, fully capturing table-level constraints and referential integrity.
@@ -22,28 +22,3 @@ Before finalizing the Logical Schema result:
 4. Verify that all Foreign Keys declare `ON DELETE RESTRICT`.
 5. Verify that multi-row constraints (Rule 1) are explicitly documented as requiring Triggers.
 6. Verify that no new attributes or tables were invented.
-
-# Common Mistakes
-- **Missing Referential Integrity Actions:** Forgetting `ON DELETE RESTRICT`, which allows accidental cascade deletes violating Rule 10.
-- **Losing the UK Constraint:** Forgetting to add `UNIQUE` constraints to 1:1 foreign keys or candidate keys (e.g., `email`).
-- **Ignoring Nullability:** Arbitrarily making optional foreign keys (like `assigned_staff_user_id`) `NOT NULL`.
-- **Missing Domain Constraints:** Forgetting to map the business domain values (e.g., Space Statuses, Booking Statuses) to `CHECK` constraints.
-- **Ignoring Time Rules:** Failing to implement `end_time > start_time` as a CHECK constraint.
-- **Hallucinating Tables:** Creating mapping tables for relationships that are already handled by the existing foreign keys.
-- **Renaming Columns:** Changing `user_id` to `id` or `space_code` to `space_id`. The names MUST remain byte-for-byte identical.
-
-# Consistency Rules
-- Table names must be UPPERCASE (e.g., `USER`, `SPACE`).
-- Column names must be snake_case, matching `Agent.md` exactly.
-- Use standard SQL syntax formatting for the schema representation.
-
-# Anti-Hallucination Rules
-- Do NOT add any tables not present in `Agent.md`.
-- Do NOT add any columns not present in `Agent.md`.
-- Do NOT invent new relationships or constraints not derived directly from previous sections.
-
-# Lessons Integrated
-- **From Section 02:** We must not drop subtle constraints. Candidate keys (`email`) and 1:1 mapping keys MUST carry their `UNIQUE` constraints over to the logical design.
-- **From Section 01:** Domain enumerations were identified as critical business logic; they must actively enforce data integrity here via `CHECK` constraints.
-- **From Section 03 (improve03):** To enforce "No hard deletes" (Rule 10), foreign keys must use `ON DELETE RESTRICT`.
-- **From Section 03 (improve03):** Table-level CHECK constraints are required for time validity rules (Rule 4), and trigger boundaries must be drawn for multi-row logic (Rule 1).

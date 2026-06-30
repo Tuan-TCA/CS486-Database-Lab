@@ -201,6 +201,9 @@ Before finalizing any draft, verify:
 - relationship consistency
 - business rule consistency
 - documentation consistency
+- domain value enumerations are explicitly extracted and listed
+- functional/view requirements are documented
+- Role-Action matrices strictly align with prompt roles without unauthorized inferences
 
 If inconsistencies are found:
 
