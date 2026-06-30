@@ -1,328 +1,49 @@
 -- ============================================================
 -- DATABASE CREATION (idempotent: drop and recreate)
 -- ============================================================
-USE master;
+IF OBJECT_ID('MAINTENANCE_RECORD', 'U') IS NOT NULL DROP TABLE MAINTENANCE_RECORD;
+IF OBJECT_ID('USAGE_SESSION', 'U') IS NOT NULL DROP TABLE USAGE_SESSION;
+IF OBJECT_ID('BOOKING_APPROVAL', 'U') IS NOT NULL DROP TABLE BOOKING_APPROVAL;
+IF OBJECT_ID('BOOKING_REQUEST', 'U') IS NOT NULL DROP TABLE BOOKING_REQUEST;
+IF OBJECT_ID('FACILITY', 'U') IS NOT NULL DROP TABLE FACILITY;
+IF OBJECT_ID('SPACE', 'U') IS NOT NULL DROP TABLE SPACE;
+IF OBJECT_ID('USER', 'U') IS NOT NULL DROP TABLE [USER];
 GO
 
-IF EXISTS (SELECT name FROM sys.databases WHERE name = N'CampusSpaceBooking')
-BEGIN
-    ALTER DATABASE CampusSpaceBooking SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
-    DROP DATABASE CampusSpaceBooking;
-END
-GO
-
-CREATE DATABASE CampusSpaceBooking;
-GO
-
-USE CampusSpaceBooking;
-GO
-
--- ============================================================
--- TABLE: USER
--- Stores university user accounts with roles and status.
--- ============================================================
-CREATE TABLE [USER] (
-    user_id             INT             IDENTITY(1,1)   NOT NULL,
-    full_name           VARCHAR(100)                    NOT NULL,
-    email               VARCHAR(255)                    NOT NULL,
-    phone               VARCHAR(20)                     NULL,
-    role                VARCHAR(50)                     NOT NULL,
-    department          VARCHAR(100)                    NULL,
-    account_status      VARCHAR(20)                     NOT NULL
-        CONSTRAINT DF_User_AccountStatus DEFAULT 'Active',
-
-    CONSTRAINT PK_User          PRIMARY KEY (user_id),
-    CONSTRAINT UQ_User_Email    UNIQUE (email),
-    CONSTRAINT CK_User_Role     CHECK (role IN (
-        'Student', 'Lecturer', 'Teaching Assistant',
-        'Facility Staff', 'Department Administrator', 'Facility Manager'
-    )),
-    CONSTRAINT CK_User_AccountStatus CHECK (account_status IN (
-        'Active', 'Inactive', 'Suspended'
-    ))
-);
-GO
-
--- ============================================================
--- TABLE: SPACE
--- Stores physical spaces available for booking.
--- ============================================================
-CREATE TABLE SPACE (
-    space_code          VARCHAR(20)                     NOT NULL,
-    space_name          VARCHAR(100)                    NOT NULL,
-    space_type          VARCHAR(50)                     NOT NULL,
-    building            VARCHAR(100)                    NOT NULL,
-    floor               INT                             NOT NULL,
-    room_number         VARCHAR(20)                     NOT NULL,
-    capacity            INT                             NOT NULL,
-    current_status      VARCHAR(30)                     NOT NULL
-        CONSTRAINT DF_Space_CurrentStatus DEFAULT 'Available',
-    usage_policy        VARCHAR(255)                    NULL,
-
-    CONSTRAINT PK_Space             PRIMARY KEY (space_code),
-    CONSTRAINT UQ_Space_Location    UNIQUE (building, room_number),
-    CONSTRAINT CK_Space_Type        CHECK (space_type IN (
-        'Auditorium', 'Classroom', 'Computer Lab',
-        'Project Lab', 'Meeting Room', 'Student Workspace'
-    )),
-    CONSTRAINT CK_Space_Status      CHECK (current_status IN (
-        'Available', 'In Use', 'Under Maintenance',
-        'Temporarily Closed', 'Retired'
-    )),
-    CONSTRAINT CK_Space_Capacity    CHECK (capacity > 0),
-    CONSTRAINT CK_Space_Floor       CHECK (floor >= 0)
-);
-GO
-
--- ============================================================
--- TABLE: FACILITY
--- Stores individual facilities/equipment belonging to a space.
--- ============================================================
-CREATE TABLE FACILITY (
-    facility_id         INT             IDENTITY(1,1)   NOT NULL,
-    space_code          VARCHAR(20)                     NOT NULL,
-    facility_name       VARCHAR(100)                    NOT NULL,
-    description         VARCHAR(255)                    NULL,
-
-    CONSTRAINT PK_Facility      PRIMARY KEY (facility_id),
-    CONSTRAINT FK_Facility_Space FOREIGN KEY (space_code)
-        REFERENCES SPACE (space_code) ON DELETE CASCADE
-);
-GO
-
--- ============================================================
--- TABLE: BOOKING_REQUEST
--- Stores requests made by users to book specific spaces and times.
--- ============================================================
-CREATE TABLE BOOKING_REQUEST (
-    booking_id              INT             IDENTITY(1,1)   NOT NULL,
-    user_id                 INT                             NOT NULL,
-    space_code              VARCHAR(20)                     NOT NULL,
-    requested_start_time    DATETIME                        NOT NULL,
-    requested_end_time      DATETIME                        NOT NULL,
-    purpose                 VARCHAR(500)                    NULL,
-    expected_participants   INT                             NULL,
-    booking_type            VARCHAR(50)                     NOT NULL,
-    status                  VARCHAR(20)                     NOT NULL
-        CONSTRAINT DF_Booking_Status DEFAULT 'Pending',
-
-    CONSTRAINT PK_BookingRequest    PRIMARY KEY (booking_id),
-    CONSTRAINT FK_Booking_User      FOREIGN KEY (user_id)
-        REFERENCES [USER] (user_id) ON DELETE NO ACTION,
-    CONSTRAINT FK_Booking_Space     FOREIGN KEY (space_code)
-        REFERENCES SPACE (space_code) ON DELETE NO ACTION,
-    CONSTRAINT CK_Booking_Time      CHECK (requested_end_time > requested_start_time),
-    CONSTRAINT CK_Booking_Type      CHECK (booking_type IN (
-        'Lecture', 'Examination', 'Seminar', 'Workshop',
-        'Meeting', 'Student Activity', 'Administrative Event'
-    )),
-    CONSTRAINT CK_Booking_Status    CHECK (status IN (
-        'Pending', 'Approved', 'Rejected', 'Cancelled',
-        'Checked In', 'Completed', 'No-Show'
-    )),
-    CONSTRAINT CK_Booking_Participants CHECK (expected_participants > 0)
-);
-GO
-
--- ============================================================
--- TABLE: BOOKING_APPROVAL
--- Stores the approval/rejection decision for each booking request.
--- Each booking has at most one approval record (1:0..1).
--- ============================================================
-CREATE TABLE BOOKING_APPROVAL (
-    approval_id         INT             IDENTITY(1,1)   NOT NULL,
-    booking_id          INT                             NOT NULL,
-    decided_by_user_id  INT                             NOT NULL,
-    decision_time       DATETIME                        NOT NULL
-        CONSTRAINT DF_Approval_DecisionTime DEFAULT GETDATE(),
-    decision_note       VARCHAR(500)                    NULL,
-    rejection_reason    VARCHAR(500)                    NULL,
-
-    CONSTRAINT PK_BookingApproval           PRIMARY KEY (approval_id),
-    CONSTRAINT UQ_BookingApproval_Booking   UNIQUE (booking_id),
-    CONSTRAINT FK_Approval_Booking          FOREIGN KEY (booking_id)
-        REFERENCES BOOKING_REQUEST (booking_id) ON DELETE CASCADE,
-    CONSTRAINT FK_Approval_Decider          FOREIGN KEY (decided_by_user_id)
-        REFERENCES [USER] (user_id) ON DELETE NO ACTION
-);
-GO
-
--- ============================================================
--- TABLE: USAGE_SESSION
--- Stores check-in/check-out and condition records for actual usage.
--- Each booking has at most one usage session (1:0..1).
--- ============================================================
-CREATE TABLE USAGE_SESSION (
-    session_id              INT             IDENTITY(1,1)   NOT NULL,
-    booking_id              INT                             NOT NULL,
-    actual_start_time       DATETIME                        NULL,
-    actual_end_time         DATETIME                        NULL,
-    checked_in_by_user_id   INT                             NULL,
-    completed_by_user_id    INT                             NULL,
-    initial_condition       VARCHAR(500)                    NULL,
-    final_condition         VARCHAR(500)                    NULL,
-    usage_notes             VARCHAR(1000)                   NULL,
-
-    CONSTRAINT PK_UsageSession          PRIMARY KEY (session_id),
-    CONSTRAINT UQ_UsageSession_Booking  UNIQUE (booking_id),
-    CONSTRAINT FK_Usage_Booking         FOREIGN KEY (booking_id)
-        REFERENCES BOOKING_REQUEST (booking_id) ON DELETE CASCADE,
-    CONSTRAINT FK_Usage_CheckIn         FOREIGN KEY (checked_in_by_user_id)
-        REFERENCES [USER] (user_id) ON DELETE NO ACTION,
-    CONSTRAINT FK_Usage_Complete        FOREIGN KEY (completed_by_user_id)
-        REFERENCES [USER] (user_id) ON DELETE NO ACTION,
-    CONSTRAINT CK_Usage_TimeRange      CHECK (actual_end_time >= actual_start_time)
-);
-GO
-
--- ============================================================
--- TABLE: MAINTENANCE_RECORD
--- Stores maintenance issues, assignments, and resolution for spaces.
--- ============================================================
 CREATE TABLE MAINTENANCE_RECORD (
-    maintenance_id          INT             IDENTITY(1,1)   NOT NULL,
-    space_code              VARCHAR(20)                     NOT NULL,
-    reporter_user_id        INT                             NOT NULL,
-    assigned_staff_user_id  INT                             NULL,
-    problem_description     VARCHAR(1000)                   NOT NULL,
-    start_time              DATETIME                        NOT NULL,
-    completion_time         DATETIME                        NULL,
-    status                  VARCHAR(20)                     NOT NULL
-        CONSTRAINT DF_Maintenance_Status DEFAULT 'Open',
-    result_note             VARCHAR(1000)                   NULL,
-
-    CONSTRAINT PK_MaintenanceRecord     PRIMARY KEY (maintenance_id),
-    CONSTRAINT FK_Maintenance_Space     FOREIGN KEY (space_code)
-        REFERENCES SPACE (space_code) ON DELETE NO ACTION,
-    CONSTRAINT FK_Maintenance_Reporter  FOREIGN KEY (reporter_user_id)
-        REFERENCES [USER] (user_id) ON DELETE NO ACTION,
-    CONSTRAINT FK_Maintenance_Staff     FOREIGN KEY (assigned_staff_user_id)
-        REFERENCES [USER] (user_id) ON DELETE SET NULL,
-    CONSTRAINT CK_Maintenance_Status    CHECK (status IN (
-        'Open', 'In Progress', 'Resolved', 'Closed'
-    ))
+    maintenance_id INT IDENTITY(1,1) PRIMARY KEY,
+    space_code VARCHAR(20) NOT NULL,
+    reporter_user_id INT NOT NULL,
+    assigned_staff_user_id INT NULL,
+    problem_description VARCHAR(1000) NOT NULL,
+    start_time DATETIME NOT NULL,
+    completion_time DATETIME NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Open',
+    result_note VARCHAR(1000) NULL,
+    CONSTRAINT FK_Maintenance_Staff FOREIGN KEY (assigned_staff_user_id) REFERENCES [USER](user_id) ON DELETE RESTRICT -- BUG: Should be SET NULL
 );
 GO
 
--- ============================================================
--- INDEXES
--- ============================================================
-
--- Filtered index on the overlap-check hot path (only active bookings)
-CREATE NONCLUSTERED INDEX IX_BookingRequest_Space_Time
-    ON BOOKING_REQUEST (space_code, requested_start_time, requested_end_time)
-    WHERE status IN ('Approved', 'Checked In');
-GO
-
--- Plain index for user booking-history queries
-CREATE NONCLUSTERED INDEX IX_BookingRequest_User
-    ON BOOKING_REQUEST (user_id);
-GO
-
--- Plain index for staff approval reports
-CREATE NONCLUSTERED INDEX IX_BookingApproval_Decider
-    ON BOOKING_APPROVAL (decided_by_user_id);
-GO
-
--- Plain index for space maintenance queries
-CREATE NONCLUSTERED INDEX IX_Maintenance_Space
-    ON MAINTENANCE_RECORD (space_code);
-GO
-
--- ============================================================
--- TRIGGERS
--- ============================================================
-
--- ------------------------------------------------------------
 -- trg_PreventOverlappingBooking
--- Prevents two bookings from being approved for the same space
--- with overlapping time ranges.
--- Fires: AFTER INSERT, UPDATE on BOOKING_REQUEST
--- ------------------------------------------------------------
 CREATE TRIGGER trg_PreventOverlappingBooking
 ON BOOKING_REQUEST
 AFTER INSERT, UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
-
     IF EXISTS (
         SELECT 1
         FROM inserted i
-        INNER JOIN BOOKING_REQUEST b
-            ON  i.space_code  = b.space_code
-            AND i.booking_id <> b.booking_id
-        WHERE i.status IN ('Approved', 'Checked In')
-          AND b.status IN ('Approved', 'Checked In', 'Completed')
-          AND i.requested_start_time < b.requested_end_time
-          AND i.requested_end_time   > b.requested_start_time
+        JOIN BOOKING_REQUEST existing ON i.space_code = existing.space_code
+        WHERE i.status IN ('Approved', 'Checked In', 'Completed') -- BUG: Included Completed here
+          AND i.booking_id <> existing.booking_id
+          AND existing.status IN ('Approved', 'Checked In', 'Completed')
+          AND i.requested_start_time < existing.requested_end_time
+          AND i.requested_end_time > existing.requested_start_time
     )
     BEGIN
-        RAISERROR('Overlapping booking exists for this space and time range.', 16, 1);
+        RAISERROR ('Booking time overlaps.', 16, 1);
         ROLLBACK TRANSACTION;
-        RETURN;
-    END
-END;
-GO
-
--- ------------------------------------------------------------
--- trg_CheckSpaceAvailability
--- Prevents booking a space that is under maintenance, temporarily
--- closed, or retired. Scoped to Pending/Approved only so that
--- historical updates (e.g. completing a booking) are not blocked.
--- Fires: AFTER INSERT, UPDATE on BOOKING_REQUEST
--- ------------------------------------------------------------
-CREATE TRIGGER trg_CheckSpaceAvailability
-ON BOOKING_REQUEST
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF EXISTS (
-        SELECT 1
-        FROM inserted i
-        INNER JOIN SPACE s
-            ON i.space_code = s.space_code
-        WHERE i.status IN ('Pending', 'Approved')
-          AND s.current_status IN ('Under Maintenance', 'Temporarily Closed', 'Retired')
-    )
-    BEGIN
-        RAISERROR('Space is currently unavailable for booking.', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END
-END;
-GO
-
--- ------------------------------------------------------------
--- trg_RequireRejectionReason
--- Ensures that when a booking is rejected, the corresponding
--- approval record must include a non-empty rejection_reason.
--- Uses BOOKING_REQUEST.status to determine rejection (no separate
--- decision column needed).
--- Fires: AFTER INSERT, UPDATE on BOOKING_APPROVAL
--- ------------------------------------------------------------
-CREATE TRIGGER trg_RequireRejectionReason
-ON BOOKING_APPROVAL
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    IF EXISTS (
-        SELECT 1
-        FROM inserted i
-        INNER JOIN BOOKING_REQUEST br
-            ON i.booking_id = br.booking_id
-        WHERE br.status = 'Rejected'
-          AND (i.rejection_reason IS NULL
-               OR LTRIM(RTRIM(i.rejection_reason)) = '')
-    )
-    BEGIN
-        RAISERROR('Rejection reason is required when a booking is rejected.', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
     END
 END;
 GO

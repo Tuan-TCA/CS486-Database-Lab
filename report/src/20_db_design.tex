@@ -39,28 +39,48 @@ Facility Manager & Oversees all spaces, bookings, maintenance, and facility stat
 
 \subsubsection{Core Entities}
 
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{|l|X|}
-\hline
-\textbf{Entity} & \textbf{Key Attributes} \\
-\hline
-\texttt{USER} & \texttt{user\_id} (PK), \texttt{full\_name}, \texttt{email}, \texttt{phone}, \texttt{role}, \texttt{department}, \texttt{account\_status} \\
-\hline
-\texttt{SPACE} & \texttt{space\_code} (PK), \texttt{space\_name}, \texttt{space\_type}, \texttt{building}, \texttt{floor}, \texttt{room\_number}, \texttt{capacity}, \texttt{current\_status}, \texttt{usage\_policy} \\
-\hline
-\texttt{FACILITY} & \texttt{facility\_id} (PK), \texttt{space\_code} (FK), \texttt{facility\_name}, \texttt{description} \\
-\hline
-\texttt{BOOKING\_REQUEST} & \texttt{booking\_id} (PK), \texttt{user\_id} (FK), \texttt{space\_code} (FK), \texttt{requested\_start\_time}, \texttt{requested\_end\_time}, \texttt{purpose}, \texttt{expected\_participants}, \texttt{booking\_type}, \texttt{status} \\
-\hline
-\texttt{BOOKING\_APPROVAL} & \texttt{approval\_id} (PK), \texttt{booking\_id} (FK, UNIQUE), \texttt{decided\_by\_user\_id} (FK), \texttt{decision\_time}, \texttt{decision\_note}, \texttt{rejection\_reason} \\
-\hline
-\texttt{USAGE\_SESSION} & \texttt{session\_id} (PK), \texttt{booking\_id} (FK, UNIQUE), \texttt{actual\_start\_time}, \texttt{actual\_end\_time}, \texttt{checked\_in\_by\_user\_id} (FK), \texttt{completed\_by\_user\_id} (FK), \texttt{initial\_condition}, \texttt{final\_condition}, \texttt{usage\_notes} \\
-\hline
-\texttt{MAINTENANCE\_RECORD} & \texttt{maintenance\_id} (PK), \texttt{space\_code} (FK), \texttt{reporter\_user\_id} (FK), \texttt{assigned\_staff\_user\_id} (FK), \texttt{problem\_description}, \texttt{start\_time}, \texttt{completion\_time}, \texttt{status}, \texttt{result\_note} \\
-\hline
-\end{tabularx}
-\end{table}
+\begin{itemize}
+    \item \textbf{\texttt{USER}}
+    \begin{itemize}
+        \item \textbf{PK:} \texttt{user\_id}
+        \item \textbf{Attributes:} \texttt{full\_name}, \texttt{email}, \texttt{phone}, \texttt{role}, \texttt{department}, \texttt{account\_status}
+    \end{itemize}
+    \item \textbf{\texttt{SPACE}}
+    \begin{itemize}
+        \item \textbf{PK:} \texttt{space\_code}
+        \item \textbf{Attributes:} \texttt{space\_name}, \texttt{space\_type}, \texttt{building}, \texttt{floor}, \texttt{room\_number}, \texttt{capacity}, \texttt{current\_status}, \texttt{usage\_policy}
+    \end{itemize}
+    \item \textbf{\texttt{FACILITY}}
+    \begin{itemize}
+        \item \textbf{PK:} \texttt{facility\_id}
+        \item \textbf{FK:} \texttt{space\_code}
+        \item \textbf{Attributes:} \texttt{facility\_name}, \texttt{description}
+    \end{itemize}
+    \item \textbf{\texttt{BOOKING\_REQUEST}}
+    \begin{itemize}
+        \item \textbf{PK:} \texttt{booking\_id}
+        \item \textbf{FK:} \texttt{user\_id}, \texttt{space\_code}
+        \item \textbf{Attributes:} \texttt{requested\_start\_time}, \texttt{requested\_end\_time}, \texttt{purpose}, \texttt{expected\_participants}, \texttt{booking\_type}, \texttt{status}
+    \end{itemize}
+    \item \textbf{\texttt{BOOKING\_APPROVAL}}
+    \begin{itemize}
+        \item \textbf{PK:} \texttt{approval\_id}
+        \item \textbf{FK:} \texttt{booking\_id} (UNIQUE), \texttt{decided\_by\_user\_id}
+        \item \textbf{Attributes:} \texttt{decision\_time}, \texttt{decision\_note}, \texttt{rejection\_reason}
+    \end{itemize}
+    \item \textbf{\texttt{USAGE\_SESSION}}
+    \begin{itemize}
+        \item \textbf{PK:} \texttt{session\_id}
+        \item \textbf{FK:} \texttt{booking\_id} (UNIQUE), \texttt{checked\_in\_by\_user\_id}, \texttt{completed\_by\_user\_id}
+        \item \textbf{Attributes:} \texttt{actual\_start\_time}, \texttt{actual\_end\_time}, \texttt{initial\_condition}, \texttt{final\_condition}, \texttt{usage\_notes}
+    \end{itemize}
+    \item \textbf{\texttt{MAINTENANCE\_RECORD}}
+    \begin{itemize}
+        \item \textbf{PK:} \texttt{maintenance\_id}
+        \item \textbf{FK:} \texttt{space\_code}, \texttt{reporter\_user\_id}, \texttt{assigned\_staff\_user\_id}
+        \item \textbf{Attributes:} \texttt{problem\_description}, \texttt{start\_time}, \texttt{completion\_time}, \texttt{status}, \texttt{result\_note}
+    \end{itemize}
+\end{itemize}
 
 \subsubsection{Business Rules}
 

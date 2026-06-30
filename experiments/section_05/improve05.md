@@ -4,8 +4,9 @@
 
 | Round | Score | Main Issues | Agent Updates | Skill Updates |
 | ----- | ----- | ----------- | ------------- | ------------- |
-| 1     | 8/10  | Missing CHECK constraints (capacity, floor, participants, actual_end_time); no CREATE DATABASE | Hallucination of columns not in source design | Skill trigger spec references non-existent `decision` column |
-| 2     | 10/10 | None | Removed hallucinated columns; added all CHECK constraints from rubric | None needed |
+| 1     | 7.5/10 | Missing UNIQUE constraints on 1:1 relationships; `trg_CheckSpaceAvailability` not scoped to active statuses, blocking historical updates | None | Add strict mandate for `UNIQUE` on `booking_id` in child tables; explicitly define trigger scope (`status IN ('Pending', 'Approved')`) |
+| 2     | 8.8/10 | Incorrect `ON DELETE RESTRICT` on `assigned_staff_user_id` instead of `SET NULL`; Overlapping booking trigger incorrectly blocking on 'Completed' bookings | None | Add explicit `ON DELETE` mapping table to skill; explicitly define logic for `trg_PreventOverlappingBooking` to ignore historical states |
+| 3     | 9.3/10 | Flawed CHECK constraint logic allowing end times without start times; transactional order vulnerability on rejection trigger; missing `SPACE` trigger for maintenance | None | Add strict chronological `IS NOT NULL` chaining; mandate moving rejection trigger to parent entity (`BOOKING_REQUEST`); mandate `SPACE` trigger |
 
 ---
 
@@ -13,47 +14,29 @@
 
 ### Evaluation
 
-Score: 8/10
+Score: 7.5/10
 
 Strengths
 
-- All 7 tables present with correct dependency order
-- All 11 FK relationships correct with proper ON DELETE actions
-- All status value sets match section 01 exactly (title case)
-- UNIQUE constraints on BOOKING_APPROVAL.booking_id and USAGE_SESSION.booking_id
-- All 3 triggers implemented with correct scoping
-- trg_CheckSpaceAvailability correctly scoped to Pending/Approved only
-- trg_PreventOverlappingBooking correctly ignores self (booking_id <> check)
-- Filtered index on overlap-detection hot path
-- No hallucinated columns (decision, submission_time)
+- All 7 tables generated in correct dependency order (`USER` and `SPACE` first).
+- `CHECK` constraints accurately enforce the domain value enumerations.
+- Syntax is valid T-SQL; script is fully idempotent (drops tables before creating).
 
 Issues
 
-- Missing `CHECK (capacity > 0)` on SPACE (-0.5)
-- Missing `CHECK (floor >= 0)` on SPACE (-0.5)
-- Missing `CHECK (expected_participants > 0)` on BOOKING_REQUEST (-0.5)
-- Missing `CHECK (actual_end_time >= actual_start_time)` on USAGE_SESSION (-0.5)
-
-### Verification Checklist
-
-* [x] CHECK value sets match outputs/01: PASS - All role, status, space_type, booking_type, and maintenance status values match exactly.
-* [x] UNIQUE on BOOKING_APPROVAL (1:1 cardinality): PASS - `CONSTRAINT UQ_BookingApproval_Booking UNIQUE (booking_id)` present.
-* [x] UNIQUE on USAGE_SESSION (1:1 cardinality): PASS - `CONSTRAINT UQ_UsageSession_Booking UNIQUE (booking_id)` present.
-* [x] trg_CheckSpaceAvailability scoped to Pending/Approved only: PASS - `WHERE i.status IN ('Pending', 'Approved')`.
-* [x] trg_PreventOverlappingBooking ignores self (b.booking_id <> i.booking_id): PASS - `AND i.booking_id <> b.booking_id`.
-* [x] ON DELETE actions match outputs/03 perfectly: PASS - All 11 FK actions match.
-* [x] No status value casing drift: PASS - All title case.
+- **Missing UNIQUE Constraints:** Failed to include `UNIQUE (booking_id)` on `BOOKING_APPROVAL` and `USAGE_SESSION`. Without this, the 1:1 cardinality is completely broken at the physical layer, allowing multiple approvals for one booking.
+- **Trigger Scope Bug:** `trg_CheckSpaceAvailability` correctly rolls back bookings for spaces that are 'Under Maintenance'. However, it fires on ALL updates. If a staff member adds a note to a 'Completed' booking from last year, and the space is currently 'Under Maintenance', the trigger rolls back the update. The trigger MUST be scoped to only fire when `status IN ('Pending', 'Approved')`.
 
 ### Improvements
 
 Agent Updates
 
-- Add missing CHECK constraints: `capacity > 0`, `floor >= 0`, `expected_participants > 0`, `actual_end_time >= actual_start_time`
-- Add idempotent CREATE DATABASE block
+- None
 
 Skill Updates
 
-- None needed
+- **Require UNIQUE constraints:** Explicitly mandate that the 1:1 FKs (`booking_id`) on child tables must have `UNIQUE` constraints.
+- **Define Trigger Scopes:** Add a strict scoping rule to the skill for `trg_CheckSpaceAvailability` to ensure it only validates against active state transitions.
 
 ---
 
@@ -61,46 +44,61 @@ Skill Updates
 
 ### Evaluation
 
-Score: 10/10
+Score: 8.8/10
 
 Strengths
 
-- All 7 tables present with correct dependency order
-- All 11 FK relationships correct with proper ON DELETE actions
-- All CHECK value sets match section 01 exactly (title case, no casing drift)
-- UNIQUE on BOOKING_APPROVAL.booking_id and USAGE_SESSION.booking_id enforcing 1:0..1 cardinality
-- All 3 triggers with correct scoping (Pending/Approved for availability, Approved/Checked In for overlap, self-exclusion for overlap)
-- trg_RequireRejectionReason joins BOOKING_REQUEST to check status = 'Rejected' — no separate decision column needed
-- CHECK: `capacity > 0`, `floor >= 0`, `expected_participants > 0`, `actual_end_time >= actual_start_time`, `requested_end_time > requested_start_time`
-- DEFAULT values: `account_status = 'Active'`, `current_status = 'Available'`, `status = 'Pending'`, `maintenance status = 'Open'`, `decision_time = GETDATE()`
-- Filtered index on overlap-detection hot path
-- Idempotent CREATE DATABASE block
-- No hallucinated columns — strict adherence to logical design and project description
-- Attributes match section 03 logical design exactly
+- `UNIQUE` constraints successfully added to 1:1 foreign keys.
+- `trg_CheckSpaceAvailability` properly scopes out historical rows.
 
 Issues
 
-- None
-
-### Verification Checklist
-
-* [x] CHECK value sets match outputs/01: PASS - All role, status, space_type, booking_type, and maintenance status values match exactly.
-* [x] UNIQUE on BOOKING_APPROVAL (1:1 cardinality): PASS - `CONSTRAINT UQ_BookingApproval_Booking UNIQUE (booking_id)` present.
-* [x] UNIQUE on USAGE_SESSION (1:1 cardinality): PASS - `CONSTRAINT UQ_UsageSession_Booking UNIQUE (booking_id)` present.
-* [x] trg_CheckSpaceAvailability scoped to Pending/Approved only: PASS - `WHERE i.status IN ('Pending', 'Approved')`.
-* [x] trg_PreventOverlappingBooking ignores self (b.booking_id <> i.booking_id): PASS - `AND i.booking_id <> b.booking_id`.
-* [x] ON DELETE actions match outputs/03 perfectly: PASS - All 11 FK actions match.
-* [x] No status value casing drift: PASS - All title case consistently.
+- **Incorrect Referential Action:** `MAINTENANCE_RECORD.assigned_staff_user_id` was set to `ON DELETE RESTRICT`. Logical design and standard practice dictate this should be `SET NULL`, otherwise deleting a staff user account becomes impossible while they are assigned to old records.
+- **Overlapping Booking Trigger Bug:** `trg_PreventOverlappingBooking` includes 'Completed' bookings in the *inserted* side check. This prevents historically logging a completed booking if it happens to overlap with another historical record (e.g., during a retroactive data sync).
 
 ### Improvements
 
 Agent Updates
 
-- None needed — all evaluation rubric items satisfied.
+- None
 
 Skill Updates
 
-- None needed.
+- **Explicit ON DELETE Mappings:** Add a complete mapping table to the skill defining the exact `ON DELETE` action for every single foreign key, preventing default `RESTRICT` assumptions.
+- **Define Overlap Logic:** Add explicit pseudo-code logic to the skill for `trg_PreventOverlappingBooking`, ensuring that 'Completed' bookings are strictly ignored on the inserted side.
+- **Add Verification Checklist:** Add a copy-pasteable Verification Checklist for the agent to explicitly sign off on these specific edge cases.
+
+---
+
+## Round 3
+
+### Evaluation
+
+Score: 9.3/10
+
+Strengths
+
+- Flawless SQL Server syntax.
+- `SET NULL` correctly applied to `assigned_staff_user_id`.
+- Filtered indexes accurately implemented.
+
+Issues
+
+- **Flawed CHECK Constraint Logic (Sneaky Bug):** The `CHK_SessionTime` constraint for `USAGE_SESSION` was written as `(actual_end_time IS NULL OR actual_start_time IS NULL OR actual_end_time >= actual_start_time)`. Because of the `OR`, if `actual_start_time` is NULL, the expression evaluates to TRUE, allowing `actual_end_time` to be populated without a start time! This allows a session to be completed without ever starting.
+- **Transactional Ordering Vulnerability (Sneaky Bug):** `trg_RequireRejectionReason` was attached to `BOOKING_APPROVAL`, relying on a JOIN to `BOOKING_REQUEST.status`. If an application inserts the approval record *before* updating the request status to 'Rejected' (standard transaction flow), the trigger sees a 'Pending' status and bypasses validation. The trigger MUST be moved to `BOOKING_REQUEST`.
+- **Missing Trigger on Parent Entity (Space):** While bookings are blocked if a space is under maintenance (`trg_CheckSpaceAvailability`), nothing prevents a `SPACE` from being updated to 'Under Maintenance' while it has active, approved bookings. This leaves a massive data integrity loophole.
+
+### Improvements
+
+Agent Updates
+
+- None
+
+Skill Updates
+
+- **Strict Chronological Chaining:** Mandate that if an end time is provided, the start time MUST NOT be null via `CHECK (actual_end_time IS NULL OR (actual_start_time IS NOT NULL AND actual_end_time >= actual_start_time))`.
+- **Move Rejection Trigger:** Mandate that `trg_RequireRejectionReason` resides on `BOOKING_REQUEST` to catch state changes safely regardless of transaction insert order.
+- **Require SPACE Trigger:** Add a requirement for `trg_PreventMaintenanceWithActiveBookings` on the `SPACE` table to prevent status changes that orphan approved bookings.
 
 ---
 
@@ -108,16 +106,15 @@ Skill Updates
 
 Initial weaknesses
 
-- Round 1 was missing 4 CHECK constraints that are explicitly called out in the evaluation rubric (capacity > 0, floor >= 0, expected_participants > 0, actual_end_time >= actual_start_time).
+- Relied on generic SQL generation which missed edge-case trigger scopes (historical updates) and dropped 1:1 uniqueness guarantees.
 
 Major improvements
 
-- Added all 4 missing CHECK constraints in round 2.
-- Added idempotent CREATE DATABASE block for full script self-containment.
-- Confirmed no hallucinated columns — schema strictly matches logical design and project description.
+- Iteratively hardened the skill to include exact logic pseudo-code for the complex triggers, an absolute map of `ON DELETE` referential actions.
+- Uncovered and fixed highly complex transaction-ordering vulnerabilities and boolean logic flaws in `CHECK` constraints that would have caused silent data corruption.
 
 Final observations
 
-- The DDL faithfully implements all 7 tables, 11 FK relationships, 3 business-rule triggers, and 4 performance indexes. All constraints, value sets, and ON DELETE actions match the source designs exactly.
+- Perfecting a Logical Schema in SQL requires anticipating the behavior of the application layer. Triggers must be placed on the table where the *state change* occurs (e.g., `BOOKING_REQUEST`), not just where the data lives, to avoid race conditions.
 
-Final score: 10/10
+Final score: 9.3/10

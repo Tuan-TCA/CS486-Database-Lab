@@ -1,16 +1,54 @@
-# skill_07_QueryDesign.md
+---
+name: Query-Design
+description: >
+  Design and execute 24 meaningful SQL queries for the Campus Space Booking system that are 
+  syntactically correct, business-accurate, performant, and fully documented.
+  Produces a single .md file containing the business questions, target users, explanations, and T-SQL code blocks.
+---
 
-## Purpose
+# Skill: Query Design
 
-Guide the generation of 24 T-SQL queries for the Campus Space Booking system that are syntactically correct, business-accurate, performant, and fully documented. Each query must translate a real business question into executable Microsoft SQL Server (T-SQL) code.
+This skill governs how to produce `result_roundN.sql` for Section 07 (Query Design). Read this file in full before writing any queries.
 
 ---
 
-## Methodology
+## Context Scope
+1. `doc/project_description.md`
+2. `agent/Agent.md`
+3. `experiments/section_03/result_round3.md` (Logical Schema)
+4. `experiments/section_05/result_round3.sql` (DDL)
+5. `experiments/section_06/result_round4.sql` (Sample Data)
 
-### Query Categories (24 queries total)
+YOU MUST READ THE `project_description.md` FIRST
+USE `evaluation_07.md` FOR SCORING AND EVALUATION IN `improve07.md`
+YOUR OUTPUT MUST BE IN THE `experiments/section_07` with the name `result_roundN.md` 
 
-Organize 24 queries into 8 categories (3 queries each):
+---
+
+## Phase 1 — Exploration
+
+Before planning, confirm these facts from the context files:
+
+1. **Query Requirements:** The project requires **24 meaningful T-SQL queries** (satisfying the requirement of ~5 per student for a group).
+2. **Components per Query:** Every query MUST include exactly 4 components:
+   - Business Question
+   - Target User(s)
+   - Explanation
+   - T-SQL Statement
+3. **Complexity Requirements:** 
+   - At least 5 queries use `GROUP BY` with aggregate functions (`COUNT`, `SUM`, `AVG`).
+   - At least 3 queries use `CASE WHEN`.
+   - At least 3 queries use subqueries or `NOT EXISTS`.
+   - At least 2 queries use `NULLIF` (to prevent division-by-zero).
+   - At least 2 queries use `DATEDIFF` or `DATEADD`.
+   - At least 1 query uses `TOP X WITH TIES`.
+   - At least 1 query uses a window function (`RANK()` or `DENSE_RANK()`).
+
+---
+
+## Phase 2 — Planning
+
+Organize your 24 queries into these 8 specific categories (3 queries each) in your working notes before executing:
 
 | # | Category | Focus |
 |---|----------|-------|
@@ -23,132 +61,90 @@ Organize 24 queries into 8 categories (3 queries each):
 | 19-21 | **Aggregations & Reports** | Occupancy rates, utilization metrics, peak usage times |
 | 22-24 | **Advanced Analytics** | Facility usage patterns, booking trends, comparative analysis |
 
-### Checklist Integrity Rule
+*Note: A "meaningful" query involves JOINs, WHERE clauses, and logic. `SELECT * FROM Table` is not acceptable.*
 
-When applying improvements between rounds, verify that no existing checklist requirement was accidentally removed. In particular:
-- If adding `DENSE_RANK()`, ensure `TOP X WITH TIES` is still present in at least one other query
-- If fixing one query, do not delete another query's distinguishing syntax feature
+---
 
-### Per-Query Structure
+## Phase 3 — Execution
 
-Every query MUST include exactly 4 components in this order:
+### File Structure
+Produce a single `.md` file structured as follows:
 
+```markdown
+# Section 07: Query Design
+
+*Schema Reference: Includes USER, SPACE, FACILITY, BOOKING_REQUEST, BOOKING_APPROVAL, USAGE_SESSION, MAINTENANCE_RECORD*
+
+## Category 1: Booking Operations
+
+### Query 1: [Short Title]
+**Business Question:** [Exact question]
+**Target User(s):** [Roles]
+**Explanation:** [Why this is useful]
+**SQL Statement:**
+\```sql
+SELECT ...
+\```
 ```
--- Business Question: <question>
--- Target User(s): <user role(s)>
--- Explanation: <why useful>
-<SQL statement>
+
+### SQL Rules
+- **Dialect:** Microsoft SQL Server (T-SQL). No PostgreSQL/MySQL syntax (`LIMIT`, `NOW()`, `ILIKE`).
+- **Identifiers:** Use fully qualified column names (e.g., `SPACE.space_name`). Use square brackets `[USER]` for the USER table since it is a reserved word.
+- **Dates:** Use `GETDATE()` for current timestamps. If comparing against static sample data, explicitly document why hardcoded dates are used or use `DATEADD` to create rolling windows relative to static dates.
+- **Performance:** Explicit column list in `SELECT` (no `SELECT *`). Use `NOT EXISTS` instead of `NOT IN`. Add index recommendation comments above high-frequency queries.
+- **Logic:** Division-by-zero MUST be handled with `NULLIF(denominator, 0)`.
+
+---
+
+## Verification Loop
+
+**Step 1: Syntax & Execution Verification**
+Mentally execute each SQL statement against the schema from Section 05.
+* Do all referenced columns exist with the EXACT spelling from `Agent.md`? (e.g., `current_status`, not `status` for `SPACE`).
+* Are `GROUP BY` clauses correctly including all non-aggregated `SELECT` columns?
+
+**Step 2: The Logical Checklist & Self-Improvement**
+Copy and paste this exact checklist into the `### Verification Checklist` section of your round log:
+
+```markdown
+### Verification Checklist
+* [ ] Exactly 24 meaningful T-SQL queries are provided: PASS/FAIL - (Notes)
+* [ ] Each query includes Business Question, Target User(s), Explanation, and SQL: PASS/FAIL - (Notes)
+* [ ] T-SQL specific syntax used (TOP X WITH TIES instead of LIMIT, GETDATE() instead of NOW()): PASS/FAIL - (Notes)
+* [ ] Complexity requirements met (Aggregates, CASE WHEN, Window functions, NULLIF): PASS/FAIL - (Notes)
+* [ ] No hallucinated column names or tables: PASS/FAIL - (Notes)
+* [ ] Division-by-zero risks mitigated with NULLIF: PASS/FAIL - (Notes)
 ```
 
 ---
 
-## Checklist
+## Common Mistakes (from prior evaluation rounds)
 
-### Documentation
-- [ ] All 24 queries present with sequential numbering
-- [ ] Each query has Business Question, Target User(s), Explanation
-- [ ] Target users match the question (e.g., Facility Manager for maintenance queries)
-- [ ] Explanations describe real business value
-- [ ] Schema reference header included at the top of the file listing all table/columns used
-
-### T-SQL Syntax
-- [ ] Uses `GETDATE()` for current timestamps (NOT `NOW()`)
-- [ ] Uses `DATEDIFF` / `DATEADD` for temporal math
-- [ ] Uses `TOP X WITH TIES` for ranking (NOT `LIMIT`)
-- [ ] Uses `CAST` for type conversions where needed
-- [ ] No PostgreSQL/MySQL syntax (`LIMIT`, `NOW()`, `ILIKE`, `SERIAL`)
-- [ ] Table/column names match the DDL exactly
-
-### Business Logic
-- [ ] Correct status filtering (`'Approved'`, `'Rejected'`, `'Completed'`, `'No-Show'`, `'Checked In'`, `'Cancelled'`, `'Pending'`)
-- [ ] Upcoming queries filter `requested_start_time > GETDATE()`
-- [ ] Past queries filter `requested_end_time < GETDATE()`
-- [ ] Active maintenance excludes `'Resolved'` and `'Closed'` statuses
-- [ ] Bookable spaces exclude `'Under Maintenance'`, `'Temporarily Closed'`, `'Retired'`
-- [ ] `LEFT JOIN` used when entities with zero counts must appear
-- [ ] Division-by-zero handled with `NULLIF`
-
-### Complexity
-- [ ] At least 5 queries use `GROUP BY` with aggregate functions (`COUNT`, `SUM`, `AVG`)
-- [ ] At least 3 queries use `CASE WHEN` for conditional logic
-- [ ] At least 3 queries use subqueries or `NOT EXISTS`
-- [ ] At least 2 queries use `NULLIF` to prevent division-by-zero errors
-- [ ] At least 2 queries use `DATEDIFF` or `DATEADD`
-- [ ] At least 1 query uses `TOP X WITH TIES`
-- [ ] At least 1 query uses a window function (`RANK()` or `DENSE_RANK()`)
-
-### Performance
-- [ ] Explicit column list in `SELECT` (avoid `SELECT *`)
-- [ ] Filters use indexed columns (`space_code`, `status`, `user_id`, `booking_id`)
-- [ ] Availability queries use `NOT EXISTS` instead of `NOT IN`
-- [ ] No unnecessary joins (only join tables actually referenced in SELECT/WHERE)
-- [ ] Overlap detection uses efficient range comparison
-- [ ] Index recommendations included as comments for high-frequency queries (e.g., composite indexes on filtered columns)
-
----
-
-## Verification Procedure
-
-1. **Syntax check**: Verify every query compiles against the DDL schema
-2. **Run against sample data**: Execute against section 06 sample data
-3. **Business check**: Does the WHERE clause correctly isolate the intended records?
-4. **Edge case check**: What happens when there are zero records? No-shows? All spaces under maintenance?
-5. **Performance check**: Would this query scan unnecessary tables or columns?
-6. **Regression check**: After applying any fix from ImproveXX, re-verify the full checklist — ensure no existing requirement was accidentally removed
-
----
-
-## Common Mistakes
-
-1. Using `LIMIT` instead of `TOP X WITH TIES`
-2. Using `NOW()` instead of `GETDATE()`
-3. Using `INNER JOIN` when `LEFT JOIN` is needed (losing zero-count entities)
-4. Forgetting to exclude `cancelled`/`rejected` bookings from active usage queries
-5. Not handling division-by-zero (use `NULLIF(denominator, 0)`)
-6. Using `SELECT *` in aggregation/reporting queries
-7. Missing `WHERE` filters on status for maintenance records (include/exclude resolved)
-8. Incorrect overlap detection (using `>=` when `>` is needed or vice versa)
-9. Removing a required syntax pattern (e.g., TOP WITH TIES) when fixing a different query issue — always re-check the full checklist after any change
-
----
-
-## Consistency Rules
-
-- Table names: `[USER]`, `SPACE`, `FACILITY`, `BOOKING_REQUEST`, `BOOKING_APPROVAL`, `USAGE_SESSION`, `MAINTENANCE_RECORD`
-- Status values: `'Pending'`, `'Approved'`, `'Rejected'`, `'Cancelled'`, `'Checked In'`, `'Completed'`, `'No-Show'`
-- Space statuses: `'Available'`, `'In Use'`, `'Under Maintenance'`, `'Temporarily Closed'`, `'Retired'`
-- Maintenance statuses: `'Open'`, `'In Progress'`, `'Resolved'`, `'Closed'`
-- Use square brackets `[USER]` for the USER table (reserved word)
-- All DATETIME comparisons use `GETDATE()` as baseline
+1. **Checklist Integrity Drop:** Removing a required syntax pattern (like `TOP X WITH TIES`) when fixing a completely different query in a later round. Always re-verify the full complexity requirements after any change!
+2. **Hallucinated Columns (CRITICAL):** Using `SPACE.status` instead of `SPACE.current_status`, or `BOOKING.status` instead of `BOOKING_REQUEST.status`. Check `Agent.md` for exact column names.
+3. **Using PostgreSQL/MySQL Syntax:** Using `LIMIT 10` instead of `TOP 10`. Using `NOW()` instead of `GETDATE()`.
+4. **Invalid `GROUP BY`:** Writing queries like `SELECT space_code, space_name, COUNT(booking_id) FROM BOOKING_REQUEST JOIN SPACE... GROUP BY space_code`. In SQL Server, `space_name` must also be in the `GROUP BY` clause.
+5. **Losing Zero-Count Entities:** Using `INNER JOIN` instead of `LEFT JOIN` when answering questions like "Find all spaces and their number of bookings" (spaces with 0 bookings disappear).
+6. **Alias Hallucination:** Naming a column `occupancy_pct` when it actually calculates `booking_distribution_pct`. Aliases must accurately reflect the mathematical business meaning.
 
 ---
 
 ## Anti-Hallucination Rules
 
-- Never reference tables or columns not in Agent.md section 3 (Source of Truth)
-- Never use syntax features not supported by Microsoft SQL Server
-- Never assume existence of indexes, triggers, or views not specified
-- Never invent business rules beyond what project_description and Agent define
-- If uncertain about a column name, use Agent.md section 3 as the authoritative source
-- Cross-check all FK column names against Agent.md relationship definitions
-- Column aliases must accurately reflect the business meaning (e.g., use `booking_distribution_pct` not `occupancy_pct` if not measuring true occupancy)
-- When calculating waiting time with no `created_at` column, document the limitation and use `requested_start_time` as proxy
+- Never reference tables or columns not in Agent.md section 3 (Source of Truth).
+- Never use syntax features not supported by Microsoft SQL Server.
+- Never assume existence of indexes, triggers, or views not specified.
+- If calculating waiting time with no `created_at` column, explicitly document the limitation in the explanation and use `requested_start_time` as a proxy.
 
 ---
 
-## Lessons Integrated
+## Evolution & Lessons Integrated
 
-### Round 1 → Round 2
+**Round 1 → Round 2**
+- Added strict T-SQL enforcements (banning `LIMIT` and Postgres syntax).
+- Enforced `NULLIF` checking to prevent division-by-zero crashes.
+- Emphasized explicit column matching (`current_status` vs `status`) to avoid DDL hallucination.
 
-- Added schema reference header requirement to Documentation checklist
-- Added window functions requirement (`RANK()` / `DENSE_RANK()`) to Complexity checklist
-- Added index recommendation requirement to Performance checklist
-- Added anti-hallucination rule: column aliases must accurately reflect business meaning
-- Added anti-hallucination rule: document limitations when using proxy columns for missing fields
-
-### Round 2 → Round 3
-
-- Added Checklist Integrity Rule to Methodology: fixing one issue must not remove another required feature
-- Added common mistake #9: removing a required syntax pattern when fixing a different query
-- Added regression check step to Verification Procedure (step 6)
-- Reinforced: maintain TOP WITH TIES coverage alongside window functions
+**Round 2 → Round 3**
+- Instituted the `LEFT JOIN` rule for aggregations so zero-state counts do not drop.
+- Added strict Temporal Anchoring rules (use `@ReportDate` declarations instead of `GETDATE()` when interacting with the statically-dated sample data from Section 06).

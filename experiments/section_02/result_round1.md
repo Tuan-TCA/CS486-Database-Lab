@@ -1,23 +1,14 @@
-# Conceptual Database Design (ERD) — Shared Campus Space Booking & Facility Management System
+# Section 02: Conceptual Database Design (ERD)
 
 ## 1. Entity-Relationship Diagram
 
 ```mermaid
 erDiagram
-    USER ||--o{ BOOKING_REQUEST : "submits"
-    USER ||--o{ BOOKING_APPROVAL : "decides"
-    USER ||--o{ USAGE_SESSION : "checks-in-completes"
-    USER ||--o{ MAINTENANCE_RECORD : "reports-is-assigned"
-    SPACE ||--o{ BOOKING_REQUEST : "receives"
-    SPACE ||--o{ FACILITY : "contains"
-    SPACE ||--o{ MAINTENANCE_RECORD : "has"
-    BOOKING_REQUEST ||--o| BOOKING_APPROVAL : "has"
-    BOOKING_REQUEST ||--o| USAGE_SESSION : "creates"
-
+    %% Entities and Attributes
     USER {
-        int user_id PK
+        string user_id PK
         string full_name
-        string email UK
+        string email
         string phone
         string role
         string department
@@ -29,7 +20,7 @@ erDiagram
         string space_name
         string space_type
         string building
-        int floor
+        string floor
         string room_number
         int capacity
         string current_status
@@ -37,15 +28,15 @@ erDiagram
     }
 
     FACILITY {
-        int facility_id PK
+        string facility_id PK
         string space_code FK
         string facility_name
         string description
     }
 
     BOOKING_REQUEST {
-        int booking_id PK
-        int user_id FK
+        string booking_id PK
+        string user_id FK
         string space_code FK
         datetime requested_start_time
         datetime requested_end_time
@@ -56,151 +47,63 @@ erDiagram
     }
 
     BOOKING_APPROVAL {
-        int approval_id PK
-        int booking_id FK
-        int decided_by_user_id FK
+        string approval_id PK
+        string booking_id FK
+        string decided_by_user_id FK
         datetime decision_time
         string decision_note
         string rejection_reason
     }
 
     USAGE_SESSION {
-        int session_id PK
-        int booking_id FK
+        string session_id PK
+        string booking_id FK
         datetime actual_start_time
         datetime actual_end_time
-        int checked_in_by_user_id FK
-        int completed_by_user_id FK
+        string checked_in_by_user_id FK
+        string completed_by_user_id FK
         string initial_condition
         string final_condition
         string usage_notes
     }
 
     MAINTENANCE_RECORD {
-        int maintenance_id PK
+        string maintenance_id PK
         string space_code FK
-        int reporter_user_id FK
-        int assigned_staff_user_id FK
+        string reporter_user_id FK
+        string assigned_staff_user_id FK
         string problem_description
         datetime start_time
         datetime completion_time
         string status
         string result_note
     }
+
+    %% Relationships and Cardinalities
+    USER ||--o{ BOOKING_REQUEST : "submits"
+    SPACE ||--o{ BOOKING_REQUEST : "receives"
+    SPACE ||--o{ FACILITY : "contains"
+    SPACE ||--o{ MAINTENANCE_RECORD : "requires"
+    USER ||--o{ BOOKING_APPROVAL : "decides"
+    USER ||--o{ USAGE_SESSION : "checks_in"
+    USER ||--o{ USAGE_SESSION : "completes"
+    USER ||--o{ MAINTENANCE_RECORD : "reports"
+    USER ||--o{ MAINTENANCE_RECORD : "assigned_to"
+    BOOKING_REQUEST ||--o| BOOKING_APPROVAL : "has_decision"
+    BOOKING_REQUEST ||--o| USAGE_SESSION : "has_session"
 ```
 
-## 2. Entity Descriptions
+## 2. Assumptions & Participation Constraints
 
-| Entity | Description |
-|--------|-------------|
-| **USER** | Individuals who interact with the system — students, lecturers, teaching assistants, facility staff, department administrators, and facility managers. |
-| **SPACE** | Physical rooms or areas available for booking: classrooms, labs, meeting rooms, auditoriums. |
-| **FACILITY** | Equipment or amenities within a space (e.g., projector, whiteboard, air conditioning). |
-| **BOOKING_REQUEST** | A reservation request submitted by a user for a specific space and time window. |
-| **BOOKING_APPROVAL** | The approval or rejection decision linked to exactly one booking request. |
-| **USAGE_SESSION** | The check-in and check-out record for an approved booking. |
-| **MAINTENANCE_RECORD** | A problem report or work order for a space, including reporter and assigned staff. |
+The following participation constraints are inferred to properly map the business logic into structural ERD constraints:
 
-## 3. Attribute Summary
+1. **Nullable Foreign Keys (Optional Participation on the Many side):** 
+   - `USAGE_SESSION.completed_by_user_id`: A session may not be completed immediately upon check-in. Therefore, the relationship `USER ||--o{ USAGE_SESSION : "completes"` implies that while a completed session must map to exactly one user, the foreign key itself is logically optional (0..1) until the completion event occurs.
+   - `MAINTENANCE_RECORD.assigned_staff_user_id`: A maintenance record is initially reported but may not be immediately assigned. The foreign key is logically optional (0..1) until assignment.
+   - For simplicity and standard structural mapping in Mermaid, the `||--o{` notation is used to represent the relationship path, emphasizing that a valid target `USER` must exist when the field is populated.
 
-### USER
+2. **Zero-or-One Constraints (0..1):**
+   - As mandated by the non-negotiable business rules, a `BOOKING_REQUEST` may exist without a `BOOKING_APPROVAL` (it remains pending/cancelled) and without a `USAGE_SESSION` (it was rejected or no-show). These are explicitly modeled with the `||--o|` notation to enforce the strict zero-or-one constraint on the dependent entities.
 
-| Attribute | Type | Constraints |
-|-----------|------|-------------|
-| **user_id** | INT | PRIMARY KEY |
-| full_name | VARCHAR | NOT NULL |
-| email | VARCHAR | NOT NULL, UNIQUE |
-| phone | VARCHAR | |
-| role | VARCHAR | NOT NULL |
-| department | VARCHAR | |
-| account_status | VARCHAR | NOT NULL |
-
-### SPACE
-
-| Attribute | Type | Constraints |
-|-----------|------|-------------|
-| **space_code** | VARCHAR | PRIMARY KEY |
-| space_name | VARCHAR | NOT NULL |
-| space_type | VARCHAR | NOT NULL |
-| building | VARCHAR | NOT NULL |
-| floor | INT | NOT NULL |
-| room_number | VARCHAR | NOT NULL |
-| capacity | INT | NOT NULL |
-| current_status | VARCHAR | NOT NULL |
-| usage_policy | VARCHAR | |
-
-### FACILITY
-
-| Attribute | Type | Constraints |
-|-----------|------|-------------|
-| **facility_id** | INT | PRIMARY KEY |
-| *space_code* | VARCHAR | FOREIGN KEY REFERENCES SPACE(space_code), NOT NULL |
-| facility_name | VARCHAR | NOT NULL |
-| description | VARCHAR | |
-
-### BOOKING_REQUEST
-
-| Attribute | Type | Constraints |
-|-----------|------|-------------|
-| **booking_id** | INT | PRIMARY KEY |
-| *user_id* | INT | FOREIGN KEY REFERENCES USER(user_id), NOT NULL |
-| *space_code* | VARCHAR | FOREIGN KEY REFERENCES SPACE(space_code), NOT NULL |
-| requested_start_time | TIMESTAMP | NOT NULL |
-| requested_end_time | TIMESTAMP | NOT NULL |
-| purpose | VARCHAR | |
-| expected_participants | INT | |
-| booking_type | VARCHAR | NOT NULL |
-| status | VARCHAR | NOT NULL |
-
-### BOOKING_APPROVAL
-
-| Attribute | Type | Constraints |
-|-----------|------|-------------|
-| **approval_id** | INT | PRIMARY KEY |
-| *booking_id* | INT | FOREIGN KEY REFERENCES BOOKING_REQUEST(booking_id), UNIQUE, NOT NULL |
-| *decided_by_user_id* | INT | FOREIGN KEY REFERENCES USER(user_id), NOT NULL |
-| decision_time | TIMESTAMP | NOT NULL |
-| decision_note | VARCHAR | |
-| rejection_reason | VARCHAR | |
-
-### USAGE_SESSION
-
-| Attribute | Type | Constraints |
-|-----------|------|-------------|
-| **session_id** | INT | PRIMARY KEY |
-| *booking_id* | INT | FOREIGN KEY REFERENCES BOOKING_REQUEST(booking_id), UNIQUE, NOT NULL |
-| actual_start_time | TIMESTAMP | |
-| actual_end_time | TIMESTAMP | |
-| *checked_in_by_user_id* | INT | FOREIGN KEY REFERENCES USER(user_id) |
-| *completed_by_user_id* | INT | FOREIGN KEY REFERENCES USER(user_id) |
-| initial_condition | VARCHAR | |
-| final_condition | VARCHAR | |
-| usage_notes | VARCHAR | |
-
-### MAINTENANCE_RECORD
-
-| Attribute | Type | Constraints |
-|-----------|------|-------------|
-| **maintenance_id** | INT | PRIMARY KEY |
-| *space_code* | VARCHAR | FOREIGN KEY REFERENCES SPACE(space_code), NOT NULL |
-| *reporter_user_id* | INT | FOREIGN KEY REFERENCES USER(user_id), NOT NULL |
-| *assigned_staff_user_id* | INT | FOREIGN KEY REFERENCES USER(user_id) |
-| problem_description | VARCHAR | NOT NULL |
-| start_time | TIMESTAMP | NOT NULL |
-| completion_time | TIMESTAMP | |
-| status | VARCHAR | NOT NULL |
-| result_note | VARCHAR | |
-
-## 4. Relationship Summary
-
-| Entity A | Relationship | Entity B | Cardinality | Description |
-|----------|-------------|----------|-------------|-------------|
-| USER | submits | BOOKING_REQUEST | 1:N | A user may submit many booking requests. |
-| USER | decides | BOOKING_APPROVAL | 1:N | A user may approve or reject many requests. |
-| USER | checks-in / completes | USAGE_SESSION | 1:N | A user may check in or complete many usage sessions. |
-| USER | reports / is assigned | MAINTENANCE_RECORD | 1:N | A user may report or be assigned many maintenance records. |
-| SPACE | receives | BOOKING_REQUEST | 1:N | A space may receive many booking requests. |
-| SPACE | contains | FACILITY | 1:N | A space may contain many facilities. |
-| SPACE | has | MAINTENANCE_RECORD | 1:N | A space may have many maintenance records. |
-| BOOKING_REQUEST | has | BOOKING_APPROVAL | 1:0..1 | A booking request has zero or one approval record. |
-| BOOKING_REQUEST | creates | USAGE_SESSION | 1:0..1 | A booking request creates zero or one usage session. |
+3. **Strict Relationship Separation:**
+   - Multiple foreign keys referencing the same parent entity (e.g., `USER`) from the same child entity (e.g., `USAGE_SESSION`) are modeled as explicitly separate relationship lines to prevent conflation of distinct business actions (checking in vs. completing). There are exactly 11 relationships modeled.

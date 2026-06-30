@@ -23,13 +23,13 @@ before writing a single INSERT statement.
 Read **only** these files:
 
 1. `doc/project_description.md`
-2. `experiments/section_01/result_round2.md`
-3. `experiments/section_02/result_round1.md`
-4. `experiments/section_03/result_round2.md`
+2. `experiments/section_01/result_round3.md`
+3. `experiments/section_02/result_round3.md`
+4. `experiments/section_03/result_round3.md`
 5. `experiments/section_04/result_round3.md`
-6. `experiments/section_05/result_round2.sql`
+6. `experiments/section_05/result_round3.sql`
 7. `evaluation/evaluation_06.md`
-
+8. `prompts/`
 YOU MUST READ THE `project_description.md` FIRST
 USE `evaluation_06.md` FOR SCORING AND EVALUATION IN `improve06.md`
 YOU MUST NOT CHANGE ANYTHING INSIDE `evaluation/` or `output/`
@@ -223,6 +223,15 @@ is in an impossible lifecycle state.
 **Use readable IDs:** If IDs are VARCHAR (not IDENTITY integers), use human-readable
 values like `'U001'`, `'SP001'`, `'BK001'` so sample data and query results are
 easy to read during grading.
+
+**State Synchronization (CRITICAL):** If a space has an active, in-progress booking (`status = 'Checked In'`), the `SPACE` record must have `current_status = 'In Use'`. Do not leave it as 'Available'.
+
+**Temporal Realism (CRITICAL):** 
+- `Pending` and `Approved` bookings must be scheduled in the *future* relative to the system date.
+- `Checked In` bookings must be scheduled *today* (avoid zombie sessions open for weeks).
+- `Completed`, `Rejected`, `Cancelled`, and `No-Show` bookings must be in the *past*.
+
+**Maintenance Collisions (CRITICAL):** Ensure that the `start_time` and `completion_time` of a `MAINTENANCE_RECORD` do not logically overlap with the `requested_start_time` of any `Completed` booking for the same space.
 
 ---
 
