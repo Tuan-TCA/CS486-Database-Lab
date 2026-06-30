@@ -43,20 +43,31 @@ WHERE br.status = 'approved' AND GETDATE() < br.requested_start_time;
 -- =====================================================
 
 /*
-
 Business Question:
-Which spaces are currently unavailable because they are under maintenance?
+Are there any approved bookings that violate the system constraint by having overlapping time schedules in the same space?
 
 Target User(s):
-- Facility Staff
 - Facility Manager
+- System Administrator
 
 Why Useful:
-Allows staff to quickly identify unavailable spaces and avoid assigning or approving bookings for those spaces.
-
+Standard DDL constraints cannot compare rows against each other. This audit query acts as a system diagnostic to detect scheduling conflicts that bypassed application-level validation.
 */
-SELECT * FROM SPACES
-WHERE current_status = 'under_maintenance'
+SELECT 
+    b1.booking_id AS conflict_booking_1,
+    b2.booking_id AS conflict_booking_2,
+    b1.space_code,
+    b1.requested_start_time AS b1_start,
+    b1.requested_end_time AS b1_end,
+    b2.requested_start_time AS b2_start,
+    b2.requested_end_time AS b2_end
+FROM BOOKING_REQUEST b1
+JOIN BOOKING_REQUEST b2 ON b1.space_code = b2.space_code
+WHERE b1.status = 'approved' 
+  AND b2.status = 'approved'
+  AND b1.booking_id < b2.booking_id -- Prevents checking a booking against itself and duplicate pairs
+  AND b1.requested_start_time < b2.requested_end_time
+  AND b1.requested_end_time > b2.requested_start_time;
 
 
 -- =====================================================
@@ -64,21 +75,29 @@ WHERE current_status = 'under_maintenance'
 -- =====================================================
 
 /*
-
 Business Question:
-Which users reserved spaces but never showed up?
+Are there any approved bookings scheduled during a time when the requested space is actively under maintenance?
 
 Target User(s):
 - Facility Manager
+- System Administrator
 
 Why Useful:
-Helps identify wasted resources and detect users who repeatedly reserve spaces without using them.
-
+Detects data integrity violations where a space was approved for use despite having an ongoing maintenance record, allowing staff to quickly relocate the affected class or event.
 */
-SELECT * FROM USERS u
-JOIN BOOKING_REQUEST  br ON u.user_id = br.user_id
-WHERE br.status = 'no_show'
-
+SELECT 
+    br.booking_id,
+    br.space_code,
+    m.maintenance_id,
+    br.requested_start_time AS booking_start,
+    m.start_time AS maintenance_start,
+    m.completion_time AS maintenance_end
+FROM BOOKING_REQUEST br
+JOIN MAINTENANCE_RECORD m ON br.space_code = m.space_code
+WHERE br.status IN ('approved', 'checked_in')
+  -- Checks if the booking overlaps with the maintenance window
+AND br.requested_start_time < ISNULL(m.completion_time, '2099-12-31') 
+AND br.requested_end_time > m.start_time;
 
 
 
@@ -208,55 +227,53 @@ ORDER BY usage_frequency DESC;
 -- =====================================================
 -- QUERY 09
 -- =====================================================
-
 /*
-
 Business Question:
-Which buildings have the highest space usage?
+Have any booking requests been approved or rejected by users who do not have the required Facility Staff or Facility Manager authorization?
 
 Target User(s):
-- Facility Manager
+- System Administrator
+- Department Administrator
 
 Why Useful:
-Helps evaluate facility utilization and supports future infrastructure planning.
-
+A security and compliance audit query. It verifies that cross-table role constraints are being respected by the application layer, ensuring students or standard lecturers aren't approving their own bookings.
 */
-
-SELECT TOP 1 WITH TIES
-    s.building,
-    COUNT(br.booking_id) AS total_usage
-FROM SPACES s
-JOIN BOOKING_REQUEST br ON s.space_code = br.space_code
-WHERE br.status IN ('approved', 'checked_in', 'completed')
-GROUP BY s.building
-ORDER BY total_usage DESC;
+SELECT 
+    ba.approval_id,
+    ba.booking_id,
+    u.user_id AS unauthorized_approver_id,
+    u.full_name,
+    u.role AS current_invalid_role,
+    ba.decision_time
+FROM BOOKING_APPROVAL ba
+JOIN USERS u ON ba.decided_by_user_id = u.user_id
+WHERE u.role NOT IN ('facility_staff', 'facility_manager');
 
 -- =====================================================
 -- QUERY 10
 -- =====================================================
-
-    /*
-
+/*
 Business Question:
-Which activity types occupy campus spaces most frequently?
+Do any usage sessions exist for bookings that were never officially approved (e.g., pending, cancelled, or rejected)?
 
 Target User(s):
 - Facility Manager
-- Department Administrator
+- System Administrator
 
 Why Useful:
-Helps understand demand patterns and supports future scheduling decisions.
-
+Ensures operational strictness. Identifies instances where users or staff bypassed the formal approval workflow and occupied a room anyway, highlighting potential process failures.
 */
-
-SELECT TOP 1 WITH TIES 
-br.booking_type,
-COUNT(br.space_code) AS activity_frequency
-FROM BOOKING_REQUEST br
-WHERE br.status IN ('approved', 'checked_in', 'completed') 
-GROUP BY br.booking_type
-ORDER BY activity_frequency DESC;
-
+SELECT 
+    us.session_id,
+    br.booking_id,
+    s.space_code,
+    br.status AS invalid_booking_status,
+    us.actual_start_time,
+    us.checked_in_by_user_id
+FROM USAGE_SESSION us
+JOIN BOOKING_REQUEST br ON us.booking_id = br.booking_id
+JOIN SPACES s ON br.space_code = s.space_code
+WHERE br.status NOT IN ('approved', 'checked_in', 'completed', 'no_show');
 -- =====================================================
 -- QUERY 11
 -- =====================================================
