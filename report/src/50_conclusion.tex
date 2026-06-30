@@ -1,0 +1,43 @@
+% ==============================================================================
+% Section 5: Conclusion
+% ==============================================================================
+
+\section{Conclusion}
+
+% ------------------------------------------------------------------------------
+% 5.1 Project Summary
+% ------------------------------------------------------------------------------
+
+\subsection{Project Summary}
+
+This project designed and implemented a relational database system for managing campus space booking, approval, usage sessions, and maintenance for the School of Computer Science. The system replaces a manual spreadsheet and email process with a structured database encompassing 7 entities---\texttt{USER}, \texttt{SPACE}, \texttt{FACILITY}, \texttt{BOOKING\_REQUEST}, \texttt{BOOKING\_APPROVAL}, \texttt{USAGE\_SESSION}, and \texttt{MAINTENANCE\_RECORD}---connected by 11 relationships that model the full booking lifecycle from request submission through approval, check-in, and completion. The database enforces business constraints at the data level, including overlap prevention, space availability checks, and historical data preservation. All deliverables across 7 sections were developed through iterative refinement using a structured Agent/Skill/Evaluation framework with human-in-the-loop evaluation, where each section's output was scored against a fixed rubric and progressively improved until quality targets were met.
+
+% ------------------------------------------------------------------------------
+% 5.2 Key Achievements
+% ------------------------------------------------------------------------------
+
+\subsection{Key Achievements}
+
+\begin{itemize}
+    \item \textbf{Database design:} Complete business requirements analysis identifying 6 actor roles, conceptual ERD with proper cardinalities and participation constraints, logical schema with 7 relations in Third Normal Form, and thorough design validation---covering the full booking-maintenance lifecycle from request to resolution.
+
+    \item \textbf{SQL implementation:} Technically sound DDL with appropriate primary keys, 11 foreign keys, CHECK constraints for domain validation, UNIQUE constraints enforcing 1:0..1 cardinalities on \texttt{BOOKING\_APPROVAL} and \texttt{USAGE\_SESSION}, triggers for cross-table business rules, and realistic sample data covering all status values (7 booking statuses, 5 space statuses, 4 maintenance statuses) and edge cases. A total of 24 business queries were implemented in T-SQL spanning single-table retrieval, multi-table joins, aggregation, subqueries, and window functions.
+
+    \item \textbf{AI agent improvement:} Demonstrated iterative refinement across 7 sections with measurable score improvements (e.g., Section~01: 8$\rightarrow$10, Section~04: 7.5$\rightarrow$9, Section~05: 10/10). The process evolved from basic prompting to a structured Agent/Skill/Evaluation framework, where reusable global knowledge was maintained in \texttt{AGENT.md}, section-specific methodology was encoded in skill files, and outputs were evaluated against fixed rubrics with human-supervised learning guiding each refinement round.
+\end{itemize}
+
+% ------------------------------------------------------------------------------
+% 5.3 Future Work
+% ------------------------------------------------------------------------------
+
+\subsection{Future Work}
+
+\begin{itemize}
+    \item \textbf{Notification system:} Implement automated notifications for booking confirmations, approval decisions, and maintenance status updates via email or in-app alerts.
+
+    \item \textbf{Authentication and access control:} Add authentication and role-based access control at the application layer to enforce permission policies (e.g., only facility staff may approve bookings or perform check-in operations).
+
+    \item \textbf{Analytics dashboard:} Develop a visual dashboard for space utilization statistics, booking trends by department or time period, and maintenance frequency analysis.
+
+    \item \textbf{Temporal utilization queries:} Extend the query suite with utilization rate calculations (actual usage hours divided by available hours per space) to support data-driven space allocation decisions.
+\end{itemize}

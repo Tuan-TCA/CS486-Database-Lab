@@ -1,0 +1,230 @@
+% ==============================================================================
+% Section 4: AI Agent Improvement
+% ==============================================================================
+
+\section{AI Agent Improvement}
+
+% ------------------------------------------------------------------------------
+% 4.1 Agent Improvement Framework
+% ------------------------------------------------------------------------------
+
+\subsection{Agent Improvement Framework}
+
+\subsubsection{Objectives}
+
+The primary objective of the agent improvement framework is to iteratively refine an AI agent's ability to generate database design artifacts by evaluating outputs against fixed rubrics and integrating lessons learned into reusable knowledge. Rather than treating the agent as a one-shot generator, the framework establishes a continuous learning loop in which each iteration builds upon previous observations, resulting in progressively more robust, consistent, and traceable outputs.
+
+\subsubsection{Overall Workflow}
+
+The end-to-end workflow proceeds as follows:
+
+\begin{enumerate}
+    \item \textbf{Project Requirement} --- The human provides the project description as the authoritative input.
+    \item \textbf{Agent} --- The agent (\texttt{Agent.md}) supplies global project knowledge: entity names, business rules, and naming conventions.
+    \item \textbf{Section Skill} --- The section-specific skill (\texttt{skill\_xx.md}) provides methodology, checklists, and verification procedures.
+    \item \textbf{Generate Output} --- The result generator produces a benchmark artifact reflecting the current state of the agent and skill.
+    \item \textbf{Human Evaluation} --- Humans evaluate the output against a fixed rubric, identifying strengths, weaknesses, and risks.
+    \item \textbf{Improve} --- The improvement worker proposes updates to the agent and/or skill based on evaluation findings.
+    \item \textbf{Update Agent/Skill} --- Humans review and approve proposed changes before they are applied.
+    \item \textbf{Next Iteration} --- The updated agent and skill are used to generate the next benchmark, closing the loop.
+\end{enumerate}
+
+\subsubsection{Design Principles}
+
+\begin{itemize}
+    \item \textbf{Separation of concerns:} The Agent stores global reusable knowledge (entity names, business rules, naming conventions), while each Skill stores section-specific methodology (checklists, verification procedures, common mistakes). This separation ensures that global lessons propagate across all sections, while section-specific lessons remain localized.
+    \item \textbf{Human-in-the-loop:} The agent proposes changes only; humans evaluate all outputs, approve all modifications, and serve as the final decision makers. No file is modified without explicit human approval.
+    \item \textbf{Iterative refinement:} Each section follows a generate $\rightarrow$ evaluate $\rightarrow$ improve cycle. Knowledge accumulates across rounds, and each iteration explicitly leverages lessons from previous rounds.
+    \item \textbf{Requirement traceability:} All outputs trace back to the project requirements. The agent enforces naming consistency and business rule compliance, ensuring that no hallucinated requirements are introduced.
+\end{itemize}
+
+% ------------------------------------------------------------------------------
+% 4.2 Agent Architecture
+% ------------------------------------------------------------------------------
+
+\subsection{Agent Architecture}
+
+\subsubsection{Architecture Overview}
+
+The agent improvement system employs a multi-component architecture that separates global knowledge from section-specific methodology, fixed evaluation criteria from cumulative learning memory, and workflow orchestration from content generation. Each component has a clearly defined responsibility and interacts with others through explicit file injection controlled by the prompt framework. This design ensures that workers operate in isolation---consuming only the files explicitly provided to them---while the overall system maintains coherence through the shared Agent and structured improvement artifacts.
+
+\subsubsection{Component Responsibilities}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Component} & \textbf{Responsibility} \\
+\hline
+Agent (\texttt{Agent.md}) & Global project knowledge: entity names, attribute definitions, business rules, naming conventions, consistency rules, and verification behavior \\
+\hline
+Skill (\texttt{skill\_xx.md}) & Section-specific methodology: purpose, checklists, verification procedures, common mistakes, anti-hallucination rules, and integrated lessons \\
+\hline
+Evaluation (\texttt{evaluation\_xx.md}) & Fixed rubrics: scoring criteria, dimension weights, technical checklists, and quality thresholds for each section \\
+\hline
+Improvement (\texttt{improveXX.md}) & Cumulative learning memory: identified issues, root causes, proposed agent and skill updates, and lessons learned across rounds \\
+\hline
+Prompts & Workflow orchestration: role definitions for each worker, input injection specifications, worker isolation rules, and human approval policies \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Repository Organization}
+
+The project repository is organized to reflect the separation of concerns:
+
+\begin{lstlisting}[basicstyle=\ttfamily\small, frame=single]
+agent/          -> Agent.md (global knowledge)
+skills/         -> skill_xx.md (section skills)
+experiments/    -> section_XX/ (improve, results per round)
+evaluation/     -> evaluation_XX.md (fixed rubrics)
+prompts/        -> workflow prompts
+output/         -> final deliverables
+\end{lstlisting}
+
+The \texttt{agent/} directory contains the single global knowledge file. The \texttt{skills/} directory holds one skill file per section. The \texttt{experiments/} directory organizes improvement files and round-by-round results into section-specific subdirectories. The \texttt{evaluation/} directory stores the fixed rubrics that remain unchanged throughout the experiment. The \texttt{prompts/} directory contains the workflow orchestration files, including the experiment policy, skill builder, result generator, evaluate, and improve prompts.
+
+% ------------------------------------------------------------------------------
+% 4.3 Iterative Improvement Process
+% ------------------------------------------------------------------------------
+
+\subsection{Iterative Improvement Process}
+
+\subsubsection{Improvement Workflow}
+
+Each section undergoes the following iterative process:
+
+\begin{enumerate}
+    \item \textbf{Generate benchmark:} The result generator consumes the project description, Agent, and current Skill to produce a benchmark output (\texttt{result\_roundX.md}).
+    \item \textbf{Evaluate against rubric:} The evaluator scores the benchmark against the section's fixed rubric, identifying strengths, weaknesses, risks, and opportunities for improvement.
+    \item \textbf{Identify weaknesses and root causes:} The improvement worker analyzes evaluation findings to determine why issues occurred and traces each issue to its root cause.
+    \item \textbf{Propose improvements (Agent vs.\ Skill):} For each issue, the improvement worker determines the appropriate owner---Agent (global), Skill (section-specific), both, or none---and proposes targeted updates.
+    \item \textbf{Apply approved improvements:} Humans review the proposed changes and approve them. Only approved changes are applied to the Agent or Skill files.
+    \item \textbf{Regenerate:} The updated Agent and Skill are used to generate the next benchmark, and the cycle repeats.
+\end{enumerate}
+
+\subsubsection{Improvement History}
+
+Table~\ref{tab:improvement-history} summarizes the iterative improvement trajectory across all seven sections.
+
+\begin{table}[H]
+\centering
+\caption{Improvement history across sections}
+\label{tab:improvement-history}
+\begin{tabularx}{\textwidth}{|l|l|l|l|X|}
+\hline
+\textbf{Section} & \textbf{Rounds} & \textbf{Initial} & \textbf{Final} & \textbf{Key Improvement} \\
+\hline
+01 Business Req & 2 & 8/10 & 10/10 & Added missing actors, business purpose section, university account rule \\
+\hline
+02 ERD Design & 1 & 10/10 & 10/10 & No issues identified \\
+\hline
+03 Logical Design & 2 & 9/10 & 10/10 & Added SPACE(building, room\_number) composite candidate key \\
+\hline
+04 Validation & 3 & 7.5/10 & 9/10 & Normalization check, gap ownership tagging, project description cross-check \\
+\hline
+05 SQL DDL & 2 & 8/10 & 10/10 & Added 4 missing CHECK constraints \\
+\hline
+06 Sample Data & 1 & 10/10 & 10/10 & No issues identified \\
+\hline
+07 Query Design & 3 & 10/10 & 10/10 & Window functions, schema reference header, index recommendations \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Representative Improvements}
+
+\textbf{Requirement extraction (Section~01).} The initial benchmark embedded the business purpose in an overview table without a dedicated narrative section, omitted several expected actors (Lecturer, Teaching Assistant, Facility Staff, Department Administrator), and missed the ``every user must have a university account'' business rule. The improvement worker identified these gaps, proposed a structured business purpose section and an explicit actor list, and added the missing rule to the skill checklist. After one improvement round, the benchmark achieved full coverage of all actors and business rules.
+
+\textbf{Naming consistency and hallucination prevention (Section~01).} The first-round output invented a ``System Administrators'' role that had no basis in the project requirements. This hallucination was traced to a lack of anti-hallucination rules in the Agent. The improvement added an explicit rule to the Agent prohibiting the introduction of roles, entities, or attributes not present in the project description. This rule propagated across all subsequent sections, preventing similar hallucinations.
+
+\textbf{Missing constraints (Sections~03 and 05).} In Section~03, the logical design omitted the composite candidate key \texttt{SPACE(building, room\_number)}, which represents the unique physical location of a space. The improvement worker added a composite key verification step to the skill checklist. In Section~05, the SQL DDL was missing four CHECK constraints (\texttt{capacity > 0}, \texttt{floor >= 0}, \texttt{expected\_participants > 0}, \texttt{actual\_end\_time >= actual\_start\_time}). These were identified through rubric evaluation and added in the subsequent round, achieving a perfect score.
+
+\textbf{Methodology evolution (Section~04).} The validation section demonstrated the most significant methodological growth, evolving from basic entity-relationship matching (7.5/10) to a comprehensive 10-dimension validation framework (9/10) over three rounds. Improvements included adding normalization verification, gap ownership tagging to distinguish between documentation gaps and implementation gaps, project description cross-checking, and data type precision review. Each round addressed specific weaknesses identified in the previous evaluation, demonstrating authentic iterative learning.
+
+% ------------------------------------------------------------------------------
+% 4.4 Evaluation Methodology
+% ------------------------------------------------------------------------------
+
+\subsection{Evaluation Methodology}
+
+\subsubsection{Evaluation Criteria}
+
+The evaluation framework assesses outputs across multiple dimensions, as summarized in Table~\ref{tab:eval-criteria}.
+
+\begin{table}[H]
+\centering
+\caption{Evaluation criteria}
+\label{tab:eval-criteria}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Criterion} & \textbf{Description} \\
+\hline
+Requirement Coverage & All business requirements from the project description are addressed in the output \\
+\hline
+Correctness & Entities, attributes, relationships, cardinalities, and constraints are technically accurate \\
+\hline
+Consistency & Naming conventions, terminology, and design decisions are uniform across all sections \\
+\hline
+Business Rule Satisfaction & All non-negotiable business rules are enforced through schema constraints, triggers, or documented application logic \\
+\hline
+SQL Quality & DDL and query implementations follow best practices: proper data types, meaningful constraints, correct referential integrity \\
+\hline
+Hallucination Prevention & No invented entities, attributes, roles, or requirements that lack justification in the project description \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsubsection{Evaluation Results}
+
+Table~\ref{tab:eval-results} presents the final evaluation scores for each section, assessed against the fixed rubrics.
+
+\begin{table}[H]
+\centering
+\caption{Final evaluation scores by section}
+\label{tab:eval-results}
+\begin{tabularx}{\textwidth}{|l|X|l|}
+\hline
+\textbf{Section} & \textbf{Description} & \textbf{Final Score} \\
+\hline
+01 & Business Requirement Analysis & 9.5/10 \\
+\hline
+02 & ERD Design & 9.5/10 \\
+\hline
+03 & Logical Database Design & 9.5/10 \\
+\hline
+04 & Database Design Validation & 9.5/10 \\
+\hline
+05 & Database Implementation (SQL DDL) & 10/10 \\
+\hline
+06 & Sample Data Preparation & 9.8/10 \\
+\hline
+\end{tabularx}
+\end{table}
+
+The final outputs demonstrate consistently high quality across all sections, with scores ranging from 9.5 to 10 out of 10. The greatest strength of the project is not any individual section but the consistency maintained across all outputs---entities, attributes, relationships, and business rules remain uniform from the business requirement analysis through to the sample data. The SQL implementation (Section~05) achieved a perfect score, reflecting the effectiveness of the iterative improvement process in identifying and resolving missing constraints.
+
+\subsubsection{Lessons Learned}
+
+Table~\ref{tab:lessons} summarizes the key observations and corresponding improvements that emerged from the iterative process.
+
+\begin{table}[H]
+\centering
+\caption{Key lessons learned and corresponding improvements}
+\label{tab:lessons}
+\begin{tabularx}{\textwidth}{|X|X|}
+\hline
+\textbf{Observation} & \textbf{Improvement} \\
+\hline
+Hallucinated roles (e.g., ``System Administrators'') appeared in early outputs & Anti-hallucination rules added to Agent: no roles, entities, or attributes may be introduced without project description justification \\
+\hline
+Missing composite candidate keys in logical design & Composite key verification step added to skill checklists, requiring evaluation of multi-attribute uniqueness \\
+\hline
+Shallow validation methodology with duplicate gaps and no ownership tagging & Evolved into a 10-dimension validation framework with gap deduplication, ownership tagging, and priority classification \\
+\hline
+Missing CHECK constraints in SQL DDL & Explicit constraint checklist added to skill, requiring verification of all domain-specific value constraints \\
+\hline
+Applying a fix in one dimension caused regression in another checklist dimension & Checklist integrity rule added: after applying improvements, verify that no existing checklist item was accidentally removed \\
+\hline
+\end{tabularx}
+\end{table}
