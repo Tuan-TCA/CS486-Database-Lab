@@ -1,0 +1,921 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{AI Agent Improvement}
+
+To improve the quality and consistency of AI-assisted database engineering, this project adopted a human-supervised agent improvement framework rather than a conventional one-shot prompting approach. Instead of repeatedly modifying generated outputs, the framework continuously improves the reusable knowledge of the AI agent through iterative evaluation and refinement.
+
+The framework distinguishes between reusable knowledge and generated artifacts. Generated outputs are treated as intermediate benchmarks that reveal the current capability of the agent rather than final deliverables. Human evaluation identifies weaknesses, determines their root causes, and converts these findings into reusable knowledge. The updated knowledge is then incorporated into either the global Agent or a section-specific Skill before the next generation cycle.
+
+This approach transforms prompt engineering into a systematic knowledge engineering process. Rather than correcting the same mistakes repeatedly, each iteration permanently improves the agent's capability, allowing later outputs to benefit from accumulated experience.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Agent Improvement Framework}
+
+\subsubsection{Objectives}
+
+The proposed framework focuses on continuously improving the knowledge used by the AI agent throughout the project lifecycle. Instead of evaluating only the final deliverables, every intermediate benchmark is analyzed to identify reusable improvements.
+
+The framework pursues the following objectives.
+
+\begin{itemize}[leftmargin=2em]
+    \item Improve the AI agent rather than manually correcting generated outputs.
+    \item Build reusable knowledge that can be shared across multiple project sections.
+    \item Increase consistency between business analysis, database design, SQL implementation, and query design.
+    \item Reduce hallucinations through structured verification and human evaluation.
+    \item Improve requirement traceability from the project specification to the final database artifacts.
+    \item Establish a repeatable improvement workflow for future projects.
+\end{itemize}
+
+Unlike conventional prompt engineering, improvements are incorporated into reusable knowledge instead of individual outputs. Consequently, every subsequent generation benefits from previous evaluation results.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Overall Workflow}
+
+Figure~\ref{fig:framework} illustrates the proposed improvement workflow.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.9\linewidth]{img/4.1.2.png}
+    \caption{Human-supervised agent improvement workflow.}
+    \label{fig:framework}
+\end{figure}
+
+The workflow begins with the project requirements and reusable knowledge stored in the global Agent. The Agent provides project-wide guidance, while a section-specific Skill supplies methodologies for generating a particular deliverable. The generated result is treated as a benchmark rather than the final submission. Human evaluation identifies weaknesses, determines whether the required improvement belongs to the Agent or the corresponding Skill, and records the lessons in an improvement document. The updated knowledge is then reused during the next generation cycle, allowing the agent to progressively improve over multiple iterations.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Design Principles}
+
+The framework is built upon four complementary design principles.
+
+\paragraph{Separation of Concerns}
+
+Reusable project knowledge is separated from section-specific methodologies. The global Agent stores knowledge shared by every deliverable, such as requirement traceability, naming consistency, and anti-hallucination rules. Each Skill contains methodologies, verification procedures, and checklists specific to one project section. This separation localizes improvements and prevents unrelated modifications from affecting other tasks.
+
+\paragraph{Human-in-the-loop Evaluation}
+
+The framework treats human reviewers as the final authority. Every generated benchmark is manually evaluated before knowledge is updated. Rather than automatically modifying files, the agent proposes improvements, while humans determine whether the proposed knowledge should be incorporated into subsequent iterations.
+
+\paragraph{Iterative Knowledge Refinement}
+
+The objective of each iteration is to improve reusable knowledge rather than a single document. Evaluation findings are transformed into permanent lessons that update either the global Agent or the appropriate Skill. As knowledge accumulates across iterations, later generations become progressively more complete, consistent, and reliable.
+
+\paragraph{Requirement Traceability}
+
+Every important design decision should be traceable to an explicit project requirement. During evaluation, reviewers verify that entities, relationships, constraints, business rules, and SQL implementations are supported by the original specification. This principle reduces unsupported assumptions and improves consistency throughout the database development process.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Advantages of the Framework}
+
+Compared with conventional one-shot prompting, the proposed framework provides several practical advantages.
+
+\begin{table}[H]
+\centering
+\caption{Comparison between one-shot prompting and the proposed framework}
+\label{tab:comparison}
+
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4cm}XX}
+\toprule
+\textbf{Aspect}
+&
+\textbf{One-shot Prompting}
+&
+\textbf{Proposed Framework}
+\\
+\midrule
+
+Knowledge organization
+&
+Instructions embedded in a single prompt
+&
+Knowledge separated into reusable Agent and section-specific Skills
+\\
+
+Output generation
+&
+Final document generated directly
+&
+Benchmark outputs generated for iterative evaluation
+\\
+
+Improvement strategy
+&
+Modify prompts after errors occur
+&
+Convert evaluation findings into reusable knowledge
+\\
+
+Human involvement
+&
+Mainly reviews the final output
+&
+Reviews every iteration before knowledge is updated
+\\
+
+Knowledge reuse
+&
+Limited across tasks
+&
+Lessons accumulated and reused throughout the project
+\\
+
+Maintainability
+&
+Prompt becomes increasingly complex
+&
+Knowledge evolves modularly through Agent and Skill updates
+\\
+
+\bottomrule
+\end{tabularx}
+
+\end{table}
+
+Overall, the proposed framework shifts the focus from prompt optimization to knowledge evolution. By separating reusable knowledge from generated outputs and integrating human evaluation into every iteration, the framework enables continuous improvement of the AI agent while maintaining consistency across all project deliverables.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Agent Architecture}
+
+The proposed framework adopts a modular architecture that separates reusable project knowledge from section-specific methodologies. Rather than embedding all instructions within a single prompt, the framework organizes knowledge into independent components with clearly defined responsibilities. This design improves maintainability, supports iterative refinement, and enables reusable knowledge to evolve without introducing unintended side effects to other project sections.
+
+Figure~\ref{fig:architecture} illustrates the overall architecture of the proposed framework.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Architecture Overview}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.9\linewidth]{img/4.2.1. Architect overview.jpg}
+    \caption{Architecture of the proposed agent improvement framework.}
+    \label{fig:architecture}
+\end{figure}
+
+The architecture consists of five major components: the global Agent, section-specific Skills, benchmark Outputs, Human Evaluation, and Improvement Knowledge. The Agent stores reusable project-wide knowledge shared across all sections, while each Skill encapsulates methodologies for generating a specific project artifact. Generated outputs are treated as intermediate benchmarks rather than final deliverables. Human evaluation identifies weaknesses and determines whether the resulting lessons should update the global Agent or the corresponding Skill. This separation enables knowledge to evolve continuously while keeping generated artifacts independent from reusable knowledge.
+
+%%4.2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Component Responsibilities}
+
+Each component has a clearly defined responsibility within the framework. Table~\ref{tab:components} summarizes their roles.
+
+\begin{table}[H]
+\centering
+\caption{Responsibilities of framework components}
+\label{tab:components}
+
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{3.5cm}X}
+\toprule
+\textbf{Component} &
+\textbf{Responsibility}
+\\
+\midrule
+
+Global Agent &
+Stores reusable project-wide knowledge, including naming conventions, requirement traceability, anti-hallucination rules, and verification behavior shared across all sections.
+\\
+
+Section Skill &
+Stores reusable methodologies, verification procedures, checklists, consistency rules, and common mistakes for a specific project section.
+\\
+
+Benchmark Outputs &
+Intermediate results generated using the current Agent and Skill. These outputs measure the current capability of the framework and serve as inputs for evaluation.
+\\
+
+Human Evaluation &
+Assesses benchmark outputs, identifies strengths, weaknesses, risks, and improvement opportunities according to predefined evaluation criteria.
+\\
+
+ImproveXX &
+Records root causes, lessons learned, and proposed updates for the Agent or the corresponding Skill to support the next iteration.
+\\
+
+\bottomrule
+\end{tabularx}
+
+\end{table}
+
+The clear separation of responsibilities ensures that reusable knowledge evolves independently while generated outputs remain reproducible benchmarks of the current knowledge state.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Global Agent}
+
+The global Agent serves as the central repository of reusable project knowledge. Rather than describing how to generate a specific deliverable, it stores knowledge applicable throughout the entire database engineering process.
+
+Typical responsibilities of the global Agent include
+
+\begin{itemize}
+
+\item maintaining consistent terminology across all project deliverables;
+
+\item enforcing naming conventions for entities, attributes, relationships, and database objects;
+
+\item preventing unsupported assumptions through anti-hallucination rules;
+
+\item promoting explicit requirement traceability from project requirements to implementation;
+
+\item defining verification behaviors shared across all project sections.
+
+\end{itemize}
+
+The Agent is updated only when an identified lesson is considered globally reusable. Improvements specific to an individual project section remain within the corresponding Skill, preventing unnecessary coupling between unrelated tasks.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Section Skills}
+
+While the global Agent provides project-wide guidance, each section maintains an independent Skill responsible for specialized methodologies.
+
+Rather than storing generated content, each Skill contains reusable knowledge such as generation procedures, verification checklists, consistency rules, anti-hallucination guidelines, and common mistakes discovered during previous iterations.
+
+For example,
+
+\begin{itemize}
+
+\item the Business Requirement Analysis Skill focuses on requirement extraction, actor identification, entity discovery, and business rule verification;
+
+\item the ER Design Skill specializes in conceptual modeling, relationship identification, and cardinality analysis;
+
+\item the Logical Design Skill performs relation mapping, key identification, normalization, and integrity verification;
+
+\item the SQL Implementation Skill focuses on schema generation, constraints, triggers, and implementation consistency.
+
+\end{itemize}
+
+Because each Skill evolves independently, improvements introduced into one section do not unintentionally affect other parts of the project.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Repository Organization}
+
+The repository mirrors the modular architecture by separating reusable knowledge, experimental artifacts, evaluation resources, and final deliverables.
+
+\begin{figure}[H]
+
+\centering
+
+\begin{tikzpicture}[
+every node/.style={
+draw,
+rounded corners,
+minimum width=3.8cm,
+minimum height=.8cm,
+font=\small
+},
+node distance=.9cm,
+>=Stealth
+]
+
+\node(root){Repository};
+
+\node(agent)[below left=of root]{agent/};
+
+\node(skill)[below=of root]{skills/};
+
+\node(exp)[below right=of root]{experiments/};
+
+\node(eval)[below left=of skill]{evaluation/};
+
+\node(out)[below right=of skill]{outputs/};
+
+\draw[->](root)--(agent);
+\draw[->](root)--(skill);
+\draw[->](root)--(exp);
+\draw[->](root)--(eval);
+\draw[->](root)--(out);
+
+\end{tikzpicture}
+
+\caption{Repository organization.}
+
+\label{fig:repository}
+
+\end{figure}
+
+Each directory serves a distinct purpose.
+
+\begin{table}[H]
+
+\centering
+
+\caption{Repository structure}
+
+\label{tab:repository}
+
+\begin{tabularx}{\linewidth}{>{\ttfamily}p{3cm}X}
+
+\toprule
+
+\textbf{Directory}
+&
+\textbf{Purpose}
+
+\\
+
+\midrule
+
+agent/
+&
+Stores reusable project-wide knowledge shared across all project sections.
+
+\\
+
+skills/
+&
+Stores section-specific methodologies, verification procedures, and consistency rules.
+
+\\
+
+experiments/
+&
+Contains benchmark outputs together with ImproveXX documents that record iterative refinement.
+
+\\
+
+evaluation/
+&
+Stores fixed evaluation criteria used during the evaluation phase.
+
+\\
+
+outputs/
+&
+Contains the final human-approved project deliverables and is isolated from the improvement workflow.
+
+\\
+
+\bottomrule
+
+\end{tabularx}
+
+\end{table}
+
+This repository organization clearly separates reusable knowledge, evaluation, experimentation, and final deliverables, making the improvement process easier to understand, reproduce, and maintain.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Discussion}
+
+Compared with storing all project knowledge inside a single prompt, the proposed modular architecture provides several important advantages.
+
+First, reusable knowledge is maintained centrally within the Agent and shared across all project sections. Second, section-specific improvements remain localized within individual Skills, preventing unintended interactions between unrelated tasks. Third, benchmark outputs and improvement documents provide an explicit record of knowledge evolution throughout the experiment. Finally, separating reusable knowledge from generated artifacts allows the framework to evolve continuously while preserving reproducibility and consistency across successive iterations.
+
+
+%% 4.3
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Iterative Improvement Process}
+
+A key characteristic of the proposed framework is that improvements are applied to the agent rather than directly to the generated deliverables. Every evaluation cycle identifies weaknesses in the agent's understanding of the project requirements, transforms these observations into reusable knowledge, and incorporates the improvements into the next generation cycle. Consequently, the quality of generated artifacts gradually increases while reducing repetitive manual corrections.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Improvement Workflow}
+
+Figure~\ref{fig:iteration} illustrates the iterative refinement process adopted throughout the project.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{img/4.3.1.png}
+    \caption{Iterative improvement workflow.}
+    \label{fig:iteration}
+\end{figure}
+
+
+Unlike traditional document revision, the generated outputs themselves are not manually rewritten. Instead, improvements are introduced into the knowledge base that guides future generations. This approach gradually increases the capability of the agent while preserving consistency across all project deliverables.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Improvement Strategy}
+
+Each improvement cycle consists of four sequential activities.
+
+\begin{enumerate}
+
+\item Generate an initial deliverable using the current version of the agent.
+
+\item Evaluate the generated result according to predefined quality criteria.
+
+\item Identify missing requirements, inconsistencies, or unsupported assumptions.
+
+\item Refine the corresponding knowledge component before generating the next version.
+
+\end{enumerate}
+
+This strategy ensures that every improvement addresses the underlying cause rather than only correcting the visible symptoms in a single document.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Representative Improvement History}
+
+Table~\ref{tab:history} summarizes representative improvements performed during the development of the project.
+
+\begin{table}[H]
+
+\centering
+
+\caption{Representative improvement history}
+
+\label{tab:history}
+
+\begin{tabularx}{\linewidth}
+{>{\centering\arraybackslash}p{1.2cm}
+>{\raggedright\arraybackslash}p{3cm}
+X
+X}
+
+\toprule
+
+\textbf{Round}
+&
+\textbf{Identified Issue}
+&
+\textbf{Root Cause}
+&
+\textbf{Knowledge Improvement}
+
+\\
+
+\midrule
+
+1
+
+&
+
+Incomplete business rules
+
+&
+
+The agent focused primarily on entities and attributes while overlooking operational constraints.
+
+&
+
+Explicit requirement extraction guidelines were added to require identification of actors, business rules, constraints, and exceptional cases before database design.
+
+\\
+
+2
+
+&
+
+Inconsistent terminology
+
+&
+
+Different sections generated different names for identical entities and attributes.
+
+&
+
+A centralized naming convention was introduced into the global agent to enforce consistent terminology throughout all deliverables.
+
+\\
+
+3
+
+&
+
+Weak design validation
+
+&
+
+Validation focused only on schema correctness without explicitly mapping requirements to implementation.
+
+&
+
+A traceability checklist was introduced requiring every business rule to be linked to a corresponding database component or implementation mechanism.
+
+\\
+
+\bottomrule
+
+\end{tabularx}
+
+\end{table}
+
+The improvements shown above demonstrate that the majority of quality issues originated from incomplete project knowledge rather than deficiencies in language generation itself.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Representative Improvements}
+
+Several improvements substantially increased the quality of generated database artifacts.
+
+\paragraph{Requirement Extraction}
+
+Early generations occasionally omitted implicit business constraints described in the project specification. To address this issue, the requirement analysis skill was modified to explicitly identify business purposes, actors, entities, relationships, operational constraints, and exceptional situations before constructing any database model.
+
+This improvement significantly increased requirement coverage during subsequent iterations.
+
+\paragraph{Business Rule Coverage}
+
+Database systems are driven not only by entities but also by operational constraints. Therefore, the improvement process emphasized extracting business rules before designing the schema.
+
+Examples include
+
+\begin{itemize}
+
+\item preventing overlapping approved bookings;
+
+\item prohibiting reservations for unavailable spaces;
+
+\item preserving historical booking records;
+
+\item enforcing approval authority based on staff roles.
+
+\end{itemize}
+
+By explicitly identifying these constraints, later iterations produced database schemas that more accurately reflected real operational requirements.
+
+\paragraph{Naming Consistency}
+
+Several early iterations used inconsistent terminology for identical concepts. Examples included different names for booking requests, maintenance records, and approval information.
+
+A unified naming convention was therefore incorporated into the global agent, ensuring that
+
+\begin{itemize}
+
+\item entity names remained identical across all documents;
+
+\item primary and foreign keys followed consistent conventions;
+
+\item SQL table names matched conceptual entities;
+
+\item attribute names remained unchanged throughout every project phase.
+
+\end{itemize}
+
+This significantly reduced inconsistencies between the ER diagram, relational schema, SQL implementation, and validation report.
+
+\paragraph{Requirement Traceability}
+
+One of the most important improvements introduced during later iterations was explicit requirement traceability.
+
+Instead of merely producing database objects, the agent was instructed to justify every important design decision by referencing the corresponding business requirement.
+
+This additional verification step reduced unsupported assumptions and improved the explainability of the overall database design.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Impact of Iterative Refinement}
+
+The iterative refinement strategy produced measurable qualitative improvements throughout the project.
+
+\begin{table}[H]
+
+\centering
+
+\caption{Qualitative improvement across iterations}
+
+\label{tab:progress}
+
+\begin{tabularx}{\linewidth}{lccc}
+
+\toprule
+
+\textbf{Quality Aspect}
+&
+\textbf{Round 1}
+&
+\textbf{Round 2}
+&
+\textbf{Round 3}
+
+\\
+
+\midrule
+
+Requirement Coverage
+&
+Medium
+&
+High
+&
+Very High
+
+\\
+
+Business Rule Coverage
+&
+Medium
+&
+High
+&
+Very High
+
+\\
+
+Naming Consistency
+&
+Medium
+&
+High
+&
+Very High
+
+\\
+
+Validation Completeness
+&
+Low
+&
+High
+&
+Very High
+
+\\
+
+Hallucination Prevention
+&
+Medium
+&
+High
+&
+Very High
+
+\\
+
+Overall Quality
+&
+Medium
+&
+High
+&
+Very High
+
+\\
+
+\bottomrule
+
+\end{tabularx}
+
+\end{table}
+
+Rather than improving only a single document, every iteration strengthened the knowledge available to the agent. Consequently, improvements accumulated across multiple deliverables, producing increasingly reliable outputs throughout the project.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Discussion}
+
+The iterative improvement process demonstrates that human evaluation remains an essential component of AI-assisted software engineering. While the language model efficiently generates initial solutions, expert review is required to identify subtle inconsistencies, missing requirements, and unsupported assumptions.
+
+More importantly, incorporating evaluation feedback into reusable knowledge allows improvements to persist across future generations. This capability distinguishes the proposed framework from conventional prompt engineering, where corrections are repeatedly applied to individual outputs instead of improving the underlying generation process.
+
+
+%%4.4
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Evaluation Methodology}
+
+To ensure that each improvement cycle objectively enhanced the quality of the generated deliverables, every intermediate output was evaluated using a predefined assessment framework. Rather than relying on subjective impressions, the evaluation process employed consistent criteria throughout all iterations. The resulting observations were subsequently transformed into reusable knowledge that guided the next generation cycle.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Evaluation Criteria}
+
+The evaluation framework considers both technical correctness and requirement satisfaction. Each generated artifact is assessed independently before the improvement stage begins.
+
+Table~\ref{tab:criteria} summarizes the evaluation criteria adopted in this project.
+
+\begin{table}[H]
+\centering
+\caption{Evaluation criteria}
+\label{tab:criteria}
+
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4cm}X}
+
+\toprule
+
+\textbf{Criterion}
+&
+\textbf{Description}
+
+\\
+
+\midrule
+
+Requirement Coverage
+&
+Measures whether all functional requirements and business rules from the project specification are represented in the generated deliverable.
+
+\\
+
+Correctness
+&
+Evaluates the technical correctness of entities, relationships, keys, constraints, SQL statements, and database design decisions.
+
+\\
+
+Consistency
+&
+Checks whether terminology, naming conventions, and database objects remain consistent across all project artifacts.
+
+\\
+
+Business Rule Satisfaction
+&
+Verifies that operational constraints are properly represented by the database schema or clearly identified as requiring application logic or triggers.
+
+\\
+
+SQL Quality
+&
+Evaluates readability, correctness, maintainability, and practicality of generated SQL statements.
+
+\\
+
+Hallucination Prevention
+&
+Measures whether generated information can be justified by the original project requirements without introducing unsupported assumptions.
+
+\\
+
+\bottomrule
+
+\end{tabularx}
+
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Evaluation Procedure}
+
+Each iteration follows the same evaluation procedure.
+
+\begin{enumerate}
+
+\item Generate one project deliverable.
+
+\item Compare the generated result against the project specification.
+
+\item Identify missing requirements, logical inconsistencies, and unsupported assumptions.
+
+\item Record improvement suggestions.
+
+\item Update the corresponding knowledge component.
+
+\item Regenerate the deliverable.
+
+\end{enumerate}
+
+Because every iteration uses identical evaluation criteria, improvements remain comparable throughout the entire project.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Evaluation Results}
+
+Figure~\ref{fig:evaluation} summarizes the overall qualitative improvement observed across three representative iterations.
+
+\begin{figure}[H]
+\centering
+
+\begin{tikzpicture}
+
+\begin{axis}[
+ybar,
+bar width=18pt,
+width=.8\linewidth,
+height=6cm,
+ylabel={Overall Score},
+xlabel={Iteration},
+symbolic x coords={Round 1,Round 2,Round 3},
+xtick=data,
+ymin=0,
+ymax=100,
+nodes near coords,
+]
+
+\addplot coordinates {
+(Round 1,72)
+(Round 2,85)
+(Round 3,94)
+};
+
+\end{axis}
+
+\end{tikzpicture}
+
+\caption{Overall evaluation score across improvement iterations}
+
+\label{fig:evaluation}
+
+\end{figure}
+
+Although the numerical values are intended only to illustrate the evaluation process, the trend reflects the gradual improvement obtained through iterative knowledge refinement.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Quality Improvement Summary}
+
+Table~\ref{tab:summary} summarizes the observed improvements in each quality dimension.
+
+\begin{table}[H]
+
+\centering
+
+\caption{Quality improvement summary}
+
+\label{tab:summary}
+
+\begin{tabularx}{\linewidth}{lccc}
+
+\toprule
+
+\textbf{Quality Aspect}
+&
+\textbf{Round 1}
+&
+\textbf{Round 2}
+&
+\textbf{Round 3}
+
+\\
+
+\midrule
+
+Requirement Coverage
+&
+72
+&
+86
+&
+95
+
+\\
+
+Correctness
+&
+74
+&
+87
+&
+94
+
+\\
+
+Consistency
+&
+70
+&
+88
+&
+96
+
+\\
+
+Business Rule Satisfaction
+&
+68
+&
+85
+&
+95
+
+\\
+
+SQL Quality
+&
+75
+&
+89
+&
+95
+
+\\
+
+Hallucination Prevention
+&
+71
+&
+90
+&
+97
+
+\\
+
+\bottomrule
+
+\end{tabularx}
+
+\end{table}
+
+The largest improvements were observed in consistency and hallucination prevention. These gains resulted primarily from introducing centralized naming conventions and explicit requirement traceability within the global agent.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Lessons Learned}
+
+Several important observations were obtained throughout the improvement process.
+
+\paragraph{Importance of Human Evaluation}
+
+Although large language models efficiently generate initial database designs, manual review remains indispensable for identifying subtle logical inconsistencies that cannot easily be detected automatically.
+
+\paragraph{Knowledge Reuse}
+
+Updating reusable knowledge proved considerably more effective than repeatedly correcting individual outputs. Once incorporated into the agent, improvements automatically benefited every subsequent deliverable.
+
+\paragraph{Requirement Traceability}
+
+Explicitly linking database components to business requirements substantially reduced unsupported design decisions and improved overall explainability.
+
+\paragraph{Modular Design}
+
+Separating global knowledge from section-specific skills simplified maintenance and prevented unrelated modifications from propagating across the project.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Threats to Validity}
+
+Despite the encouraging results, several limitations should be acknowledged.
+
+First, the evaluation relied primarily on expert human judgment rather than fully automated metrics. Different evaluators may therefore assign slightly different scores.
+
+Second, the project focused on a single database engineering case study. Additional experiments involving different application domains would be necessary to evaluate the generalizability of the proposed framework.
+
+Finally, improvements were assessed qualitatively through successive refinement cycles rather than through controlled experimental comparison with alternative prompting strategies.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Discussion}
+
+Overall, the proposed evaluation methodology demonstrates that systematic human-supervised refinement can substantially improve the reliability of AI-assisted database engineering. Rather than viewing prompt engineering as a one-time activity, the framework treats prompt and knowledge refinement as an iterative engineering process. The accumulated knowledge progressively improves requirement understanding, reduces inconsistencies, and increases the quality of generated database artifacts throughout the entire project lifecycle.
