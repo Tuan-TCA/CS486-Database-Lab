@@ -17,6 +17,7 @@
 \usepackage{float}        % gives you the [H] specifier
 \usepackage{placeins}
 \usepackage{caption}
+\usepackage{booktabs}     % required for \toprule, \midrule, \bottomrule
 \captionsetup[table]{labelformat=empty}
 
 % 3. General Utilities
@@ -71,7 +72,14 @@
 }
 \lstset{style=mystyle}
 
-% 5. Variables & Commands
+% 5. Graphics and Charts
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% 6. Variables & Commands
 \newtheorem*{soln1}{Solution}
 
 \newcommand{\coursename}{CS486 - Introduction to Database System}
@@ -82,7 +90,7 @@
 
 \ihead{\textbf{}}
 
-% 6. Hyperref (Load Last)
+% 7. Hyperref (Load Last)
 \usepackage{hyperref}
 
 \begin{document}
