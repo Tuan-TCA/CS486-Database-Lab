@@ -46,7 +46,7 @@ The end-to-end workflow proceeds as follows:
 
 \subsubsection{Architecture Overview}
 
-The agent improvement system employs a multi-component architecture that separates global knowledge from section-specific methodology, fixed evaluation criteria from cumulative learning memory, and workflow orchestration from content generation. Each component has a clearly defined responsibility and interacts with others through explicit file injection controlled by the prompt framework. This design ensures that workers operate in isolation---consuming only the files explicitly provided to them---while the overall system maintains coherence through the shared Agent and structured improvement artifacts.
+The agent improvement system employs a multi-component architecture that separates global knowledge from section-specific methodology, fixed evaluation criteria from cumulative learning memory, and workflow orchestration from content generation. Each component has a clearly defined responsibility and interacts with others through explicit file injection controlled by the experiment subagent framework. This design ensures that workers operate in isolation---consuming only the files explicitly provided to them---while the overall system maintains coherence through the shared Agent and structured improvement artifacts.
 
 \subsubsection{Component Responsibilities}
 
@@ -55,7 +55,7 @@ The agent improvement system employs a multi-component architecture that separat
     \item[Skill (\texttt{skill\_xx.md})] Section-specific methodology: purpose, checklists, verification procedures, common mistakes, anti-hallucination rules, and integrated lessons
     \item[Evaluation (\texttt{evaluation\_xx.md})] Fixed rubrics: scoring criteria, dimension weights, technical checklists, and quality thresholds for each section
     \item[Improvement (\texttt{improveXX.md})] Cumulative learning memory: identified issues, root causes, proposed agent and skill updates, and lessons learned across rounds
-    \item[Prompts] Workflow orchestration: role definitions for each worker, input injection specifications, worker isolation rules, and human approval policies
+    \item[ExperimentAgent] Workflow orchestration: role definitions for each worker, input injection specifications, worker isolation rules, and human approval policies
 \end{description}
 
 \subsubsection{Repository Organization}
@@ -67,11 +67,11 @@ agent/          -> Agent.md (global knowledge)
 skills/         -> skill_xx.md (section skills)
 experiments/    -> section_XX/ (improve, results per round)
 evaluation/     -> evaluation_XX.md (fixed rubrics)
-prompts/        -> workflow prompts
+ExperimentAgent/-> workflow subagents for experiments
 output/         -> final deliverables
 \end{lstlisting}
 
-The \texttt{agent/} directory contains the single global knowledge file. The \texttt{skills/} directory holds one skill file per section. The \texttt{experiments/} directory organizes improvement files and round-by-round results into section-specific subdirectories. The \texttt{evaluation/} directory stores the fixed rubrics that remain unchanged throughout the experiment. The \texttt{prompts/} directory contains the workflow orchestration files, including the experiment policy, skill builder, result generator, evaluate, and improve prompts.
+The \texttt{agent/} directory contains the single global knowledge file. The \texttt{skills/} directory holds one skill file per section. The \texttt{experiments/} directory organizes improvement files and round-by-round results into section-specific subdirectories. The \texttt{evaluation/} directory stores the fixed rubrics that remain unchanged throughout the experiment. The \texttt{ExperimentAgent/} directory contains the workflow subagents for experiments.
 
 % ------------------------------------------------------------------------------
 % 4.3 Iterative Improvement Process

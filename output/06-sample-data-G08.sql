@@ -265,7 +265,7 @@ INSERT INTO BOOKING_APPROVAL VALUES
 
 ('A023','B025','U017','2026-07-02 09:00','equipment_unavailable','equipment_unavailable'),
 
-('A024','B026','U018','2026-08-25 10:00','approved',NULL);
+('A024','B026','U018','2026-08-25 10:00','approved',NULL),
 
 ('A025','B030','U017','2026-11-10 09:00','approved',NULL);
 

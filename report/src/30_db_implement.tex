@@ -133,28 +133,15 @@ The sample dataset populates all seven tables with realistic data covering the f
 
 \subsubsection{Test Coverage}
 
-\begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{|X|X|}
-\hline
-\textbf{Scenario} & \textbf{Covered} \\
-\hline
-7 booking statuses: Pending, Approved, Rejected, Cancelled, Checked In, Completed, No-show & B019/B028 (Pending), B016/B018/B020/B022/B026/B027/B029 (Approved), B024/B025 (Rejected), B023 (Cancelled), B017/B021 (Checked In), B001--B015 (Completed), B012/B030 (No-show) \\
-\hline
-5 space statuses: Available, In Use, Under Maintenance, Temporarily Closed, Retired & SP001--SP004/SP006/SP007/SP009/SP011 (Available), SP005 (Under Maintenance), SP008/SP010 (Temporarily Closed), SP012 (Retired) \\
-\hline
-6 user roles: Student, Lecturer, Teaching Assistant, Facility Staff, Department Administrator, Facility Manager & U001--U008 (Student), U009--U013 (Lecturer), U014--U016 (TA), U017--U018 (Facility Staff), U019 (Dept.\ Admin), U020 (Facility Manager) \\
-\hline
-4 maintenance statuses: Pending, In Progress, Completed, Cancelled & M002 (Pending), M001/M008 (In Progress), M003--M007/M009/M012 (Completed), M010/M011 (Cancelled) \\
-\hline
-3 account statuses: Active, Inactive, Suspended & U007 (Inactive), U008 (Suspended), all others (Active) \\
-\hline
-Optional relationship cases (1:0..1) & Bookings without approval (B019, B028), bookings without usage session (B012, B016, B018--B020, B022--B030) \\
-\hline
-Edge cases & No-show with approval but no session (B012/B030), ongoing sessions with NULL \texttt{actual\_end\_time} (S015/S016), rejected bookings with recorded reasons (B024/B025), maintenance on retired space (M011) \\
-\hline
-\end{tabularx}
-\end{table}
+\begin{itemize}
+    \item \textbf{Booking statuses:} Covered all seven statuses: Pending (B019, B028), Approved (B016, B018, B020, B022, B026, B027, B029), Rejected (B024, B025), Cancelled (B023), Checked In (B017, B021), Completed (B001--B015), and No-show (B012, B030).
+    \item \textbf{Space statuses:} Covered Available (SP001--SP004, SP006, SP007, SP009, SP011), Under Maintenance (SP005), Temporarily Closed (SP008, SP010), Retired (SP012), and In Use scenarios.
+    \item \textbf{User roles:} Covered Student (U001--U008), Lecturer (U009--U013), Teaching Assistant (U014--U016), Facility Staff (U017--U018), Department Administrator (U019), and Facility Manager (U020).
+    \item \textbf{Maintenance statuses:} Covered Pending (M002), In Progress (M001, M008), Completed (M003--M007, M009, M012), and Cancelled (M010, M011).
+    \item \textbf{Account statuses:} Covered Active accounts (all others), Inactive (U007), and Suspended (U008).
+    \item \textbf{Optional relationship cases:} Included bookings without approval (B019, B028) and bookings without usage session (B012, B016, B018--B020, B022--B030).
+    \item \textbf{Edge cases:} Included no-show bookings with approval but no session (B012, B030), ongoing sessions with NULL \texttt{actual\_end\_time} (S015, S016), rejected bookings with recorded reasons (B024, B025), and maintenance on retired space (M011).
+\end{itemize}
 
 % ------------------------------------------------------------------------------
 % 3.3 Query Design
