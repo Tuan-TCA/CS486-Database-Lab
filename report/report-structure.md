@@ -37,14 +37,14 @@
 
 ## 1.3 Project Deliverables
 
-| Deliverable | Description |
-|-------------|-------------|
+| Deliverable                   | Description                         |
+| ----------------------------- | ----------------------------------- |
 | Business Requirement Analysis | Requirement extraction and analysis |
-| ER Diagram | Conceptual database design |
-| Logical Schema | Relational database design |
-| SQL Implementation | Database implementation |
-| Sample Data | Testing dataset |
-| SQL Queries | Business queries |
+| ER Diagram                    | Conceptual database design          |
+| Logical Schema                | Relational database design          |
+| SQL Implementation            | Database implementation             |
+| Sample Data                   | Testing dataset                     |
+| SQL Queries                   | Business queries                    |
 
 ---
 

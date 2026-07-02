@@ -15,26 +15,26 @@ The logical schema was implemented as a SQL Server database using T-SQL DDL stat
 \subsubsection{Table Summary}
 
 \begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{|l|X|}
-\hline
-\textbf{Table} & \textbf{Purpose} \\
-\hline
-USERS & Stores all system users with role-based access (students, lecturers, TAs, staff, administrators, managers) \\
-\hline
-SPACES & Stores shared campus spaces with type, location, capacity, and availability status \\
-\hline
-FACILITY & Stores equipment and facilities installed in each space (projectors, computers, whiteboards, etc.) \\
-\hline
-BOOKING\_REQUEST & Records booking requests with time range, purpose, participant count, and lifecycle status \\
-\hline
-BOOKING\_APPROVAL & Records approval or rejection decisions for booking requests (at most one per request) \\
-\hline
-USAGE\_SESSION & Records actual check-in/check-out data for approved bookings (at most one per request) \\
-\hline
-MAINTENANCE\_RECORD & Tracks maintenance issues from report through assignment to resolution \\
-\hline
-\end{tabularx}
+	\centering
+	\begin{tabularx}{\textwidth}{|l|X|}
+		\hline
+		\textbf{Table}      & \textbf{Purpose}                                                                                           \\
+		\hline
+		USERS               & Stores all system users with role-based access (students, lecturers, TAs, staff, administrators, managers) \\
+		\hline
+		SPACES              & Stores shared campus spaces with type, location, capacity, and availability status                         \\
+		\hline
+		FACILITY            & Stores equipment and facilities installed in each space (projectors, computers, whiteboards, etc.)         \\
+		\hline
+		BOOKING\_REQUEST    & Records booking requests with time range, purpose, participant count, and lifecycle status                 \\
+		\hline
+		BOOKING\_APPROVAL   & Records approval or rejection decisions for booking requests (at most one per request)                     \\
+		\hline
+		USAGE\_SESSION      & Records actual check-in/check-out data for approved bookings (at most one per request)                     \\
+		\hline
+		MAINTENANCE\_RECORD & Tracks maintenance issues from report through assignment to resolution                                     \\
+		\hline
+	\end{tabularx}
 \end{table}
 
 \subsubsection{Constraints}
@@ -46,81 +46,81 @@ All seven tables use single-attribute primary keys (\texttt{user\_id}, \texttt{s
 Eleven foreign keys implement all relationships from the ERD:
 
 \begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{|l|l|X|}
-\hline
-\textbf{Child Table} & \textbf{FK Column} & \textbf{Parent Table} \\
-\hline
-FACILITY & space\_code & SPACES \\
-\hline
-BOOKING\_REQUEST & user\_id & USERS \\
-\hline
-BOOKING\_REQUEST & space\_code & SPACES \\
-\hline
-BOOKING\_APPROVAL & booking\_id & BOOKING\_REQUEST \\
-\hline
-BOOKING\_APPROVAL & decided\_by\_user\_id & USERS \\
-\hline
-USAGE\_SESSION & booking\_id & BOOKING\_REQUEST \\
-\hline
-USAGE\_SESSION & checked\_in\_by\_user\_id & USERS \\
-\hline
-USAGE\_SESSION & completed\_by\_user\_id & USERS \\
-\hline
-MAINTENANCE\_RECORD & space\_code & SPACES \\
-\hline
-MAINTENANCE\_RECORD & reporter\_user\_id & USERS \\
-\hline
-MAINTENANCE\_RECORD & assigned\_staff\_user\_id & USERS \\
-\hline
-\end{tabularx}
+	\centering
+	\begin{tabularx}{\textwidth}{|l|l|X|}
+		\hline
+		\textbf{Child Table} & \textbf{FK Column}        & \textbf{Parent Table} \\
+		\hline
+		FACILITY             & space\_code               & SPACES                \\
+		\hline
+		BOOKING\_REQUEST     & user\_id                  & USERS                 \\
+		\hline
+		BOOKING\_REQUEST     & space\_code               & SPACES                \\
+		\hline
+		BOOKING\_APPROVAL    & booking\_id               & BOOKING\_REQUEST      \\
+		\hline
+		BOOKING\_APPROVAL    & decided\_by\_user\_id     & USERS                 \\
+		\hline
+		USAGE\_SESSION       & booking\_id               & BOOKING\_REQUEST      \\
+		\hline
+		USAGE\_SESSION       & checked\_in\_by\_user\_id & USERS                 \\
+		\hline
+		USAGE\_SESSION       & completed\_by\_user\_id   & USERS                 \\
+		\hline
+		MAINTENANCE\_RECORD  & space\_code               & SPACES                \\
+		\hline
+		MAINTENANCE\_RECORD  & reporter\_user\_id        & USERS                 \\
+		\hline
+		MAINTENANCE\_RECORD  & assigned\_staff\_user\_id & USERS                 \\
+		\hline
+	\end{tabularx}
 \end{table}
 
 \paragraph{CHECK Constraints.}
 The following CHECK constraints enforce domain integrity at the database level:
 
 \begin{itemize}
-    \item \texttt{requested\_end\_time > requested\_start\_time} --- ensures valid booking time ranges
-    \item \texttt{actual\_end\_time >= actual\_start\_time} (or NULL) --- ensures valid session durations
-    \item \texttt{capacity > 0} --- prevents zero or negative space capacity
-    \item \texttt{expected\_participants > 0} --- prevents zero or negative participant counts
-    \item \texttt{floor >= 0} --- implied by INT NOT NULL (no explicit CHECK, enforced by data type)
-    \item \texttt{role} restricted to: \texttt{student}, \texttt{lecturer}, \texttt{teaching\_assistant}, \texttt{facility\_staff}, \texttt{department\_administrator}, \texttt{facility\_manager}
-    \item \texttt{space\_type} restricted to: \texttt{classroom}, \texttt{computer\_laboratory}, \texttt{meeting\_room}, \texttt{project\_laboratory}, \texttt{auditorium}, \texttt{workspace}
-    \item \texttt{booking\_type} restricted to: \texttt{lecture}, \texttt{examination}, \texttt{seminar}, \texttt{workshop}, \texttt{meeting}, \texttt{student\_activity}, \texttt{administrative\_event}
-    \item \texttt{current\_status} (SPACES) restricted to: \texttt{available}, \texttt{in\_use}, \texttt{under\_maintenance}, \texttt{temporarily\_closed}, \texttt{retired}
-    \item \texttt{status} (BOOKING\_REQUEST) restricted to: \texttt{pending}, \texttt{approved}, \texttt{rejected}, \texttt{cancelled}, \texttt{checked\_in}, \texttt{completed}, \texttt{no\_show}
-    \item \texttt{status} (MAINTENANCE\_RECORD) restricted to: \texttt{pending}, \texttt{in\_progress}, \texttt{completed}, \texttt{cancelled}
-    \item \texttt{account\_status} restricted to: \texttt{active}, \texttt{inactive}, \texttt{suspended}
+	\item \texttt{requested\_end\_time > requested\_start\_time}: ensures valid booking time ranges
+	\item \texttt{actual\_end\_time >= actual\_start\_time} (or NULL): ensures valid session durations
+	\item \texttt{capacity > 0}: prevents zero or negative space capacity
+	\item \texttt{expected\_participants > 0}: prevents zero or negative participant counts
+	\item \texttt{floor >= 0}: implied by INT NOT NULL (no explicit CHECK, enforced by data type)
+	\item \texttt{role} restricted to: \texttt{student}, \texttt{lecturer}, \texttt{teaching\_assistant}, \texttt{facility\_staff}, \texttt{department\_administrator}, \texttt{facility\_manager}
+	\item \texttt{space\_type} restricted to: \texttt{classroom}, \texttt{computer\_laboratory}, \texttt{meeting\_room}, \texttt{project\_laboratory}, \texttt{auditorium}, \texttt{workspace}
+	\item \texttt{booking\_type} restricted to: \texttt{lecture}, \texttt{examination}, \texttt{seminar}, \texttt{workshop}, \texttt{meeting}, \texttt{student\_activity}, \texttt{administrative\_event}
+	\item \texttt{current\_status} (SPACES) restricted to: \texttt{available}, \texttt{in\_use}, \texttt{under\_maintenance}, \texttt{temporarily\_closed}, \texttt{retired}
+	\item \texttt{status} (BOOKING\_REQUEST) restricted to: \texttt{pending}, \texttt{approved}, \texttt{rejected}, \texttt{cancelled}, \texttt{checked\_in}, \texttt{completed}, \texttt{no\_show}
+	\item \texttt{status} (MAINTENANCE\_RECORD) restricted to: \texttt{pending}, \texttt{in\_progress}, \texttt{completed}, \texttt{cancelled}
+	\item \texttt{account\_status} restricted to: \texttt{active}, \texttt{inactive}, \texttt{suspended}
 \end{itemize}
 
 \paragraph{UNIQUE Constraints.}
 Four UNIQUE constraints enforce candidate keys and 1:0..1 cardinalities:
 
 \begin{itemize}
-    \item \texttt{USERS.email} --- ensures no duplicate email addresses
-    \item \texttt{SPACES(building, room\_number)} --- ensures no duplicate rooms within a building
-    \item \texttt{BOOKING\_APPROVAL.booking\_id} --- enforces at most one approval per booking request
-    \item \texttt{USAGE\_SESSION.booking\_id} --- enforces at most one usage session per booking request
+	\item \texttt{USERS.email} - ensures no duplicate email addresses
+	\item \texttt{SPACES(building, room\_number)} - ensures no duplicate rooms within a building
+	\item \texttt{BOOKING\_APPROVAL.booking\_id} - enforces at most one approval per booking request
+	\item \texttt{USAGE\_SESSION.booking\_id} - enforces at most one usage session per booking request
 \end{itemize}
 
 \paragraph{DEFAULT Values.}
 Default values provide sensible initial states for status columns:
 
 \begin{itemize}
-    \item \texttt{account\_status} defaults to \texttt{'active'}
-    \item \texttt{current\_status} defaults to \texttt{'available'}
-    \item \texttt{status} (BOOKING\_REQUEST) defaults to \texttt{'pending'}
-    \item \texttt{status} (MAINTENANCE\_RECORD) defaults to \texttt{'pending'}
+	\item \texttt{account\_status} defaults to \texttt{'active'}
+	\item \texttt{current\_status} defaults to \texttt{'available'}
+	\item \texttt{status} (BOOKING\_REQUEST) defaults to \texttt{'pending'}
+	\item \texttt{status} (MAINTENANCE\_RECORD) defaults to \texttt{'pending'}
 \end{itemize}
 
 \paragraph{Triggers.}
 Three business rules require triggers or application logic because they involve cross-row or cross-table validation:
 
 \begin{enumerate}
-    \item \textbf{Overlapping booking prevention:} Before inserting or updating a \texttt{BOOKING\_REQUEST} with status \texttt{'approved'}, the trigger checks for existing approved bookings on the same space with overlapping time ranges and raises an error if a conflict is found.
-    \item \textbf{Space availability check:} Before inserting a \texttt{BOOKING\_REQUEST}, the trigger verifies that the target space's \texttt{current\_status} is not \texttt{'under\_maintenance'}, \texttt{'temporarily\_closed'}, or \texttt{'retired'}, and that no active maintenance records exist for the space.
-    \item \textbf{Rejection reason enforcement:} When a \texttt{BOOKING\_REQUEST} is set to \texttt{'rejected'}, the trigger ensures that the corresponding \texttt{BOOKING\_APPROVAL} record contains a non-NULL \texttt{rejection\_reason}.
+	\item \textbf{Overlapping booking prevention:} Before inserting or updating a \texttt{BOOKING\_REQUEST} with status \texttt{'approved'}, the trigger checks for existing approved bookings on the same space with overlapping time ranges and raises an error if a conflict is found.
+	\item \textbf{Space availability check:} Before inserting a \texttt{BOOKING\_REQUEST}, the trigger verifies that the target space's \texttt{current\_status} is not \texttt{'under\_maintenance'}, \texttt{'temporarily\_closed'}, or \texttt{'retired'}, and that no active maintenance records exist for the space.
+	\item \textbf{Rejection reason enforcement:} When a \texttt{BOOKING\_REQUEST} is set to \texttt{'rejected'}, the trigger ensures that the corresponding \texttt{BOOKING\_APPROVAL} record contains a non-NULL \texttt{rejection\_reason}.
 \end{enumerate}
 
 % ------------------------------------------------------------------------------
@@ -134,13 +134,13 @@ The sample dataset populates all seven tables with realistic data covering the f
 \subsubsection{Test Coverage}
 
 \begin{itemize}
-    \item \textbf{Booking statuses:} Covered all seven statuses: Pending (B019, B028), Approved (B016, B018, B020, B022, B026, B027, B029), Rejected (B024, B025), Cancelled (B023), Checked In (B017, B021), Completed (B001--B015), and No-show (B012, B030).
-    \item \textbf{Space statuses:} Covered Available (SP001--SP004, SP006, SP007, SP009, SP011), Under Maintenance (SP005), Temporarily Closed (SP008, SP010), Retired (SP012), and In Use scenarios.
-    \item \textbf{User roles:} Covered Student (U001--U008), Lecturer (U009--U013), Teaching Assistant (U014--U016), Facility Staff (U017--U018), Department Administrator (U019), and Facility Manager (U020).
-    \item \textbf{Maintenance statuses:} Covered Pending (M002), In Progress (M001, M008), Completed (M003--M007, M009, M012), and Cancelled (M010, M011).
-    \item \textbf{Account statuses:} Covered Active accounts (all others), Inactive (U007), and Suspended (U008).
-    \item \textbf{Optional relationship cases:} Included bookings without approval (B019, B028) and bookings without usage session (B012, B016, B018--B020, B022--B030).
-    \item \textbf{Edge cases:} Included no-show bookings with approval but no session (B012, B030), ongoing sessions with NULL \texttt{actual\_end\_time} (S015, S016), rejected bookings with recorded reasons (B024, B025), and maintenance on retired space (M011).
+	\item \textbf{Booking statuses:} Covered all seven statuses: Pending (B019, B028), Approved (B016, B018, B020, B022, B026, B027, B029), Rejected (B024, B025), Cancelled (B023), Checked In (B017, B021), Completed (B001-B015), and No-show (B012, B030).
+	\item \textbf{Space statuses:} Covered Available (SP001-SP004, SP006, SP007, SP009, SP011), Under Maintenance (SP005), Temporarily Closed (SP008, SP010), Retired (SP012), and In Use scenarios.
+	\item \textbf{User roles:} Covered Student (U001-U008), Lecturer (U009-U013), Teaching Assistant (U014-U016), Facility Staff (U017-U018), Department Administrator (U019), and Facility Manager (U020).
+	\item \textbf{Maintenance statuses:} Covered Pending (M002), In Progress (M001, M008), Completed (M003-M007, M009, M012), and Cancelled (M010, M011).
+	\item \textbf{Account statuses:} Covered Active accounts (all others), Inactive (U007), and Suspended (U008).
+	\item \textbf{Optional relationship cases:} Included bookings without approval (B019, B028) and bookings without usage session (B012, B016, B018-B020, B022-B030).
+	\item \textbf{Edge cases:} Included no-show bookings with approval but no session (B012, B030), ongoing sessions with NULL \texttt{actual\_end\_time} (S015, S016), rejected bookings with recorded reasons (B024, B025), and maintenance on retired space (M011).
 \end{itemize}
 
 % ------------------------------------------------------------------------------
@@ -153,35 +153,35 @@ Twenty-four queries were designed to address operational, analytical, and report
 
 \subsubsection{Query Summary}
 
-The following table lists a representative subset of the 24 queries:
+The table below shows a selection of queries that illustrate how different user roles interact with the system:
 
 \begin{table}[H]
-\centering
-\begin{tabularx}{\textwidth}{|l|X|X|}
-\hline
-\textbf{Query \#} & \textbf{Business Question} & \textbf{Target User} \\
-\hline
-Q01 & Which spaces are scheduled to be used in the future? & Facility Staff/Manager \\
-\hline
-Q05 & Which spaces are used most frequently? & Facility Manager \\
-\hline
-Q06 & How many maintenance tasks is each staff member responsible for? & Facility Manager \\
-\hline
-Q13 & Which pending requests have events starting soonest? & Facility Staff \\
-\hline
-Q14 & What is the average actual session duration for each space type? & Facility Manager \\
-\hline
-Q16 & What is the no-show rate for each user? & Facility Manager/Dept.\ Admin \\
-\hline
-Q17 & Which departments submit the most requests, and what is their approval rate? & Facility Manager/Dept.\ Admin \\
-\hline
-Q20 & Which maintenance issues have been open for more than 7 days? & Facility Manager \\
-\hline
-Q22 & Which spaces have both high bookings and frequent maintenance? & Facility Manager \\
-\hline
-Q24 & What is the expected occupancy rate for upcoming approved bookings? & Facility Staff/Manager \\
-\hline
-\end{tabularx}
+	\centering
+	\begin{tabularx}{\textwidth}{|l|X|X|}
+		\hline
+		\textbf{Query \#} & \textbf{Business Question}                                                        & \textbf{Target User}          \\
+		\hline
+		Q12               & Which available spaces contain specific facilities (projectors, computers, etc.)? & Student/Lecturer/TA           \\
+		\hline
+		Q18               & Which spaces are available to book right now?                                     & Student/Lecturer/TA/Staff     \\
+		\hline
+		Q04               & Which booking requests were rejected and why?                                     & Facility Manager/Dept.\ Admin \\
+		\hline
+		Q09               & Have any bookings been approved by users without the required authorization?      & System Admin/Dept.\ Admin     \\
+		\hline
+		Q05               & Which spaces are used most frequently?                                            & Facility Manager              \\
+		\hline
+		Q13               & Which pending requests have events starting soonest?                              & Facility Staff                \\
+		\hline
+		Q17               & Which departments submit the most requests, and what is their approval rate?      & Facility Manager/Dept.\ Admin \\
+		\hline
+		Q16               & What is the no-show rate for each user?                                           & Facility Manager/Dept.\ Admin \\
+		\hline
+		Q20               & Which maintenance issues have been open for more than 7 days?                     & Facility Manager              \\
+		\hline
+		Q21               & Which users have a history of overstaying beyond their approved end time?         & Facility Manager              \\
+		\hline
+	\end{tabularx}
 \end{table}
 
 \subsubsection{Representative Query Results}

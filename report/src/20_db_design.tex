@@ -83,10 +83,10 @@ The system manages the booking and usage of shared campus spaces for the School 
 The Entity Relationship Diagram (ERD) models the conceptual structure of the Campus Space Management System. It consists of seven entities, together with their attributes, relationships, cardinalities, and participation constraints. The complete Mermaid source is provided in the project deliverables (\texttt{output/02-erd-design-G08.md}), while Figure~\ref{fig:erd} presents the rendered ERD.
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=\textwidth]{src/diagram.png}
-    \caption{Entity Relationship Diagram of the Campus Space Management System}
-    \label{fig:erd}
+	\centering
+	\includegraphics[width=\textwidth]{img/diagram.png}
+	\caption{Entity Relationship Diagram of the Campus Space Management System}
+	\label{fig:erd}
 \end{figure}
 
 \subsubsection{Design Decisions}
@@ -186,31 +186,61 @@ and maintenance management to \texttt{MAINTENANCE\-\_RECORD}.
 
 \begin{table}[H]
 	\centering
-	\small
 	\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
 		\hline
 		\textbf{Business Rule}            & \textbf{Schema Constraint}        & \textbf{Additional Enforcement} \\
 		\hline
-		No overlapping bookings           & ---                               & Trigger / application logic     \\
+		No overlapping bookings           & -                                 & Trigger / application logic     \\
 		\hline
 		Unavailable spaces not bookable   & CHECK on \texttt{current\_status} & Application status check        \\
 		\hline
-		Active maintenance blocks booking & ---                               & Application logic               \\
+		Active maintenance blocks booking & -                                 & Application logic               \\
 		\hline
-		End time > start time             & CHECK constraint                  & ---                             \\
+		End time $>$ start time           & CHECK constraint                  & -                               \\
 		\hline
-		At most one approval per booking  & UNIQUE on \texttt{booking\_id}    & ---                             \\
+		At most one approval per booking  & UNIQUE on \texttt{booking\_id}    & -                               \\
 		\hline
-		At most one session per booking   & UNIQUE on \texttt{booking\_id}    & ---                             \\
+		At most one session per booking   & UNIQUE on \texttt{booking\_id}    & -                               \\
 		\hline
-		Rejection reason preserved        & ---                               & Application logic               \\
+		Rejection reason preserved        & -                                 & Application logic               \\
 		\hline
-		Valid user roles                  & CHECK on \texttt{role}            & ---                             \\
+		Valid user roles                  & CHECK on \texttt{role}            & -                               \\
 		\hline
-		No hard deletes                   & ---                               & Application policy              \\
+		No hard deletes                   & -                                 & Application policy              \\
 		\hline
 	\end{tabularx}
+	\caption{Blank entries (-) in the Schema Constraint indicate rules that exceed the capabilities of standard DDL, requiring inter-row or cross-table evaluation. Blank entries in Additional Enforcement means that the database schema constraint is sufficient to enforce the business rule.}
 \end{table}
+
+Standard DDL constraints (\texttt{CHECK}, \texttt{UNIQUE}, \texttt{PRIMARY KEY}, \texttt{FOREIGN KEY}) are strictly \textbf{intra-row} or \textbf{intra-table static}. They evaluate data based \textit{only} on the specific row being inserted or updated, or against a static index structure. When a business rule requires the database to ``look around'' at other rows or entirely different tables, standard DDL is no longer sufficient, and the responsibility shifts to active mechanisms or Application Logic.
+
+\subsubsection{The Boundaries of DDL: What It Can and Cannot Do}
+
+To build a robust system, it is critical to understand where the database schema should enforce the rules, and where the application code must take over.
+
+DDL is incredibly fast and foolproof, but it is effectively ``blind'' to context. It excels at enforcing absolute, mathematical, or structural truths about a single row of data:
+\begin{itemize}
+	\item \textbf{Intra-row Logic:} It can compare two columns within the \textit{same} row (e.g., ensuring End time $>$ start time via a \texttt{CHECK} constraint).
+	\item \textbf{Domain Restriction:} It can force a column to only accept specific values or formats (e.g., a \texttt{CHECK} or \texttt{ENUM} on \texttt{role} to ensure it is only `Admin' or `User').
+	\item \textbf{Absolute Uniqueness:} It can guarantee that a value or combination of values never repeats in a table (e.g., \texttt{UNIQUE} on \texttt{booking\_id} preventing duplicate approvals).
+	\item \textbf{Referential Integrity:} It guarantees relationships exist (e.g., a \texttt{FOREIGN KEY} ensuring a booking references a valid user).
+\end{itemize}
+
+DDL fails when a rule is dynamic, contextual, or crosses structural boundaries:
+\begin{itemize}
+	\item \textbf{Inter-row Comparisons:} Standard DDL cannot evaluate a new row against other existing rows.
+	      \begin{itemize}
+		      \item \textit{Example:} \textbf{``No overlapping bookings.''} A simple \texttt{CHECK} constraint cannot say, ``Check all other bookings for this room to ensure the time ranges do not collide.'' (Note: Advanced RDBMS like PostgreSQL offer \texttt{EXCLUDE} constraints for this, but this falls outside standard DDL).
+	      \end{itemize}
+	\item \textbf{Cross-table State Checks:} DDL cannot query another table to validate an insertion.
+	      \begin{itemize}
+		      \item \textit{Example:} \textbf{``Active maintenance blocks booking.''} A \texttt{CHECK} constraint on the \texttt{Bookings} table cannot run a query against the \texttt{Maintenance} table to see if the room is currently out of order.
+	      \end{itemize}
+	\item \textbf{Enforcing Workflow or History:} DDL defines the structure of data, not the lifecycle of data.
+	      \begin{itemize}
+		      \item \textit{Example:} \textbf{``Rejection reason preserved''} or \textbf{``No hard deletes.''} A schema cannot natively intercept a \texttt{DELETE} command and transform it into an \texttt{UPDATE status = 'deleted'} command. That requires a database Trigger (procedural logic) or application-level policies enforcing soft deletes.
+	      \end{itemize}
+\end{itemize}
 
 \subsubsection{Design Limitations}
 
