@@ -10,7 +10,7 @@
 
 \subsection{Database Implementation}
 
-The logical schema was implemented as a SQL Server database using T-SQL DDL statements. The complete implementation is provided in the project deliverables (\texttt{output/05-db-definition-G08.sql}).
+The logical schema was implemented as a SQL Server database using T-SQL DDL statements. The complete implementation is provided in \texttt{output/05-db-definition-G08.sql}.
 
 \subsubsection{Table Summary}
 
@@ -85,13 +85,13 @@ The following CHECK constraints enforce domain integrity at the database level:
 	\item \texttt{capacity > 0}: prevents zero or negative space capacity
 	\item \texttt{expected\_participants > 0}: prevents zero or negative participant counts
 	\item \texttt{floor >= 0}: implied by INT NOT NULL (no explicit CHECK, enforced by data type)
-	\item \texttt{role} restricted to: \texttt{student}, \texttt{lecturer}, \texttt{teaching\_assistant}, \texttt{facility\_staff}, \texttt{department\_administrator}, \texttt{facility\_manager}
-	\item \texttt{space\_type} restricted to: \texttt{classroom}, \texttt{computer\_laboratory}, \texttt{meeting\_room}, \texttt{project\_laboratory}, \texttt{auditorium}, \texttt{workspace}
-	\item \texttt{booking\_type} restricted to: \texttt{lecture}, \texttt{examination}, \texttt{seminar}, \texttt{workshop}, \texttt{meeting}, \texttt{student\_activity}, \texttt{administrative\_event}
-	\item \texttt{current\_status} (SPACES) restricted to: \texttt{available}, \texttt{in\_use}, \texttt{under\_maintenance}, \texttt{temporarily\_closed}, \texttt{retired}
-	\item \texttt{status} (BOOKING\_REQUEST) restricted to: \texttt{pending}, \texttt{approved}, \texttt{rejected}, \texttt{cancelled}, \texttt{checked\_in}, \texttt{completed}, \texttt{no\_show}
-	\item \texttt{status} (MAINTENANCE\_RECORD) restricted to: \texttt{pending}, \texttt{in\_progress}, \texttt{completed}, \texttt{cancelled}
-	\item \texttt{account\_status} restricted to: \texttt{active}, \texttt{inactive}, \texttt{suspended}
+	\item \texttt{role}: \texttt{student}, \texttt{lecturer}, \texttt{teaching\_assistant}, \texttt{facility\_staff}, \\ \texttt{department\_administrator}, \texttt{facility\_manager}
+	\item \texttt{space\_type}: \texttt{classroom}, \texttt{computer\_laboratory}, \texttt{meeting\_room}, \texttt{project\_laboratory}, \texttt{auditorium}, \texttt{workspace}
+	\item \texttt{booking\_type}: \texttt{lecture}, \texttt{examination}, \texttt{seminar}, \texttt{workshop}, \texttt{meeting}, \texttt{student\_activity}, \texttt{administrative\_event}
+	\item \texttt{current\_status} (SPACES): \texttt{available}, \texttt{in\_use}, \texttt{under\_maintenance}, \\ \texttt{temporarily\_closed}, \texttt{retired}
+	\item \texttt{status} (BOOKING\_REQUEST): \texttt{pending}, \texttt{approved}, \texttt{rejected}, \texttt{cancelled}, \texttt{checked\_in}, \texttt{completed}, \texttt{no\_show}
+	\item \texttt{status} (MAINTENANCE\_RECORD): \texttt{pending}, \texttt{in\_progress}, \texttt{completed}, \texttt{cancelled}
+	\item \texttt{account\_status}: \texttt{active}, \texttt{inactive}, \texttt{suspended}
 \end{itemize}
 
 \paragraph{UNIQUE Constraints.}
@@ -119,7 +119,7 @@ Three business rules require triggers or application logic because they involve 
 
 \begin{enumerate}
 	\item \textbf{Overlapping booking prevention:} Before inserting or updating a \texttt{BOOKING\_REQUEST} with status \texttt{'approved'}, the trigger checks for existing approved bookings on the same space with overlapping time ranges and raises an error if a conflict is found.
-	\item \textbf{Space availability check:} Before inserting a \texttt{BOOKING\_REQUEST}, the trigger verifies that the target space's \texttt{current\_status} is not \texttt{'under\_maintenance'}, \texttt{'temporarily\_closed'}, or \texttt{'retired'}, and that no active maintenance records exist for the space.
+	\item \textbf{Space availability check:} Before inserting a \texttt{BOOKING\_REQUEST}, the trigger verifies that the target space's \texttt{current\_status} is not \texttt{'under\_maintenance'}, \\ \texttt{'temporarily\_closed'}, or \texttt{'retired'}, and that no active maintenance records exist for the space.
 	\item \textbf{Rejection reason enforcement:} When a \texttt{BOOKING\_REQUEST} is set to \texttt{'rejected'}, the trigger ensures that the corresponding \texttt{BOOKING\_APPROVAL} record contains a non-NULL \texttt{rejection\_reason}.
 \end{enumerate}
 
@@ -129,7 +129,7 @@ Three business rules require triggers or application logic because they involve 
 
 \subsection{Sample Data}
 
-The sample dataset populates all seven tables with realistic data covering the full range of business scenarios. The complete dataset is provided in the project deliverables (\texttt{output/06-sample-data-G08.sql}).
+The sample dataset populates all seven tables with realistic data covering the full range of business scenarios. The complete dataset is provided in \texttt{output/06-sample-data-G08.sql}.
 
 \subsubsection{Test Coverage}
 
@@ -149,7 +149,7 @@ The sample dataset populates all seven tables with realistic data covering the f
 
 \subsection{Query Design}
 
-Twenty-four queries were designed to address operational, analytical, and reporting needs across all user roles. The complete set is provided in the project deliverables (\texttt{output/07-query-design-G08.sql}).
+Twenty-four queries were designed to address operational, analytical, and reporting needs across all user roles. The complete set is provided in \texttt{output/07-query-design-G08.sql}.
 
 \subsubsection{Query Summary}
 
