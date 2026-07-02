@@ -248,6 +248,6 @@ The following constraints cannot be expressed as single-table CHECK constraints 
 
 \begin{itemize}
 	\item \textbf{Overlapping booking prevention:} Requires querying existing approved bookings for time-range overlap detection.
-	\item \textbf{Maintenance-based booking blocks:} Requires cross-table join between \texttt{BOOKING\_REQUEST} and \texttt{MAINTENANCE\_RECORD}.
+	\item \textbf{Maintenance-based booking blocks:} Requires cross join \texttt{BOOKING\_REQUEST} and \texttt{MAINTENANCE\_RECORD}.
 	\item \textbf{Conditional NOT NULL:} Fields like \texttt{rejection\_reason} and completion fields are conditionally required based on booking status.
 \end{itemize}

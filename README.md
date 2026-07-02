@@ -1,436 +1,190 @@
-# CS486 Database Project - Human-Supervised Experiment Framework - Group08
+# CS486 Database Project – Group 08
 
-## Purpose
+This repository contains the complete development process for the CS486 Database System project.
 
-This repository contains two independent components:
+Besides the final project deliverables, it also includes a human-supervised framework for improving an AI database-design agent through iterative experiments.
 
-1. Final human-made deliverables submitted for the project.
-2. A human-supervised experiment framework used to improve Agent and Skills.
-
-The final deliverables and the experiment framework are intentionally separated.
-
-The experiment does NOT attempt to generate the final submission directly.
-
-Its purpose is to progressively build reusable knowledge.
+The goal is not to automatically generate the final submission, but to continuously improve reusable knowledge, methodologies, and evaluation procedures.
 
 ---
 
-# Project Structure
+# Repository Structure
 
 ```text
-project/
-
-├── doc/
-|   ├── project_description.md
-│   └── report.md
-|
-│
-├── output/
-│   ├── 01-business-req-analysis-G08.md
-│   ├── 02-erd-design-G08.md
-│   ├── 03-logical-design-G08.md
-│   ├── 04-design-validation-G08.md
-│   ├── 05-db-definition-G08.sql
-│   ├── 06-sample-data-G08.sql
-│   └── 07-query-design-G08.sql
-│
-├── evaluation/
-│   ├── evaluation_01.md
-│   ├── evaluation_02.md
-│   ├── ...
-│   └── evaluation_07.md
-│
+.
 ├── agent/
-│   └── AGENT.md
-│
-├── skills/
-│   ├── skill_01_BR.md
-│   ├── skill_02_ERD.md
-│   ├── skill_03_LogicalSchema.md
-│   ├── skill_04_Validation.md
-│   ├── skill_05_SQL.md
-│   ├── skill_06_SampleData.md
-│   └── skill_07_QueryDesign.md
-│
+├── doc/
+├── evaluation/
+├── ExperimentAgent/
 ├── experiments/
-│   ├── section_01/
-│   │   ├── result_round1.md
-│   │   ├── result_round2.md
-│   │   ├── result_round3.md
-│   │   └── improve01.md
-│   │
-│   ├── section_02/
-│   │   └── ...
-│   │
-│   └── ...
-│
-└── prompts/
-    ├── 00-experiment-policy.md
-    ├── 01-workflow-prompt.md
-    ├── 02-skill-builder-prompt.md
-    ├── 03-result-generator-prompt.md
-    ├── 04-evaluate-prompt.md
-    └── 05-improve-prompt.md
+├── output/
+├── report/
+├── skills/
+└── temp/
 ```
 
 ---
 
-# Folder Description
+# Directory Overview
 
-## doc/
+## `doc/`
 
-Contains documents of the project.
+Project documentation.
 
----
-
-## output/
-
-Contains the final deliverables manually created and approved by the group.
-
-These files are the final submission artifacts.
-
-These files are OUTSIDE the experiment universe.
-
-During experiments:
-
-* Do NOT read output
-* Do NOT compare output
-* Do NOT copy output
-* Do NOT use output as references
+- Project description
+- Supporting documents
 
 ---
 
-## evaluation/
+## `output/`
 
-Contains fixed evaluation rubrics.
+Final deliverables submitted for the project.
 
-Each file defines the scoring criteria for one section.
+```
+01-business-req-analysis
+02-erd-design
+03-logical-design
+04-design-validation
+05-db-definition
+06-sample-data
+07-query-design
+```
 
-Rules:
-
-* Each section is evaluated out of 10 points
-* The same evaluation file is reused across all rounds
-* Evaluation files never change between rounds
-
-evaluation may ONLY be used during the Evaluate phase.
-
-Outside the Evaluate phase:
-
-* Do NOT read evaluation
-* Do NOT search for evaluation
-* Do NOT use evaluation indirectly
+These files represent the final approved solution.
 
 ---
 
-## agent/
+## `skills/`
 
-Contains AGENT.md.
+Reusable methodologies for each project section.
 
-AGENT stores global reusable knowledge shared across all sections.
+Each skill focuses on **how to solve** a class of problems rather than storing project-specific outputs.
 
-Examples:
+Typical contents include:
 
-* anti-hallucination
-* requirement traceability
-* naming consistency
-* verification behavior
-
-Rules:
-
-* Do NOT rewrite
-* Do NOT replace
-* Do NOT clear
-
-Only append.
-
-Update AGENT only when the lesson is globally reusable.
+- methodology
+- workflow
+- verification checklist
+- common mistakes
+- best practices
 
 ---
 
-## skills/
+## `agent/`
 
-Contains section-specific reusable knowledge.
+Stores global knowledge shared by all skills.
 
-Each skill file stores methodologies rather than outputs.
+Examples include:
 
-Examples:
+- requirement traceability
+- consistency checking
+- anti-hallucination
+- verification strategy
+- reusable design principles
 
-skill_03_LogicalSchema.md
-
-* convert entities into relations
-* identify candidate keys
-* verify foreign keys
-* preserve constraints
-
-Each skill should contain:
-
-* methodology
-* checklists
-* verification procedures
-* common mistakes
-* consistency rules
+Unlike Skills, Agent knowledge is independent of any single project section.
 
 ---
 
-## experiments/
+## `ExperimentAgent/`
 
-Contains experiment artifacts.
+Contains the implementation of the experimental AI agent used during iterative improvement.
 
-Each section contains:
-
-### result_round1.md
-
-Benchmark generated using the current Agent and skill_xx.
-
-### result_round2.md
-
-Benchmark generated after learning from Round1.
-
-### result_round3.md
-
-Benchmark generated after learning from previous rounds.
-
-Results are benchmarks only.
-
-Results are NOT the experiment objective.
+The agent consumes the Skills, follows the experiment prompts, generates benchmark results, and assists the human throughout the improvement process.
 
 ---
 
-### improveXX.md
+## `evaluation/`
 
-Learning memory for a section.
+Evaluation rubrics for every project section.
 
-Stores:
-
-* issues
-* root causes
-* proposed skill updates
-* proposed agent updates
-* lessons learned
-
-improveXX is cumulative.
-
-It acts as the bridge between iterations.
+Each rubric is reused across all experiment rounds to ensure consistent assessment.
 
 ---
 
-## prompts/
+## `experiments/`
 
-Contains the experiment framework.
+Stores artifacts produced during iterative experiments.
 
-### 00-experiment-policy.md
+Each section contains multiple benchmark generations together with the accumulated improvement history.
 
-Global immutable rules.
+Typical structure:
 
-### 01-workflow-prompt.md
+```text
+section_xx/
 
-Workflow orchestrator.
+result_round1.md
+result_round2.md
+result_round3.md
 
-### 02-skill-builder-prompt.md
+improveXX.md
+```
 
-Convert lessons into reusable skills.
+Benchmark results are snapshots of the agent's capability at different stages.
 
-### 03-result-generator-prompt.md
+Improvement files record lessons learned between iterations.
 
-Generate benchmark results.
+---
 
-### 04-evaluate-prompt.md
 
-Evaluate benchmark quality.
+## `report/`
 
-### 05-improve-prompt.md
+Source files for the final report.
 
-Convert findings into reusable knowledge.
+Includes:
+
+- LaTeX sources
+- figures
+- generated assets
+
+---
+
+## `temp/`
+
+Temporary workspace.
+
+Contains experimental files, prototypes, and intermediate resources that are not part of the final repository.
 
 ---
 
 # Experiment Workflow
 
-Phase0
+The improvement process follows an iterative cycle.
 
-Create skill_xx
+```text
+Create Skill
+      │
+      ▼
+Generate Benchmark
+      │
+      ▼
+Evaluate Benchmark
+      │
+      ▼
+Identify Weaknesses
+      │
+      ▼
+Update Skill
+      │
+      ▼
+(Optional) Update Agent
+      │
+      ▼
+Generate Next Benchmark
+```
 
-↓
-
-Round1
-
-Generate benchmark
-
-↓
-
-Evaluate benchmark
-
-↓
-
-Create improveXX
-
-↓
-
-STOP
-
-↓
-
-Wait Human
-
----
-
-Round2
-
-Read improveXX
-
-↓
-
-Update skill_xx
-
-↓
-
-Optionally update Agent
-
-↓
-
-Generate benchmark
-
-↓
-
-Evaluate benchmark
-
-↓
-
-Update improveXX
-
-↓
-
-STOP
-
-↓
-
-Wait Human
+The human remains responsible for reviewing results and approving all modifications.
 
 ---
 
-Round3
+# Project Philosophy
 
-Read improveXX
+The repository separates **project deliverables** from **knowledge generation**.
 
-↓
+- **Outputs** represent the final submission.
+- **Skills** capture reusable methodologies.
+- **Agent** stores reusable global knowledge.
+- **Experiments** document the evolution of the agent.
+- **Evaluations** provide objective assessment.
 
-Update skill_xx
-
-↓
-
-Optionally update Agent
-
-↓
-
-Generate benchmark
-
-↓
-
-Evaluate benchmark
-
-↓
-
-Update improveXX
-
-↓
-
-STOP
-
----
-
-Finalization
-
-Review Agent
-
-↓
-
-Review skill_xx
-
-↓
-
-Review improveXX
-
-↓
-
-STOP
-
----
-
-# Human Approval Protocol
-
-OpenCode is a research assistant.
-
-It may:
-
-* Analyze
-* Generate drafts
-* Evaluate
-* Propose improvements
-
-It may NOT:
-
-* Apply changes
-* Modify files
-* Make decisions
-
-Always follow:
-
-Propose
-
-↓
-
-STOP
-
-↓
-
-Wait Human
-
-↓
-
-AC
-
-↓
-
-Apply
-
-Only these commands are approvals:
-
-* AC
-* AC Result
-* AC Improve
-* AC Skill
-* AC Agent
-
-Everything else is NOT approval.
-
----
-
-# Overall Principles
-
-output/
-
-= Final deliverables
-
-evaluation/
-
-= Fixed scoring rubrics
-
-result_roundX
-
-= Benchmark results
-
-improveXX
-
-= Learning memory
-
-Agent
-
-= Global reusable knowledge
-
-skill_xx
-
-= Section-specific reusable knowledge
-
-The objective of the experiment is NOT to maximize a single result.
-
-The objective is to progressively build more robust, consistent, and reusable knowledge over multiple iterations.
+The objective is to build an increasingly reliable database-design assistant through repeated human-supervised refinement rather than optimizing a single generated result.
