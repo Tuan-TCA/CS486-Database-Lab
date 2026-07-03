@@ -1,14 +1,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{AI Agent Improvement}
 
-This project adopted a human-supervised framework to iteratively improve an AI-assisted database engineering agent. Rather than repeatedly modifying generated outputs, the framework continuously refines the reusable knowledge used by the agent through iterative benchmark generation, evaluation, and knowledge refinement.
+This project adopted a human-supervised framework to iteratively improve an AI-assisted database engineering agent. Rather than repeatedly modifying generated experiment results, the framework continuously refines the reusable knowledge used by the agent through iterative experiment result generation, evaluation, and knowledge refinement.
 
-The framework separates project deliverables from experiment artifacts. Benchmark results are generated only for evaluating and improving the Agent, while the final project deliverables are manually reviewed and prepared by the project team.
+The framework clearly separates experiment artifacts from the final project deliverables. During each experiment round, an experiment result is generated solely for evaluation and knowledge refinement. These experiment results are not submitted as project deliverables. Instead, the accumulated knowledge extracted from multiple experiment rounds is incorporated into the Global Agent and section-specific Skills. Based on this refined knowledge, the project team manually prepares, reviews, and finalizes the deliverables stored in the \texttt{output/} directory.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Experiment Framework}
 
-The experiment framework follows an iterative workflow that continuously improves reusable knowledge throughout the project. Each experiment round generates a benchmark using the current Agent and Skill, evaluates the result, identifies reusable improvements, and incorporates these improvements into the knowledge base before the next benchmark is generated.
+The experiment framework follows an iterative workflow that continuously improves reusable knowledge throughout the project. Each experiment round generates an experiment result using the current Global Agent together with the corresponding section-specific Skill. The generated experiment result is then evaluated, reusable improvements are identified, and the accumulated knowledge is refined before the next experiment round begins.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Repository Organization}
@@ -36,15 +36,16 @@ The repository is organized into four major categories.
 
     \item \textbf{Experiment Artifacts} (\texttt{ExperimentAgent/}, \texttt{evaluation/}, \texttt{experiments/})
 
-    Contains the experiment workflow, evaluation rubrics, benchmark results, and improvement records produced during iterative refinement.
+    Contains the experiment workflow, evaluation rubrics, experiment results, and improvement records produced during iterative refinement.
 
     \item \textbf{Final Deliverables} (\texttt{output/})
 
-    Stores the final human-approved project deliverables submitted for the course.
+    Stores the final human-produced project deliverables submitted for the course.
 
 \end{itemize}
 
-This organization clearly separates reusable knowledge, experiment artifacts, and final deliverables, allowing the experiment to evolve independently without affecting the submitted project outputs.
+This organization clearly separates reusable knowledge, experiment artifacts, and final deliverables, allowing the experiment framework to evolve independently without affecting the submitted project outputs.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Experiment Workflow}
@@ -57,11 +58,11 @@ For each project section, the experiment proceeds as follows.
 
     \item Generate or update the section-specific Skill.
 
-    \item Generate a benchmark using the current Agent and Skill.
+    \item Generate an experiment result using the current Global Agent and the corresponding Skill.
 
-    \item Evaluate the benchmark using predefined evaluation criteria.
+    \item Evaluate the experiment result using predefined evaluation criteria.
 
-    \item Record weaknesses and improvement suggestions.
+    \item Record identified weaknesses together with reusable improvement suggestions.
 
     \item Update the corresponding Skill and, when appropriate, the Global Agent.
 
@@ -69,74 +70,76 @@ For each project section, the experiment proceeds as follows.
 
 \end{enumerate}
 
-Rather than directly editing benchmark outputs, the framework continuously improves the reusable knowledge used by subsequent generations.
+Rather than directly revising experiment results, the framework continuously improves the reusable knowledge used to generate subsequent experiment results.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Experiment Agents}
 
-The experiment workflow is implemented using six specialized agents located in the \texttt{ExperimentAgent/} directory. Each agent performs a dedicated responsibility within the iterative improvement process.
+The experiment workflow is implemented by six specialized agents located in the \texttt{ExperimentAgent/} directory. Each agent performs a dedicated responsibility within the iterative improvement process, allowing knowledge generation, evaluation, and refinement to remain modular and reusable across different project sections.
 
 \begin{table}[H]
 \centering
 \caption{Responsibilities of experiment agents}
 \label{tab:experiment-agents}
 
-\begin{tabularx}{\linewidth}{>{\ttfamily}p{3.2cm}X}
+\renewcommand{\arraystretch}{1.25}
 
-\toprule
+\begin{tabularx}{\linewidth}{|>{\ttfamily\raggedright\arraybackslash}p{4.4cm}|X|}
+\hline
 
 \textbf{Agent}
 &
 \textbf{Responsibility}
-
 \\
-
-\midrule
+\hline
 
 00-experiment-policy
 &
 Defines the experiment rules, repository constraints, and human-supervised operating principles.
 \\
+\hline
 
 01-workflow
 &
-Determines the current experiment phase and coordinates the overall workflow.
+Determines the current experiment phase and coordinates the overall experiment workflow.
 \\
+\hline
 
 02-skill-builder
 &
-Creates or updates section-specific Skills using accumulated improvement knowledge.
+Creates or updates section-specific Skills using accumulated improvement knowledge from previous experiment rounds.
 \\
+\hline
 
 03-result-generator
 &
-Generates benchmark outputs using the current Agent and corresponding Skill.
+Generates an experiment result using the current Global Agent together with the corresponding Skill.
 \\
+\hline
 
 04-evaluate
 &
-Evaluates benchmark quality according to predefined evaluation criteria.
+Evaluates the experiment result according to predefined evaluation criteria and identifies deficiencies.
 \\
+\hline
 
 05-improve
 &
-Summarizes evaluation findings, identifies root causes, and proposes reusable updates for the Agent or Skill.
+Summarizes evaluation findings, identifies root causes, and proposes reusable updates for the Global Agent or the corresponding Skill.
 \\
-
-\bottomrule
+\hline
 
 \end{tabularx}
 
 \end{table}
 
-The modular design enables each agent to evolve independently while maintaining a consistent experiment workflow. Throughout the project, benchmark outputs serve only as intermediate artifacts for evaluation, whereas the accumulated knowledge stored in the Agent and Skills forms the basis for producing the final project deliverables.
+The modular design enables each agent to evolve independently while maintaining a consistent experiment workflow. Throughout the project, experiment results serve only as intermediate artifacts for evaluation and knowledge refinement, whereas the accumulated knowledge stored in the Global Agent and Skills forms the foundation for producing the final human-reviewed project deliverables.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Agent Architecture}
 
-The proposed framework adopts a modular architecture that separates reusable knowledge from generated artifacts. Instead of embedding all project knowledge within a single prompt, the framework organizes reusable knowledge into independent components with clearly defined responsibilities. This separation improves maintainability, enables localized refinement, and preserves the evolution history of the Agent throughout the experiment.
+The proposed framework adopts a modular architecture that separates reusable knowledge from experiment artifacts. Instead of embedding all project knowledge within a single prompt, the framework organizes reusable knowledge into independent components with clearly defined responsibilities. This separation improves maintainability, enables localized refinement, and preserves the evolution history of the Agent throughout the experiment.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Architecture Overview}
 
@@ -149,61 +152,63 @@ Figure~\ref{fig:architecture} illustrates the architecture of the proposed agent
     \label{fig:architecture}
 \end{figure}
 
-The proposed framework adopts a modular architecture that separates reusable knowledge, experiment artifacts, and knowledge refinement. The \textit{Global Agent} stores reusable project-wide knowledge shared across all project sections, while each \textit{Section-specific Skill} contains methodologies and verification procedures for a specific project section.
+The proposed framework separates reusable knowledge, experiment results, and knowledge refinement into independent components. The \textit{Global Agent} stores reusable project-wide knowledge shared across all project sections, while each \textit{Section-specific Skill} contains methodologies and verification procedures for a specific project section.
 
-For each experiment, the project specification, the Global Agent, and the corresponding Skill are used to generate an experiment result. The generated result is first evaluated by an AI-assisted evaluator using predefined evaluation criteria and is subsequently reviewed by a human evaluator to verify correctness, consistency, and requirement coverage.
+During each experiment round, the project specification, the Global Agent, and the corresponding Skill are combined to generate an experiment result. The generated experiment result is first evaluated according to predefined evaluation criteria and is subsequently reviewed by human evaluators to verify correctness, consistency, and requirement coverage.
 
-The evaluation findings are summarized in an \texttt{ImproveXX} document, which records identified weaknesses, root causes, and improvement proposals. Section-specific improvements are incorporated into the corresponding Skill, whereas project-wide improvements are incorporated into the Global Agent before the next experiment iteration.
+The evaluation findings are summarized in an \texttt{ImproveXX} document, which records identified weaknesses, root causes, and reusable improvement proposals. Section-specific improvements are incorporated into the corresponding Skill, whereas project-wide improvements are incorporated into the Global Agent before the next experiment round begins.
 
-This architecture enables reusable knowledge to evolve continuously while preserving generated results as immutable experiment artifacts. Consequently, improvements accumulated throughout the experiment are inherited by subsequent generations without modifying previously generated results.
+This architecture enables reusable knowledge to evolve continuously while preserving experiment results as immutable experiment artifacts. Consequently, improvements accumulated throughout the experiment are inherited by subsequent experiment rounds without modifying previously generated experiment results.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Component Responsibilities}
 
 Table~\ref{tab:components} summarizes the responsibilities of each component.
 
 \begin{table}[H]
 \centering
+\renewcommand{\arraystretch}{1.35}
 \caption{Responsibilities of framework components}
 \label{tab:components}
 
-\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{3.5cm}X}
-
-\toprule
+\begin{tabularx}{\linewidth}{|>{\raggedright\arraybackslash}p{3.5cm}|X|}
+\hline
 
 \textbf{Component}
 &
 \textbf{Responsibility}
-
 \\
-
-\midrule
+\hline
 
 Global Agent
 &
 Stores reusable project-wide knowledge shared across all project sections, including requirement traceability, naming conventions, verification strategies, and anti-hallucination rules.
 \\
+\hline
 
 Section Skills
 &
 Store reusable methodologies, workflows, verification checklists, and common mistakes specific to individual project sections.
 \\
+\hline
 
-Benchmark Generator
+Result Generator
 &
-Produces benchmark deliverables using the current version of the Global Agent together with the corresponding Skill.
+Produces experiment results using the current version of the Global Agent together with the corresponding Skill.
 \\
+\hline
 
 Human Evaluation
 &
-Evaluates benchmark outputs using predefined rubrics, identifies deficiencies, and determines appropriate improvements.
+Evaluates experiment results using predefined evaluation rubrics, identifies deficiencies, and determines appropriate improvements.
 \\
+\hline
 
 Improvement Knowledge
 &
 Captures reusable lessons learned from evaluation and updates either the Global Agent or the corresponding Skill before the next experiment round.
 \\
-
-\bottomrule
+\hline
 
 \end{tabularx}
 
@@ -216,23 +221,23 @@ The framework distinguishes between project-wide knowledge and section-specific 
 
 Project-wide improvements, such as naming conventions, requirement traceability, or verification strategies, are incorporated into the Global Agent because they benefit every project section. In contrast, improvements related to a specific task, such as ERD construction or SQL implementation, are incorporated only into the corresponding Skill.
 
-This separation minimizes unnecessary coupling between project sections and allows each Skill to evolve independently while maintaining consistency through the shared Global Agent.
+This separation minimizes unnecessary coupling between project sections and allows each Skill to evolve independently while maintaining overall consistency through the shared Global Agent.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Knowledge Flow}
 
 Figure~\ref{fig:architecture} also illustrates how knowledge flows through the framework.
 
-At the beginning of each experiment round, the Global Agent and the corresponding Skill are combined to generate a benchmark. The benchmark is then evaluated by human reviewers, who identify weaknesses and summarize reusable improvements. These improvements are incorporated into the knowledge base before the following experiment round begins.
+At the beginning of each experiment round, the Global Agent and the corresponding Skill are combined to generate an experiment result. The experiment result is then evaluated by human reviewers, who identify weaknesses and summarize reusable improvements. These improvements are incorporated into the knowledge base before the following experiment round begins.
 
-Consequently, benchmark outputs remain immutable experiment artifacts, while the Agent and Skills continuously evolve throughout the project. This design allows improvements to accumulate across multiple iterations without modifying previously generated benchmarks.
+Consequently, experiment results remain immutable experiment artifacts, while the Global Agent and Skills continuously evolve throughout the project. This design allows improvements to accumulate across multiple experiment rounds without modifying previously generated experiment results.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Iterative Improvement}
 
-The objective of the experiment is to continuously improve the reusable knowledge of the AI agent rather than directly modifying generated benchmark outputs. Each experiment cycle evaluates the current capability of the Agent and Skills, identifies reusable improvements, and incorporates these improvements into the knowledge base before the next benchmark is generated.
+The objective of the experiment is to continuously improve the reusable knowledge of the AI agent rather than directly modifying generated experiment results. Each experiment cycle evaluates the current capability of the Global Agent and section-specific Skills, identifies reusable improvements, and incorporates these improvements into the knowledge base before the next experiment result is generated.
 
-Throughout the project, benchmark outputs serve only as intermediate artifacts for evaluation, while the accumulated knowledge stored in the Agent and Skills is progressively refined across multiple iterations.
+Throughout the project, experiment results serve only as intermediate artifacts for evaluation and knowledge refinement, while the accumulated knowledge stored in the Global Agent and Skills is progressively refined across multiple experiment rounds.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Improvement Cycle}
@@ -252,32 +257,32 @@ Each improvement cycle consists of the following activities.
 
     \item Read the project requirements together with the current version of the Global Agent and the corresponding Skill.
 
-    \item Generate a benchmark deliverable for the target project section.
+    \item Generate an experiment result for the target project section.
 
-    \item Evaluate the benchmark using the predefined evaluation criteria.
+    \item Evaluate the experiment result using the predefined evaluation criteria.
 
-    \item Summarize the evaluation findings in an \texttt{ImproveXX} document, including identified weaknesses, root causes, and improvement proposals.
+    \item Summarize the evaluation findings in an \texttt{ImproveXX} document, including identified weaknesses, root causes, and reusable improvement proposals.
 
     \item Update the corresponding Skill using the recorded improvements.
 
-    \item Update the Global Agent only when an improvement is reusable across multiple project sections.
+    \item Update the Global Agent only when an improvement is applicable across multiple project sections.
 
-    \item Generate the next benchmark using the updated knowledge.
+    \item Generate the next experiment result using the updated knowledge.
 
 \end{enumerate}
 
-Unlike conventional document revision, benchmark outputs are not manually rewritten. Instead, evaluation feedback is transformed into reusable knowledge that improves future generations.
+Unlike conventional document revision, experiment results are not manually rewritten. Instead, evaluation feedback is transformed into reusable knowledge that improves subsequent experiment rounds.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Knowledge Evolution}
 
-The experiment distinguishes between two types of improvements.
+The experiment distinguishes between two categories of reusable improvements.
 
 \begin{itemize}
 
 \item \textbf{Section-specific improvements}
 
-These improvements are incorporated into the corresponding Skill. Examples include methodologies for requirement analysis, ERD construction, logical schema mapping, SQL implementation, and query design.
+These improvements are incorporated into the corresponding Skill. Examples include methodologies for business requirement analysis, ERD construction, logical schema mapping, SQL implementation, and query design.
 
 \item \textbf{Project-wide improvements}
 
@@ -294,6 +299,8 @@ Table~\ref{tab:history} summarizes representative improvements identified during
 
 \begin{table}[H]
 \centering
+
+\renewcommand{\arraystretch}{1.35}
 \caption{Representative improvement history}
 \label{tab:history}
 
@@ -335,7 +342,7 @@ Strengthened validation procedures to verify consistency between the ERD, relati
 
 Verification
 &
-Expanded section-specific checklists to reduce omissions and unsupported assumptions during benchmark generation.
+Expanded section-specific verification checklists to reduce omissions and unsupported assumptions during experiment result generation.
 \\
 
 \bottomrule
@@ -347,13 +354,13 @@ Expanded section-specific checklists to reduce omissions and unsupported assumpt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Experiment Results}
 
-Table~\ref{tab:progress} summarizes the benchmark evaluation scores obtained during the three experiment rounds.
+Table~\ref{tab:progress} summarizes the evaluation scores of experiment results obtained during the three experiment rounds.
 
 \begin{table}[H]
 
 \centering
 
-\caption{Benchmark evaluation results}
+\caption{Evaluation scores of experiment results}
 
 \label{tab:progress}
 
@@ -442,12 +449,12 @@ Table~\ref{tab:progress} summarizes the benchmark evaluation scores obtained dur
 
 \end{table}
 
-The evaluation results demonstrate a consistent improvement across all project sections. As reusable knowledge accumulated through successive experiment cycles, later benchmark generations became more complete, consistent, and required fewer corrections during evaluation. The experiment therefore improved the capability of the Agent rather than optimizing individual benchmark outputs.
+The evaluation results demonstrate consistent improvement across all project sections. As reusable knowledge accumulated through successive experiment rounds, experiment results became progressively more complete, consistent, and required fewer revisions during evaluation. These improvements indicate that the experiment successfully enhanced the reusable knowledge stored in the Global Agent and section-specific Skills rather than optimizing individual experiment results.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Evaluation}
 
-Each benchmark generated during the experiment was evaluated before the next iteration began. A fixed evaluation methodology was adopted to ensure that benchmark quality could be assessed consistently across different project sections and experiment rounds. Rather than directly correcting benchmark outputs, the evaluation process focused on identifying reusable improvements that could be incorporated into the Global Agent or the corresponding Skill.
+Each experiment result generated during the experiment was evaluated before the next iteration began. A fixed evaluation methodology was adopted to ensure that experiment results could be assessed consistently across different project sections and experiment rounds. Rather than directly correcting experiment results, the evaluation process focused on identifying reusable improvements that could be incorporated into the Global Agent or the corresponding Skill.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Evaluation Criteria}
@@ -456,6 +463,7 @@ Table~\ref{tab:criteria} summarizes the evaluation criteria adopted throughout t
 
 \begin{table}[H]
 \centering
+\renewcommand{\arraystretch}{1.35}
 \caption{Evaluation criteria}
 \label{tab:criteria}
 
@@ -473,7 +481,7 @@ Table~\ref{tab:criteria} summarizes the evaluation criteria adopted throughout t
 
 Requirement Coverage
 &
-Evaluates whether functional requirements and business rules from the project specification are correctly represented in the generated artifact.
+Evaluates whether functional requirements and business rules from the project specification are correctly represented in the generated experiment result.
 \\
 
 Correctness
@@ -493,7 +501,7 @@ Checks whether major design decisions can be traced back to explicit project req
 
 Completeness
 &
-Evaluates whether the generated artifact contains all expected components for the corresponding project section.
+Evaluates whether the generated experiment result contains all expected components for the corresponding project section.
 \\
 
 Hallucination Prevention
@@ -507,18 +515,18 @@ Ensures that generated information is supported by the project specification rat
 
 \end{table}
 
-The same evaluation criteria were applied throughout the entire experiment, ensuring that benchmark quality could be compared consistently across successive iterations.
+The same evaluation criteria were applied throughout the entire experiment, ensuring that experiment results could be evaluated consistently across successive experiment rounds.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Evaluation Procedure}
 
-Each benchmark was evaluated using the following procedure.
+Each experiment result was evaluated using the following procedure.
 
 \begin{enumerate}
 
-\item Compare the generated benchmark against the project specification.
+\item Compare the generated experiment result against the project specification.
 
-\item Evaluate the benchmark using the predefined evaluation criteria.
+\item Evaluate the experiment result using the predefined evaluation criteria.
 
 \item Identify missing requirements, inconsistencies, unsupported assumptions, and implementation errors.
 
@@ -526,18 +534,18 @@ Each benchmark was evaluated using the following procedure.
 
 \item Summarize reusable improvements in the associated \texttt{ImproveXX} document.
 
-\item Update the corresponding Skill and, when applicable, the Global Agent before the next benchmark is generated.
+\item Update the corresponding Skill and, when applicable, the Global Agent before the next experiment round.
 
 \end{enumerate}
 
-By keeping the evaluation procedure unchanged throughout the experiment, improvements observed between benchmark generations primarily reflect refinements to reusable knowledge rather than changes in the evaluation methodology.
+By keeping the evaluation procedure unchanged throughout the experiment, improvements observed across successive experiment rounds primarily reflect refinements to reusable knowledge rather than changes in the evaluation methodology.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Evaluation Results}
 
-The evaluation results presented in Table~\ref{tab:progress} demonstrate that benchmark quality improved consistently across successive experiment rounds. The largest improvements were observed in project sections that required extensive requirement analysis and verification, including Business Requirement Analysis, Database Implementation, and Query Design.
+The evaluation results presented in Table~\ref{tab:progress} demonstrate that the quality of experiment results improved consistently across successive experiment rounds. The largest improvements were observed in project sections requiring extensive requirement analysis and verification, including Business Requirement Analysis, Database Implementation, and Query Design.
 
-The progressive increase in benchmark quality indicates that the accumulated knowledge stored in the Global Agent and Skills effectively reduced omissions, inconsistencies, and unsupported assumptions during subsequent generations. Rather than repeatedly correcting benchmark outputs, the framework continuously improved the underlying knowledge used to generate them.
+The progressive improvement in experiment result quality indicates that the accumulated knowledge stored in the Global Agent and section-specific Skills effectively reduced omissions, inconsistencies, and unsupported assumptions during subsequent experiment rounds. Rather than repeatedly correcting experiment results, the framework continuously improved the reusable knowledge used to generate them.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsubsection{Threats to Validity}
@@ -548,12 +556,12 @@ Several limitations should be considered when interpreting the experimental resu
 
 \item The experiment was conducted using a single database engineering case study. Additional case studies would be required to evaluate the generalizability of the proposed framework.
 
-\item Benchmark evaluation relied on human reviewers. Although predefined rubrics were used consistently, some assessment decisions inevitably involved subjective judgment.
+\item Evaluation of experiment results relied on human reviewers. Although predefined rubrics were applied consistently, some assessment decisions inevitably involved subjective judgment.
 
 \item The experiment focused on iterative knowledge refinement and did not compare different prompting strategies, language models, or autonomous agent architectures under identical experimental conditions.
 
-\item The reported benchmark scores provide relative evidence of improvement within this project rather than absolute measures of AI capability.
+\item The reported evaluation scores provide relative evidence of improvement within this project rather than absolute measures of AI capability.
 
 \end{itemize}
 
-Despite these limitations, the experiment demonstrates that systematic human-supervised refinement can effectively improve the reusable knowledge of an AI-assisted database engineering agent. By incorporating evaluation feedback into the Global Agent and section-specific Skills, the framework progressively improved benchmark quality throughout the project while preserving reproducible experiment artifacts.
+Despite these limitations, the experiment demonstrates that systematic human-supervised refinement can effectively improve the reusable knowledge of an AI-assisted database engineering agent. By incorporating evaluation feedback into the Global Agent and section-specific Skills, the framework progressively improved the quality of experiment results while preserving reproducible experiment artifacts. The final deliverables submitted for the course were manually reviewed and prepared by the project team based on the accumulated knowledge obtained throughout the experiment.

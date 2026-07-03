@@ -2,37 +2,44 @@
 
 \subsection{Background}
 
-The School of Computer Science manages shared physical spaces (classrooms, laboratories, meeting rooms, auditoriums) for teaching, seminars, examinations, workshops, and student activities. Space requests are currently handled manually via email, phone, and spreadsheets, leading to booking conflicts, use of spaces under maintenance, and loss of usage history. This project develops a relational database system to replace the manual process.
+The School of Computer Science manages shared physical spaces (classrooms, laboratories, meeting rooms, and auditoriums) for teaching, seminars, examinations, workshops, and student activities. Space requests are currently handled manually through email, phone calls, and spreadsheets, making it difficult to prevent booking conflicts, manage maintenance, and preserve historical records. This project develops a relational database system that digitalizes the booking and maintenance process while supporting efficient space management.
 
 \subsection{Objectives}
 
+The project aims to:
+
 \begin{itemize}
-	\item Centralize the management of all bookable campus spaces and their facilities.
+	\item Centralize the management of bookable campus spaces and their facilities.
 	\item Prevent conflicting bookings and block reservations for unavailable spaces.
-	\item Track maintenance issues from report through resolution.
+	\item Track maintenance activities from issue reporting through resolution.
 	\item Preserve complete historical records of bookings and maintenance.
-	\item Support operational decision-making with booking and usage data.
+	\item Support operational decision-making using booking and utilization data.
 \end{itemize}
 
 \subsection{Deliverables}
+
+The repository contains both the final project deliverables and a human-supervised experiment framework used to iteratively improve the prompting knowledge for each project section. The final deliverables include the business requirement analysis, ER diagram, logical schema, database implementation, sample data, and SQL query design.
 
 \begin{table}[H]
 	\centering
 	\begin{tabularx}{\textwidth}{|l|X|}
 		\hline
-		\textbf{Deliverable}          & \textbf{Description}                \\
+		\textbf{Deliverable} & \textbf{Description} \\
 		\hline
-		Business Requirement Analysis & requirement extraction and analysis \\
+		Business Requirement Analysis & Requirement extraction and analysis \\
 		\hline
-		ER Diagram                    & conceptual database design          \\
+		ER Diagram & Conceptual database design \\
 		\hline
-		Logical Schema                & relational database design          \\
+		Logical Schema & Relational database design \\
 		\hline
-		SQL Implementation            & database implementation             \\
+		SQL Implementation & Database implementation \\
 		\hline
-		Sample Data                   & testing dataset                     \\
+		Sample Data & Testing dataset \\
 		\hline
-		SQL Queries                   & business queries                    \\
+		SQL Queries & Business queries \\
 		\hline
 	\end{tabularx}
 \end{table}
+
+\subsection{LLM and Agent Improvement Process}
+All experiment agents were executed using \textbf{\textcolor{Maroon}{DeepSeek V4 Flash}} through the \textbf{OpenCode} framework. Rather than directly generating the final submission, the framework was used to iteratively evaluate benchmark outputs, extract reusable improvement knowledge, and refine the Agent and section-specific Skills over multiple experiment rounds. The final deliverables in the \texttt{output/} directory were created and reviewed by the project members based on the accumulated knowledge obtained from these experiments. This human-supervised process improved requirement coverage, consistency, and overall quality while ensuring that the submitted results remained human-produced.
