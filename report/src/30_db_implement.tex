@@ -212,7 +212,29 @@ GROUP BY u.user_id, u.full_name
 HAVING COUNT(br.booking_id) > 0
 ORDER BY no_show_rate_pct DESC;
 \end{lstlisting}
-
+\textbf{Output}:
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|l|l|c|c|c|}
+\hline
+\textbf{user\_id} & \textbf{full\_name} & \textbf{total\_bookings} & \textbf{no\_show\_count} & \textbf{no\_show\_rate\_pct} \\ \hline
+U004 & Pham Gia Huy & 2 & 2 & 100.00 \\ \hline
+U005 & Vo Thanh Dat & 1 & 0 & 0.00 \\ \hline
+U009 & Nguyen Thi Thu Ha & 5 & 0 & 0.00 \\ \hline
+U010 & Tran Thi My Linh & 4 & 0 & 0.00 \\ \hline
+U011 & Le Thanh Tung & 5 & 0 & 0.00 \\ \hline
+U012 & Pham Ngoc Anh & 1 & 0 & 0.00 \\ \hline
+U013 & Vo Minh Chau & 1 & 0 & 0.00 \\ \hline
+U014 & Nguyen Quang Hieu & 3 & 0 & 0.00 \\ \hline
+U015 & Tran Gia Bao & 1 & 0 & 0.00 \\ \hline
+U019 & Nguyen Thi Kim Ngan & 4 & 0 & 0.00 \\ \hline
+U001 & Nguyen Van An & 1 & 0 & 0.00 \\ \hline
+U002 & Tran Minh Khoa & 1 & 0 & 0.00 \\ \hline
+U003 & Le Quoc Bao & 1 & 0 & 0.00 \\ \hline
+\end{tabular}
+}
+\end{table}
 \paragraph{T-SQL features: GETDATE, DATEDIFF, and TOP WITH TIES.}
 Query~05 uses \texttt{TOP 1 WITH TIES} to return all spaces that share the highest usage frequency, rather than arbitrarily picking one. The \texttt{COUNT} aggregation with \texttt{GROUP BY} computes usage frequency, and the \texttt{IN} predicate filters to bookings that were actually used (approved, checked in, or completed).
 
@@ -231,7 +253,17 @@ WHERE br.status IN (
 GROUP BY s.space_code, s.space_name
 ORDER BY usage_frequency DESC;
 \end{lstlisting}
-
+\pagebreak
+\textbf{Output}:
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|l|l|c|}
+\hline
+\textbf{space\_code} & \textbf{space\_name} & \textbf{usage\_frequency} \\ \hline
+SP007 & meeting\_room\_d101 & 5 \\ \hline
+SP011 & auditorium\_g301 & 5 \\ \hline
+\end{tabular}
+\end{table}
 \paragraph{Cross-table business logic with DATEDIFF and GETDATE.}
 Query~20 identifies overdue maintenance tasks by joining \texttt{MAINTENANCE\_RECORD} with \texttt{SPACES} and \texttt{USERS} (for both the reporter and assigned staff), then using \texttt{DATEDIFF(DAY, ...)} with \texttt{GETDATE()} to compute how long each issue has been open. Only tasks with status \texttt{'open'} or \texttt{'in\_progress'} that exceed 7 days are returned.
 
@@ -255,3 +287,15 @@ LEFT JOIN USERS u_asgn
 WHERE m.status IN ('open', 'in_progress')
   AND DATEDIFF(DAY, m.start_time, GETDATE()) > 7;
 \end{lstlisting}
+\textbf{Output}:
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|l|l|l|l|l|c|}
+\hline
+\textbf{maintenance\_id} & \textbf{space\_name} & \textbf{problem\_description} & \textbf{reporter\_name} & \textbf{assigned\_staff\_name} & \textbf{days\_open} \\ \hline
+M001 & computer\_lab\_b202 & broken\_projector & Pham Tuan Anh & Dang Thanh Son & 18 \\ \hline
+M002 & computer\_lab\_b202 & network\_issue & Dang Thanh Son & Pham Tuan Anh & 17 \\ \hline
+\end{tabular}
+}
+\end{table}
