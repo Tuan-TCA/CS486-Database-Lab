@@ -266,13 +266,12 @@ Ensures operational strictness. Identifies instances where users or staff bypass
 SELECT 
     us.session_id,
     br.booking_id,
-    s.space_code,
+    br.space_code,
     br.status AS invalid_booking_status,
     us.actual_start_time,
     us.checked_in_by_user_id
 FROM USAGE_SESSION us
 JOIN BOOKING_REQUEST br ON us.booking_id = br.booking_id
-JOIN SPACES s ON br.space_code = s.space_code
 WHERE br.status NOT IN ('approved', 'checked_in', 'completed', 'no_show');
 -- =====================================================
 -- QUERY 11
@@ -339,12 +338,10 @@ Helps staff prioritize pending requests that are dangerously close to their requ
 */
 SELECT 
     br.booking_id, 
-    u.full_name, 
-    s.space_name, 
+    br.user_id, 
+    br.space_code, 
     DATEDIFF(HOUR, GETDATE(), br.requested_start_time) AS hours_until_event
 FROM BOOKING_REQUEST br
-JOIN USERS u ON br.user_id = u.user_id
-JOIN SPACES s ON br.space_code = s.space_code
 WHERE br.status = 'pending'
   AND br.requested_start_time > GETDATE()
 ORDER BY hours_until_event ASC;
