@@ -17,7 +17,7 @@ The goal is not to automatically generate the final submission, but to continuou
 ├── evaluation/
 ├── ExperimentAgent/
 ├── experiments/
-├── output/
+├── outputs/
 ├── report/
 ├── skills/
 └── temp/
@@ -36,7 +36,7 @@ Project documentation.
 
 ---
 
-## `output/`
+## `outputs/`
 
 Final deliverables submitted for the project.
 
