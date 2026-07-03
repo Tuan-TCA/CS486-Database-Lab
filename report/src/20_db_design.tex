@@ -25,7 +25,7 @@ The system manages the booking and usage of shared campus spaces for the School 
 \begin{description}[style=nextline]
 	\begingroup\raggedright
 	\item[\texttt{USER}]
-	      \col{user\_id} (PK), \col{full\_name}, \col{email}, \col{phone}, \col{role}, \col{department}, \col{account\_status}.
+	      \col{user\_id} (PK), \col{full\_name}, \col{email}, \col{phone\_number}, \col{role}, \col{department}, \col{account\_status}.
 
 	\item[\texttt{SPACE}]
 	      \col{space\_code} (PK), \col{space\_name}, \col{space\_type}, \col{building}, \col{floor}, \col{room\_number}, \col{capacity}, \col{current\_status}, \col{usage\_policy}.
@@ -40,7 +40,7 @@ The system manages the booking and usage of shared campus spaces for the School 
 	      \col{approval\_id} (PK), \col{booking\_id} (FK, UNIQUE), \col{decided\_by\_user\_id} (FK), \col{decision\_time}, \col{decision\_note}, \col{rejection\_reason}.
 
 	\item[\texttt{USAGE\_SESSION}]
-	      \col{session\_id} (PK), \col{booking\_id} (FK, UNIQUE), \col{actual\_start\_time}, \col{actual\_end\_time}, \col{checked\_in\_by\_user\_id} (FK), \col{completed\_by\_user\_id} (FK), \col{initial\_condition}, \\ \col{final\_condition}, \col{usage\_notes}.
+	      \col{session\_id} (PK), \col{booking\_id} (FK, UNIQUE), \col{actual\_start\_time}, \col{actual\_end\_time}, \col{checked\_in\_by\_user\_id} (FK), \col{completed\_by\_user\_id} (FK), \col{initial\_condition}, \col{final\_condition}, \col{usage\_notes}.
 
 	\item[\texttt{MAINTENANCE\_RECORD}]
 	      \col{maintenance\_id} (PK), \col{space\_code} (FK), \col{reporter\_user\_id} (FK), \\ \col{assigned\_staff\_user\_id} (FK), \col{problem\_description}, \col{start\_time}, \\ \col{completion\_time}, \col{status}, \col{result\_note}.
