@@ -6,3 +6,5 @@
 *.synctex.gz
 *.synctex.gz.sum.synctex
 *.toc
+*.nav
+*.out

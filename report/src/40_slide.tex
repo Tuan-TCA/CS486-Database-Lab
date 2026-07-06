@@ -1,0 +1,111 @@
+% ====================================================================
+% Section: AI Agent Improvement Process
+% ====================================================================
+\section{AI Agent Improvement Process}
+
+% --- Slide: Architecture Overview ---
+\begin{frame}{Agent Architecture}
+    \textbf{A two-layer knowledge system guides the LLM throughout the project.}
+    \vspace{0.3cm}
+
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Agent (Global Knowledge)}
+        \begin{itemize}
+            \item Source-of-truth schema
+            \item Non-negotiable business rules
+            \item Global consistency rules
+            \item Verification behavior
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \textbf{Skills (Section-Specific)}
+        \begin{itemize}
+            \item Methodology \& checklists
+            \item Verification procedures
+            \item Common mistakes
+            \item Anti-hallucination rules
+        \end{itemize}
+    \end{columns}
+
+    \vspace{0.4cm}
+    \centering
+    \small\textit{7 sections $\times$ 3 rounds each = 21 experiment iterations}
+\end{frame}
+
+% --- Slide: Iterative Workflow ---
+\begin{frame}{Iterative Improvement Workflow}
+    \textbf{Each section undergoes a 3-round experiment cycle:}
+    \vspace{0.3cm}
+
+    \begin{center}
+        \begin{tikzpicture}[
+            node distance=0.6cm and 1.2cm,
+            box/.style={draw, rounded corners, minimum width=2.2cm, minimum height=0.7cm, align=center, font=\small},
+            arr/.style={-{Stealth[length=2mm]}, thick}
+        ]
+            % Row 1: Main flow
+            \node[box] (skill) {Build\\Skill};
+            \node[box, right=of skill] (gen) {Generate\\Result};
+            \node[box, right=of gen] (eval) {Evaluate\\Result};
+            \node[box, right=of eval] (improve) {Propose\\Improvements};
+
+            \draw[arr] (skill) -- (gen);
+            \draw[arr] (gen) -- (eval);
+            \draw[arr] (eval) -- (improve);
+
+            % Feedback loop
+            \draw[arr] (improve.south) -- ++(0,-0.6) -| (skill.south)
+                node[pos=0.25, below, font=\scriptsize] {Update Skill \& Agent};
+        \end{tikzpicture}
+    \end{center}
+
+    \vspace{0.2cm}
+    \begin{itemize}
+        \item \textbf{Round 1:} Baseline --- initial skill generates the first benchmark.
+        \item \textbf{Round 2:} Lessons from Round 1 refine the skill before regenerating.
+        \item \textbf{Round 3:} Accumulated lessons produce the final benchmark.
+    \end{itemize}
+\end{frame}
+
+% --- Slide: Evaluation & Learning ---
+\begin{frame}{Evaluation \& Learning}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Evaluation Dimensions}
+        \begin{itemize}
+            \item Requirement coverage
+            \item Correctness
+            \item Naming consistency
+            \item Hallucination risk
+            \item Documentation quality
+            \item Maintainability
+        \end{itemize}
+
+        \column{0.48\textwidth}
+        \textbf{Learning Mechanism}
+        \begin{itemize}
+            \item Each round produces an \texttt{ImproveXX} document
+            \item Records issues, root causes, and proposed fixes
+            \item Knowledge is \textbf{cumulative} --- never discarded
+            \item Lessons are classified: Agent-level vs.\ Skill-level
+        \end{itemize}
+    \end{columns}
+
+    \vspace{0.3cm}
+    \centering
+    \small\textit{Human approval is required at every step --- the agent proposes, never applies.}
+\end{frame}
+
+% --- Slide: Key Design Principles ---
+\begin{frame}{Key Design Principles}
+    \begin{enumerate}
+        \item \textbf{Human-in-the-Loop:} The agent proposes changes; humans approve before any modification is applied.
+        \vspace{0.2cm}
+        \item \textbf{Separation of Concerns:} Dedicated workers for skill building, result generation, evaluation, and improvement --- no worker exceeds its role.
+        \vspace{0.2cm}
+        \item \textbf{Cumulative Knowledge:} Skills and improvement documents grow over rounds; previous lessons are preserved and refined.
+        \vspace{0.2cm}
+        \item \textbf{Anti-Hallucination:} Workers operate only on explicitly injected files; no repository exploration or hidden context is allowed.
+    \end{enumerate}
+\end{frame}
