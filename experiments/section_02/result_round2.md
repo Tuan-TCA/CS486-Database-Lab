@@ -5,78 +5,78 @@
 ```mermaid
 erDiagram
     %% Entities and Attributes
-    USER {
-        user_id PK
-        full_name
-        email
-        phone
-        role
-        department
-        account_status
+USER {
+        string user_id PK
+        string full_name
+        string email
+        string phone
+        string role
+        string department
+        string account_status
     }
 
     SPACE {
-        space_code PK
-        space_name
-        space_type
-        building
-        floor
-        room_number
-        capacity
-        current_status
-        usage_policy
+        string space_code PK
+        string space_name
+        string space_type
+        string building
+        string floor
+        string room_number
+        int capacity
+        string current_status
+        string usage_policy
     }
 
     FACILITY {
-        facility_id PK
-        space_code FK
-        facility_name
-        description
+        string facility_id PK
+        string space_code FK
+        string facility_name
+        string description
     }
 
     BOOKING_REQUEST {
-        booking_id PK
-        user_id FK
-        space_code FK
-        requested_start_time
-        requested_end_time
-        purpose
-        expected_participants
-        booking_type
-        status
+        string booking_id PK
+        string user_id FK
+        string space_code FK
+        datetime requested_start_time
+        datetime requested_end_time
+        string purpose
+        int expected_participants
+        string booking_type
+        string status
     }
 
     BOOKING_APPROVAL {
-        approval_id PK
-        booking_id FK
-        decided_by_user_id FK
-        decision_time
-        decision_note
-        rejection_reason
+        string approval_id PK
+        string booking_id FK
+        string decided_by_user_id FK
+        datetime decision_time
+        string decision_note
+        string rejection_reason
     }
 
     USAGE_SESSION {
-        session_id PK
-        booking_id FK
-        actual_start_time
-        actual_end_time
-        checked_in_by_user_id FK
-        completed_by_user_id FK
-        initial_condition
-        final_condition
-        usage_notes
+        string session_id PK
+        string booking_id FK
+        datetime actual_start_time
+        datetime actual_end_time
+        string checked_in_by_user_id FK
+        string completed_by_user_id FK
+        string initial_condition
+        string final_condition
+        string usage_notes
     }
 
     MAINTENANCE_RECORD {
-        maintenance_id PK
-        space_code FK
-        reporter_user_id FK
-        assigned_staff_user_id FK
-        problem_description
-        start_time
-        completion_time
-        status
-        result_note
+        string maintenance_id PK
+        string space_code FK
+        string reporter_user_id FK
+        string assigned_staff_user_id FK
+        string problem_description
+        datetime start_time
+        datetime completion_time
+        string status
+        string result_note
     }
 
     %% Relationships and Cardinalities
