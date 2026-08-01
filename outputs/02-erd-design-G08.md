@@ -17,7 +17,6 @@ USERS {
     string account_status
 }
 
-
 SPACES {
     string space_code PK
     string space_name
@@ -28,8 +27,6 @@ SPACES {
     int capacity
     string current_status
     string usage_policy
-    int nums_out_of_service___[read_only]
-    int nums_advisory___[read_only]
 }
 
 FACILITY {
@@ -48,22 +45,21 @@ BOOKING_REQUEST {
     string purpose
     int expected_participants
     string booking_type
-    string status___[read_only]
-    string is_warned___[read_only]
+    string status
 }
 
-BOOKING_DECISION {
-    string decision_id PK
+BOOKING_APPROVAL {
+    string approval_id PK
     string booking_id FK
-    boolean is_approved 
-    string decided_by FK
+    string decided_by_user_id FK
     datetime decision_time
-    string decision_reason
+    string decision_note
+    string rejection_reason
 }
 
 USAGE_SESSION {
     string session_id PK
-    string decision_id FK
+    string booking_id FK
     datetime actual_start_time
     datetime actual_end_time
     string checked_in_by_user_id FK
@@ -83,7 +79,6 @@ MAINTENANCE_RECORD {
     datetime completion_time
     string status
     string result_note
-    string impact_level
 }
 
 %% Relationships
@@ -94,21 +89,21 @@ USERS ||--o{ BOOKING_REQUEST : submits
 
 SPACES ||--o{ BOOKING_REQUEST : receives
 
-BOOKING_REQUEST ||--o| BOOKING_DECISION : requires
+BOOKING_REQUEST ||--o| BOOKING_APPROVAL : has
 
-USERS ||--o{ BOOKING_DECISION : decide_by_staff_machine
+USERS ||--o{ BOOKING_APPROVAL : performs
 
-BOOKING_DECISION ||--o| USAGE_SESSION : creates
+BOOKING_REQUEST ||--o| USAGE_SESSION : creates
 
-USERS ||--o{ USAGE_SESSION : checks_in_by_staff
+USERS ||--o{ USAGE_SESSION : checks_in
 
-USERS ||--o{ USAGE_SESSION : completes_by_staff
+USERS ||--o{ USAGE_SESSION : completes
 
 SPACES ||--o{ MAINTENANCE_RECORD : has
 
 USERS ||--o{ MAINTENANCE_RECORD : reports
 
-USERS ||--o{ MAINTENANCE_RECORD : assigned_to_staff
+USERS ||--o{ MAINTENANCE_RECORD : assigned_to
 ```
 
 # Main Entities
