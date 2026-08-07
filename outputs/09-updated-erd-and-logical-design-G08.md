@@ -41,7 +41,7 @@ Compared with the Phase 1 design, the logical model has been updated as follows:
 ```mermaid
 erDiagram
 
-USER {
+USERS {
     string user_id PK
     int role_id FK
     string full_name
@@ -139,7 +139,7 @@ ADVISORY_ACKNOWLEDGEMENT {
 
 %% Relationships
 
-ROLE ||--o{ USER : assigned_to
+ROLE ||--o{ USERS : assigned_to
 
 SPACE_TYPE ||--o{ SPACE : categorizes
 SPACE_TYPE ||--o{ AUTO_USAGE_POLICY : auto_policy
@@ -150,7 +150,7 @@ SPACE ||--o{ BOOKING_REQUEST : receives
 SPACE ||--o{ FACILITY : contains
 SPACE ||--o{ MAINTENANCE_RECORD : has
 
-USER ||--o{ BOOKING_REQUEST : submits
+USERS ||--o{ BOOKING_REQUEST : submits
 
 BOOKING_REQUEST ||--o| BOOKING_DECISION : results_in
 BOOKING_DECISION ||--o| USAGE_SESSION : creates
@@ -158,11 +158,11 @@ BOOKING_DECISION ||--o| USAGE_SESSION : creates
 BOOKING_REQUEST ||--o{ ADVISORY_ACKNOWLEDGEMENT : acknowledges
 MAINTENANCE_RECORD ||--o{ ADVISORY_ACKNOWLEDGEMENT : acknowledged_by
 
-USER ||--o{ BOOKING_DECISION : decides
-USER ||--o{ MAINTENANCE_RECORD : reports
-USER ||--o{ MAINTENANCE_RECORD : assigned_to
-USER ||--o{ USAGE_SESSION : checks_in
-USER ||--o{ USAGE_SESSION : completes
+USERS ||--o{ BOOKING_DECISION : decides
+USERS ||--o{ MAINTENANCE_RECORD : reports
+USERS ||--o{ MAINTENANCE_RECORD : assigned_to
+USERS ||--o{ USAGE_SESSION : checks_in
+USERS ||--o{ USAGE_SESSION : completes
 ```
 
 
@@ -183,10 +183,10 @@ The `ROLE` relation defines the predefined user roles recognized by the system. 
 
 ---
 
-### 5.2 `USER`
+### 5.2 `USERS`
 
 ```text
-USER(
+USERS(
     user_id,
     role_id,
     full_name,
@@ -197,7 +197,7 @@ USER(
 )
 ```
 
-The `USER` relation stores user accounts together with their assigned roles and account status. A user may submit booking requests, report maintenance issues, perform staff booking decisions, and manage usage sessions depending on the assigned role.
+The `USERS` relation stores user accounts together with their assigned roles and account status. A user may submit booking requests, report maintenance issues, perform staff booking decisions, and manage usage sessions depending on the assigned role.
 
 ---
 
