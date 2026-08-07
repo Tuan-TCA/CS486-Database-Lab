@@ -9,7 +9,7 @@
 --   * 2,000 requester accounts, four processing/staff accounts, 50 spaces;
 --   * decisions, completed usage sessions, cancellations, no-shows,
 --     rejections, pending requests, maintenance at both impact levels, and
---     advisory acknowledgements;
+--     booking notifications;
 --   * no overlapping generated approved/non-cancelled bookings per space.
 --
 -- Run after 10-schema-migration-G08.sql. The script is deterministic and
@@ -20,7 +20,7 @@
 --   GU######      users                 GSP###       spaces
 --   GF#####       facilities            GB#########  bookings
 --   GD#########   decisions             GSN######### usage sessions
---   GM#########   maintenance records
+--   GM#########   maintenance records   ADVISORY     booking notifications
 --   GSTAFF01, GSTAFF02, GMANAGER01, GSYSTEM01 are generated service accounts.
 -- ============================================================================
 
@@ -47,41 +47,43 @@ IF @BookingCount <> 100000
 -- --------------------------------------------------------------------------
 -- Target-schema preflight
 -- --------------------------------------------------------------------------
-IF OBJECT_ID(N'dbo.[ROLE]', N'U') IS NULL
-   OR OBJECT_ID(N'dbo.[USER]', N'U') IS NULL
-   OR OBJECT_ID(N'dbo.SPACE', N'U') IS NULL
+IF OBJECT_ID(N'dbo.ROLE', N'U') IS NULL
+   OR OBJECT_ID(N'dbo.USERS', N'U') IS NULL
+   OR OBJECT_ID(N'dbo.SPACES', N'U') IS NULL
    OR OBJECT_ID(N'dbo.FACILITY', N'U') IS NULL
-   OR OBJECT_ID(N'dbo.SPACE_USAGE_POLICY', N'U') IS NULL
+   OR OBJECT_ID(N'dbo.SPACE_TYPE', N'U') IS NULL
+   OR OBJECT_ID(N'dbo.AUTO_USAGE_POLICY', N'U') IS NULL
    OR OBJECT_ID(N'dbo.BOOKING_REQUEST', N'U') IS NULL
    OR OBJECT_ID(N'dbo.BOOKING_DECISION', N'U') IS NULL
    OR OBJECT_ID(N'dbo.USAGE_SESSION', N'U') IS NULL
    OR OBJECT_ID(N'dbo.MAINTENANCE_RECORD', N'U') IS NULL
-   OR OBJECT_ID(N'dbo.ADVISORY_ACKNOWLEDGEMENT', N'U') IS NULL
+   OR OBJECT_ID(N'dbo.BOOKING_NOTIFICATION', N'U') IS NULL
     THROW 52003, 'The Phase 2 schema is incomplete. Run 10-schema-migration-G08.sql first.', 1;
 
 IF COL_LENGTH(N'dbo.BOOKING_REQUEST', N'start_time') IS NULL
    OR COL_LENGTH(N'dbo.BOOKING_REQUEST', N'end_time') IS NULL
    OR COL_LENGTH(N'dbo.MAINTENANCE_RECORD', N'impact_level') IS NULL
    OR COL_LENGTH(N'dbo.USAGE_SESSION', N'decision_id') IS NULL
+   OR COL_LENGTH(N'dbo.SPACES', N'space_type_id') IS NULL
     THROW 52004, 'The database does not match updated design 09.', 1;
 
 DECLARE @student_role INT = (
-    SELECT MIN(role_id) FROM dbo.[ROLE] WHERE role_name = 'student'
+    SELECT MIN(role_id) FROM dbo.ROLE WHERE role_name = 'student'
 );
 DECLARE @lecturer_role INT = (
-    SELECT MIN(role_id) FROM dbo.[ROLE] WHERE role_name = 'lecturer'
+    SELECT MIN(role_id) FROM dbo.ROLE WHERE role_name = 'lecturer'
 );
 DECLARE @ta_role INT = (
-    SELECT MIN(role_id) FROM dbo.[ROLE] WHERE role_name = 'teaching_assistant'
+    SELECT MIN(role_id) FROM dbo.ROLE WHERE role_name = 'teaching_assistant'
 );
 DECLARE @staff_role INT = (
-    SELECT MIN(role_id) FROM dbo.[ROLE] WHERE role_name = 'facility_staff'
+    SELECT MIN(role_id) FROM dbo.ROLE WHERE role_name = 'facility_staff'
 );
 DECLARE @admin_role INT = (
-    SELECT MIN(role_id) FROM dbo.[ROLE] WHERE role_name = 'department_administrator'
+    SELECT MIN(role_id) FROM dbo.ROLE WHERE role_name = 'department_administrator'
 );
 DECLARE @manager_role INT = (
-    SELECT MIN(role_id) FROM dbo.[ROLE] WHERE role_name = 'facility_manager'
+    SELECT MIN(role_id) FROM dbo.ROLE WHERE role_name = 'facility_manager'
 );
 
 IF @student_role IS NULL OR @lecturer_role IS NULL OR @ta_role IS NULL
@@ -94,7 +96,7 @@ BEGIN TRY
     -- ----------------------------------------------------------------------
     -- Remove only rows from this generator's reserved namespaces.
     -- ----------------------------------------------------------------------
-    DELETE FROM dbo.ADVISORY_ACKNOWLEDGEMENT
+    DELETE FROM dbo.BOOKING_NOTIFICATION
     WHERE (LEFT(booking_id, 2) = 'GB'
            AND TRY_CONVERT(BIGINT, SUBSTRING(booking_id, 3, 18)) IS NOT NULL)
        OR (LEFT(maintenance_id, 2) = 'GM'
@@ -120,15 +122,15 @@ BEGIN TRY
     WHERE SUBSTRING(space_code, 1, 3) = 'GSP'
       AND TRY_CONVERT(INT, SUBSTRING(space_code, 4, 17)) IS NOT NULL;
 
-    DELETE FROM dbo.SPACE_USAGE_POLICY
+    -- AUTO_USAGE_POLICY is keyed by (space_type_id, role_id) and was left
+    -- empty by the Phase 1 migration, so the generated policies own it.
+    DELETE FROM dbo.AUTO_USAGE_POLICY;
+
+    DELETE FROM dbo.SPACES
     WHERE SUBSTRING(space_code, 1, 3) = 'GSP'
       AND TRY_CONVERT(INT, SUBSTRING(space_code, 4, 17)) IS NOT NULL;
 
-    DELETE FROM dbo.SPACE
-    WHERE SUBSTRING(space_code, 1, 3) = 'GSP'
-      AND TRY_CONVERT(INT, SUBSTRING(space_code, 4, 17)) IS NOT NULL;
-
-    DELETE FROM dbo.[USER]
+    DELETE FROM dbo.USERS
     WHERE (LEFT(user_id, 2) = 'GU'
            AND TRY_CONVERT(INT, SUBSTRING(user_id, 3, 18)) IS NOT NULL)
        OR user_id IN ('GSTAFF01', 'GSTAFF02', 'GMANAGER01', 'GSYSTEM01');
@@ -167,7 +169,7 @@ BEGIN TRY
     -- ----------------------------------------------------------------------
     -- Users
     -- ----------------------------------------------------------------------
-    INSERT INTO dbo.[USER] (
+    INSERT INTO dbo.USERS (
         user_id, role_id, full_name, email, phone_number, department, account_status
     )
     VALUES
@@ -180,7 +182,7 @@ BEGIN TRY
         ('GSYSTEM01', @manager_role, 'Generated Automatic Booking Service',
          'gsystem01@g08.example', NULL, 'System', 'active');
 
-    INSERT INTO dbo.[USER] (
+    INSERT INTO dbo.USERS (
         user_id, role_id, full_name, email, phone_number, department, account_status
     )
     SELECT
@@ -209,42 +211,46 @@ BEGIN TRY
     WHERE n <= @RequesterCount;
 
     -- ----------------------------------------------------------------------
-    -- Spaces, facilities, and role-based policies
+    -- Spaces, facilities, and role-based auto usage policies
     -- ----------------------------------------------------------------------
-    INSERT INTO dbo.SPACE (
-        space_code, space_name, space_type, building, floor, room_number,
+    INSERT INTO dbo.SPACES (
+        space_code, space_name, space_type_id, building, floor, room_number,
         capacity, current_status
     )
     SELECT
-        CONCAT('GSP', RIGHT(CONCAT('000', n), 3)),
+        CONCAT('GSP', RIGHT(CONCAT('000', nums.n), 3)),
         CONCAT('generated_',
-            CASE (n - 1) % 5
+            CASE (nums.n - 1) % 5
                 WHEN 0 THEN 'classroom'
                 WHEN 1 THEN 'computer_lab'
                 WHEN 2 THEN 'meeting_room'
                 WHEN 3 THEN 'project_lab'
                 ELSE 'auditorium'
-            END, '_', RIGHT(CONCAT('000', n), 3)),
-        CASE (n - 1) % 5
+            END, '_', RIGHT(CONCAT('000', nums.n), 3)),
+        st.space_type_id,
+        CONCAT('G', CHAR(65 + ((nums.n - 1) % 5))),
+        1 + ((nums.n - 1) % 5),
+        CONVERT(VARCHAR(20), 100 + nums.n),
+        CASE (nums.n - 1) % 5
+            WHEN 0 THEN 60 + (nums.n % 3) * 20
+            WHEN 1 THEN 35 + (nums.n % 4) * 5
+            WHEN 2 THEN 16 + (nums.n % 5) * 4
+            WHEN 3 THEN 30 + (nums.n % 4) * 5
+            ELSE 180 + (nums.n % 4) * 40
+        END,
+        'available'
+    FROM #N AS nums
+    CROSS APPLY (VALUES (
+        CASE (nums.n - 1) % 5
             WHEN 0 THEN 'classroom'
             WHEN 1 THEN 'computer_laboratory'
             WHEN 2 THEN 'meeting_room'
             WHEN 3 THEN 'project_laboratory'
             ELSE 'auditorium'
-        END,
-        CONCAT('G', CHAR(65 + ((n - 1) % 5))),
-        1 + ((n - 1) % 5),
-        CONVERT(VARCHAR(20), 100 + n),
-        CASE (n - 1) % 5
-            WHEN 0 THEN 60 + (n % 3) * 20
-            WHEN 1 THEN 35 + (n % 4) * 5
-            WHEN 2 THEN 16 + (n % 5) * 4
-            WHEN 3 THEN 30 + (n % 4) * 5
-            ELSE 180 + (n % 4) * 40
-        END,
-        'available'
-    FROM #N
-    WHERE n <= @SpaceCount;
+        END
+    )) AS type_calc(space_type_name)
+    JOIN dbo.SPACE_TYPE AS st ON st.space_type_name = type_calc.space_type_name
+    WHERE nums.n <= @SpaceCount;
 
     INSERT INTO dbo.FACILITY (facility_id, space_code, facility_name, description)
     SELECT
@@ -256,53 +262,48 @@ BEGIN TRY
         CASE v.facility_number
             WHEN 1 THEN 'projector'
             WHEN 2 THEN CASE
-                WHEN s.space_type IN ('computer_laboratory', 'project_laboratory')
+                WHEN st.space_type_name IN ('computer_laboratory', 'project_laboratory')
                     THEN 'computer'
-                WHEN s.space_type = 'auditorium' THEN 'microphone'
+                WHEN st.space_type_name = 'auditorium' THEN 'microphone'
                 ELSE 'whiteboard'
             END
             ELSE CASE
-                WHEN s.space_type = 'computer_laboratory' THEN 'printer'
-                WHEN s.space_type = 'auditorium' THEN 'speaker'
+                WHEN st.space_type_name = 'computer_laboratory' THEN 'printer'
+                WHEN st.space_type_name = 'auditorium' THEN 'speaker'
                 ELSE 'air_conditioner'
             END
         END,
         CONCAT('generated facility ', v.facility_number, ' for ', s.space_code)
-    FROM dbo.SPACE AS s
+    FROM dbo.SPACES AS s
+    JOIN dbo.SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
     CROSS APPLY (VALUES (TRY_CONVERT(INT, SUBSTRING(s.space_code, 4, 17)))) AS x(space_number)
     CROSS JOIN (VALUES (1), (2), (3)) AS v(facility_number)
     WHERE LEFT(s.space_code, 3) = 'GSP'
       AND x.space_number IS NOT NULL;
 
-    INSERT INTO dbo.SPACE_USAGE_POLICY (space_code, role_id)
-    SELECT space_code, @student_role
-    FROM dbo.SPACE
-    WHERE LEFT(space_code, 3) = 'GSP'
-      AND space_type IN ('classroom', 'computer_laboratory', 'meeting_room', 'project_laboratory')
+    INSERT INTO dbo.AUTO_USAGE_POLICY (space_type_id, role_id)
+    SELECT st.space_type_id, @student_role
+    FROM dbo.SPACE_TYPE AS st
+    WHERE st.space_type_name IN ('classroom', 'computer_laboratory', 'meeting_room', 'project_laboratory')
     UNION ALL
-    SELECT space_code, @lecturer_role
-    FROM dbo.SPACE
-    WHERE LEFT(space_code, 3) = 'GSP'
+    SELECT st.space_type_id, @lecturer_role
+    FROM dbo.SPACE_TYPE AS st
     UNION ALL
-    SELECT space_code, @ta_role
-    FROM dbo.SPACE
-    WHERE LEFT(space_code, 3) = 'GSP'
-      AND space_type IN ('classroom', 'computer_laboratory', 'meeting_room', 'project_laboratory')
+    SELECT st.space_type_id, @ta_role
+    FROM dbo.SPACE_TYPE AS st
+    WHERE st.space_type_name IN ('classroom', 'computer_laboratory', 'meeting_room', 'project_laboratory')
     UNION ALL
-    SELECT space_code, @staff_role
-    FROM dbo.SPACE
-    WHERE LEFT(space_code, 3) = 'GSP'
-      AND space_type = 'meeting_room'
+    SELECT st.space_type_id, @staff_role
+    FROM dbo.SPACE_TYPE AS st
+    WHERE st.space_type_name = 'meeting_room'
     UNION ALL
-    SELECT space_code, @admin_role
-    FROM dbo.SPACE
-    WHERE LEFT(space_code, 3) = 'GSP'
-      AND space_type IN ('classroom', 'meeting_room', 'auditorium')
+    SELECT st.space_type_id, @admin_role
+    FROM dbo.SPACE_TYPE AS st
+    WHERE st.space_type_name IN ('classroom', 'meeting_room', 'auditorium')
     UNION ALL
-    SELECT space_code, @manager_role
-    FROM dbo.SPACE
-    WHERE LEFT(space_code, 3) = 'GSP'
-      AND space_type IN ('meeting_room', 'auditorium');
+    SELECT st.space_type_id, @manager_role
+    FROM dbo.SPACE_TYPE AS st
+    WHERE st.space_type_name IN ('meeting_room', 'auditorium');
 
     -- ----------------------------------------------------------------------
     -- Booking seed: two non-overlapping daily slots per generated space.
@@ -314,7 +315,7 @@ BEGIN TRY
         booking_id            VARCHAR(20)  NOT NULL,
         user_id               VARCHAR(20)  NOT NULL,
         space_code            VARCHAR(20)  NOT NULL,
-        space_type            VARCHAR(50)  NOT NULL,
+        space_type_name       VARCHAR(50)  NOT NULL,
         capacity              INT          NOT NULL,
         start_time            DATETIME2(0) NOT NULL,
         end_time              DATETIME2(0) NOT NULL,
@@ -325,7 +326,7 @@ BEGIN TRY
     );
 
     INSERT INTO #BookingSeed (
-        n, booking_id, user_id, space_code, space_type, capacity,
+        n, booking_id, user_id, space_code, space_type_name, capacity,
         start_time, end_time, purpose, expected_participants,
         booking_type, status
     )
@@ -334,7 +335,7 @@ BEGIN TRY
         CONCAT('GB', RIGHT(CONCAT('000000000', nums.n), 9)),
         CONCAT('GU', RIGHT(CONCAT('000000', usr.user_number), 6)),
         sp.space_code,
-        sp.space_type,
+        st.space_type_name,
         sp.capacity,
         tm.start_time,
         DATEADD(HOUR, attrs.duration_hours, tm.start_time),
@@ -352,8 +353,10 @@ BEGIN TRY
         1 + ((nums.n - 1) % @SpaceCount),
         (nums.n - 1) / @SpaceCount
     )) AS seq(space_number, space_cycle)
-    JOIN dbo.SPACE AS sp
+    JOIN dbo.SPACES AS sp
         ON sp.space_code = CONCAT('GSP', RIGHT(CONCAT('000', seq.space_number), 3))
+    JOIN dbo.SPACE_TYPE AS st
+        ON st.space_type_id = sp.space_type_id
     CROSS APPLY (VALUES (
         seq.space_cycle % 2,
         seq.space_cycle / 2
@@ -379,7 +382,7 @@ BEGIN TRY
         END
     )) AS stat(status)
     CROSS APPLY (VALUES (
-        CASE sp.space_type
+        CASE st.space_type_name
             WHEN 'classroom' THEN
                 CASE WHEN seq.space_cycle % 4 = 0 THEN 'examination' ELSE 'lecture' END
             WHEN 'computer_laboratory' THEN 'workshop'
@@ -390,14 +393,14 @@ BEGIN TRY
             ELSE
                 CASE WHEN seq.space_cycle % 4 = 0 THEN 'administrative_event' ELSE 'seminar' END
         END,
-        CASE sp.space_type
+        CASE st.space_type_name
             WHEN 'classroom' THEN CASE WHEN seq.space_cycle % 4 = 0 THEN 3 ELSE 2 END
             WHEN 'meeting_room' THEN 2
             ELSE 3
         END
     )) AS attrs(booking_type, duration_hours)
     CROSS APPLY (VALUES (
-        CASE sp.space_type
+        CASE st.space_type_name
             WHEN 'classroom' THEN CASE
                 WHEN seq.space_cycle % 2 = 0 THEN 1 + ((nums.n * 17) % 1200)
                 ELSE 1201 + ((nums.n * 17) % 400)
@@ -442,11 +445,11 @@ BEGIN TRY
         b.booking_id,
         CONVERT(BIT, CASE WHEN b.status = 'rejected' THEN 0 ELSE 1 END),
         CONVERT(BIT, CASE
-            WHEN b.space_type IN ('meeting_room', 'project_laboratory')
+            WHEN b.space_type_name IN ('meeting_room', 'project_laboratory')
              AND ((b.n - 1) / @SpaceCount) % 2 = 0 THEN 1 ELSE 0
         END),
         CASE
-            WHEN b.space_type IN ('meeting_room', 'project_laboratory')
+            WHEN b.space_type_name IN ('meeting_room', 'project_laboratory')
              AND ((b.n - 1) / @SpaceCount) % 2 = 0 THEN 'GSYSTEM01'
             WHEN b.n % 3 = 0 THEN 'GMANAGER01'
             WHEN b.n % 2 = 0 THEN 'GSTAFF02'
@@ -484,7 +487,7 @@ BEGIN TRY
     WHERE b.status = 'completed';
 
     -- ----------------------------------------------------------------------
-    -- Maintenance history and advisories
+    -- Maintenance history and booking notifications
     -- ----------------------------------------------------------------------
     ;WITH candidates AS (
         SELECT TOP (750)
@@ -541,14 +544,16 @@ BEGIN TRY
     FROM #N
     WHERE n <= 20;
 
-    -- An acknowledgement remains historical evidence after maintenance closes.
-    -- Each generated completed advisory is joined to every overlapping request.
-    INSERT INTO dbo.ADVISORY_ACKNOWLEDGEMENT (
-        booking_id, maintenance_id, acknowledge_time
+    -- A booking notification remains historical evidence after maintenance
+    -- closes. Each generated completed advisory is joined to every overlapping
+    -- request.
+    INSERT INTO dbo.BOOKING_NOTIFICATION (
+        booking_id, maintenance_id, notification_type, notification_time
     )
     SELECT
         b.booking_id,
         m.maintenance_id,
+        'ADVISORY',
         DATEADD(MINUTE, 5, m.start_time)
     FROM dbo.MAINTENANCE_RECORD AS m
     JOIN #BookingSeed AS b
@@ -594,15 +599,15 @@ BEGIN TRY
         THROW 52013, 'Both maintenance impact levels are required.', 1;
 
     IF NOT EXISTS (
-        SELECT 1 FROM dbo.ADVISORY_ACKNOWLEDGEMENT
+        SELECT 1 FROM dbo.BOOKING_NOTIFICATION
         WHERE LEFT(booking_id, 2) = 'GB'
     )
-        THROW 52014, 'No advisory acknowledgements were generated.', 1;
+        THROW 52014, 'No booking notifications were generated.', 1;
 
     IF EXISTS (
         SELECT 1
         FROM #BookingSeed AS b
-        JOIN dbo.SPACE AS s ON s.space_code = b.space_code
+        JOIN dbo.SPACES AS s ON s.space_code = b.space_code
         JOIN dbo.BOOKING_DECISION AS d ON d.booking_id = b.booking_id
         WHERE d.is_approved = 1
           AND b.expected_participants > s.capacity
@@ -649,12 +654,13 @@ BEGIN TRY
           AND m.status = 'completed'
           AND NOT EXISTS (
               SELECT 1
-              FROM dbo.ADVISORY_ACKNOWLEDGEMENT AS aa
-              WHERE aa.booking_id = b.booking_id
-                AND aa.maintenance_id = m.maintenance_id
+              FROM dbo.BOOKING_NOTIFICATION AS bn
+              WHERE bn.booking_id = b.booking_id
+                AND bn.maintenance_id = m.maintenance_id
+                AND bn.notification_type = 'ADVISORY'
           )
     )
-        THROW 52018, 'An overlapping generated advisory lacks an acknowledgement.', 1;
+        THROW 52018, 'An overlapping generated advisory lacks a booking notification.', 1;
 
     COMMIT TRANSACTION;
 
@@ -675,8 +681,8 @@ BEGIN TRY
          WHERE LEFT(session_id, 3) = 'GSN') AS generated_usage_sessions,
         (SELECT COUNT_BIG(*) FROM dbo.MAINTENANCE_RECORD
          WHERE LEFT(maintenance_id, 2) = 'GM') AS generated_maintenance_rows,
-        (SELECT COUNT_BIG(*) FROM dbo.ADVISORY_ACKNOWLEDGEMENT
-         WHERE LEFT(booking_id, 2) = 'GB') AS generated_acknowledgements
+        (SELECT COUNT_BIG(*) FROM dbo.BOOKING_NOTIFICATION
+         WHERE LEFT(booking_id, 2) = 'GB') AS generated_notifications
     FROM #BookingSeed;
 END TRY
 BEGIN CATCH
