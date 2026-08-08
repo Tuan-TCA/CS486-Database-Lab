@@ -90,59 +90,63 @@ GO
 -- ============================================================================
 --
 -- Business question:
---   How are approved bookings distributed across weekdays and starting hours?
+--   How are approved booking decisions distributed across weekdays and hours
+--   for a given semester?
 --
 -- Target users:
 --   Facility Manager, Department Administrator
 --
 -- Why useful:
---   Reveals peak booking times for scheduling and staffing decisions.
+--   Reveals peak booking decision periods for operational planning and helps
+--   identify when booking approval activity is highest.
 --
 -- Expected Output:
---   (14 rows: 7 weekdays x 2 start hours)
+--   (variable — depends on the selected semester and hourly interval)
 --
--- weekday_name | weekday_number | start_hour | booking_count
--- -------------|----------------|------------|-------------
--- Monday       |              2 |          8 |        ~1900
--- Monday       |              2 |         13 |        ~1900
--- Tuesday      |              3 |          8 |        ~1900
--- Tuesday      |              3 |         13 |        ~1900
--- Wednesday    |              4 |          8 |        ~1900
--- Wednesday    |              4 |         13 |        ~1900
--- Thursday     |              5 |          8 |        ~1900
--- Thursday     |              5 |         13 |        ~1900
--- Friday       |              6 |          8 |        ~1900
--- Friday       |              6 |         13 |        ~1900
--- Saturday     |              7 |          8 |        ~1900
--- Saturday     |              7 |         13 |        ~1900
--- Sunday       |              1 |          8 |        ~1900
--- Sunday       |              1 |         13 |        ~1900
+--   With the default interval @FromHour = 7 and @ToHour = 19:
+--
+-- weekday_name | weekday_number | decision_hour | booking_count
+-- -------------|----------------|---------------|--------------
+-- Sunday       |              1 |             7 |           ...
+-- Sunday       |              1 |             8 |           ...
+-- Sunday       |              1 |             9 |           ...
+-- ...          |            ... |           ... |           ...
+-- Monday       |              2 |             7 |           ...
+-- Monday       |              2 |             8 |           ...
+-- ...          |            ... |           ... |           ...
 --
 -- Notes:
---   All generated bookings start at either 08:00 or 13:00 (two daily slots).
---   The coprime day permutation distributes bookings roughly uniformly across
---   all 7 weekdays. Total should sum to approximately the number of approved
---   non-cancelled bookings in the semester (~85% of ~14% of 100,000 = ~11,900).
---   Each cell is roughly 11900 / 14 = ~850.
---   Phase 1 bookings may add a few off-slot rows (e.g. a 09:00 booking).
+--   BOOKING_DECISION.decision_time is used to determine the weekday and hour
+--   associated with each approved booking decision.
+--   Results are grouped first by weekday and then by hour.
+--   @FromHour and @ToHour allow the user to select the hourly interval.
+--   The default interval is 07:00 through 18:59.
+--   Only approved, non-cancelled bookings are included.
 -- ============================================================================
 
+DECLARE @SemesterStart DATETIME = '2025-09-01';
+DECLARE @SemesterEnd   DATETIME = '2026-02-01';
+
+DECLARE @FromHour INT = 7;
+DECLARE @ToHour   INT = 18;
+
 SELECT
-  DATENAME(WEEKDAY, br.start_time) AS weekday_name,
-  DATEPART(WEEKDAY, br.start_time) AS weekday_number,
-  DATEPART(HOUR, br.start_time)    AS start_hour,
-  COUNT(*)                         AS booking_count
-FROM BOOKING_REQUEST AS br
-  JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
+  DATENAME(WEEKDAY, bd.decision_time) AS weekday_name,
+  DATEPART(WEEKDAY, bd.decision_time) AS weekday_number,
+  DATEPART(HOUR, bd.decision_time)    AS decision_hour,
+  COUNT(*)                            AS booking_count
+FROM BOOKING_DECISION AS bd
+  JOIN BOOKING_REQUEST AS br ON br.booking_id = bd.booking_id
 WHERE bd.is_approved = 1
   AND br.status <> 'cancelled'
-  AND br.start_time >= @SemesterStart
-  AND br.start_time <  @SemesterEnd
+  AND bd.decision_time >= @SemesterStart
+  AND bd.decision_time <  @SemesterEnd
+  AND DATEPART(HOUR, bd.decision_time) BETWEEN @FromHour AND @ToHour
 GROUP BY
-    DATENAME(WEEKDAY, br.start_time),
-    DATEPART(WEEKDAY, br.start_time),
-    DATEPART(HOUR, br.start_time)
-ORDER BY weekday_number, start_hour;
+  DATENAME(WEEKDAY, bd.decision_time),
+  DATEPART(WEEKDAY, bd.decision_time),
+  DATEPART(HOUR, bd.decision_time)
+ORDER BY weekday_number, decision_hour;
 GO
 
 -- ============================================================================
@@ -249,35 +253,35 @@ GO
 -- ============================================================================
 -- Query 04 — Approved bookings affected by maintenance escalation
 -- ============================================================================
+--
 -- Business question:
---   If a specific maintenance record were escalated to 'out_of_service', which
---   approved bookings would be affected?
+--   After a specific maintenance record has been escalated from 'advisory' to
+--   'out_of_service', which previously approved bookings were affected?
 --
 -- Target users:
 --   Facility Staff, Facility Manager
 --
 -- Why useful:
---   Lets staff identify affected users before escalating maintenance.
+--   Lets staff retrieve approved bookings affected by an actual maintenance
+--   escalation so that the corresponding users can be informed and the
+--   affected bookings can be handled or cancelled.
 --
 -- Expected Output:
 --   (variable — depends on the chosen maintenance_id)
 --
---   For @MaintenanceId = 'GM900000001' (an open out_of_service record on a
---   generated space, placed after the booking horizon 2026-09-01+):
+--   For @MaintenanceId = 'GM900000001':
 --
---   booking_id | user_id | full_name | email | space_code | start_time | end_time | purpose | status | maintenance_id | problem_description | current_impact_level
---  ------------|---------|-----------|-------|-----------|------------|----------|---------|--------|---------------|----------------------|----------------------
---   (May return 0 rows if no approved bookings overlap the open maintenance
---    period, since generated bookings end before @DataEndExclusive.)
---
---   For a completed advisory maintenance record (e.g. 'GM000000001'):
---   May return several rows of bookings whose time windows overlap the
---   maintenance period on the same space.
+-- booking_id | user_id | full_name | email | space_code | start_time | end_time | purpose | booking_status | decision_time | escalation_notification_time | maintenance_id | problem_description | impact_level | maintenance_status
+-- -----------|---------|-----------|-------|------------|------------|----------|---------|----------------|---------------|------------------------------|----------------|---------------------|--------------|-------------------
+-- ...        | ...     | ...       | ...   | ...        | ...        | ...      | ...     | cancelled      | ...           | ...                          | GM900000001    | ...                 | out_of_service| ...
 --
 -- Notes:
---   Only non-cancelled, non-completed, non-no_show approved bookings are
---   relevant for escalation (status NOT IN ('cancelled','completed','no_show')).
---   The query is designed to be run before escalation to identify impact.
+--   BOOKING_NOTIFICATION is used as the record of an actual maintenance
+--   escalation affecting a booking.
+--   notification_type = 'OUT_OF_SERVICE' identifies bookings affected after
+--   maintenance was escalated from advisory to out_of_service.
+--   The booking must have an approved BOOKING_DECISION before the escalation
+--   notification was generated.
 -- ============================================================================
 
 DECLARE @MaintenanceId VARCHAR(20) = 'GM900000001';
@@ -291,20 +295,22 @@ SELECT
   br.start_time,
   br.end_time,
   br.purpose,
-  br.status,
+  br.status AS booking_status,
+  bd.decision_time,
+  bn.notification_time AS escalation_notification_time,
   m.maintenance_id,
   m.problem_description,
-  m.impact_level AS current_impact_level
-FROM MAINTENANCE_RECORD AS m
-  JOIN BOOKING_REQUEST AS br ON br.space_code = m.space_code
-    AND br.start_time < ISNULL(m.end_time, '2099-12-31')
-    AND br.end_time   > m.start_time
+  m.impact_level,
+  m.status AS maintenance_status
+FROM BOOKING_NOTIFICATION AS bn
+  JOIN BOOKING_REQUEST AS br ON br.booking_id = bn.booking_id
   JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
+  JOIN MAINTENANCE_RECORD AS m ON m.maintenance_id = bn.maintenance_id
   JOIN USERS AS u ON u.user_id = br.user_id
-WHERE m.maintenance_id = @MaintenanceId
+WHERE bn.maintenance_id = @MaintenanceId
+  AND bn.notification_type = 'OUT_OF_SERVICE'
   AND bd.is_approved = 1
-  AND br.status NOT IN ('cancelled', 'completed', 'no_show')
-ORDER BY br.start_time;
+ORDER BY bn.notification_time, br.start_time;
 GO
 
 -- ============================================================================
@@ -361,27 +367,45 @@ GO
 -- ============================================================================
 --
 -- Business question:
---   What booking notifications have been generated for a specific space?
+--   What maintenance-related booking notifications have been generated for a
+--   specific space, and why was each notification generated?
 --
 -- Target users:
 --   Facility Staff, Facility Manager
 --
 -- Why useful:
---   Audit trail of how maintenance events affected bookings over time.
+--   Provides an audit trail of maintenance events affecting booking requests
+--   and distinguishes advisory notifications from notifications caused by
+--   maintenance escalation.
 --
 -- Expected Output:
 --   (variable — depends on the chosen space)
 --
---   For @qSpace = 'GSP001' (a classroom):
+--   For @SpaceCode = 'GSP001':
 --
---   booking_id   | maintenance_id | notification_type | notification_time   | booking_start       | booking_end         | booking_status | problem_description     | impact_level | maintenance_status
--- -------------|----------------|-------------------|---------------------|---------------------|---------------------|----------------|-------------------------|--------------|------------------
--- GB000000001  | GM000000001    | ADVISORY          | 2023-xx-xx xx:xx:xx | 2023-xx-xx 08:00:00 | 2023-xx-xx 10:00:00 | completed      | projector_fault         | advisory     | completed
+-- booking_id | maintenance_id | notification_type | notification_time | booking_start | booking_end | booking_status | problem_description | impact_level | maintenance_status
+-- -----------|----------------|-------------------|-------------------|---------------|-------------|----------------|---------------------|--------------|-------------------
+-- ...        | ...            | ADVISORY          | ...               | ...           | ...         | approved       | ...                 | advisory     | ...
+-- ...        | ...            | OUT_OF_SERVICE    | ...               | ...           | ...         | cancelled      | ...                 | out_of_service| ...
 --
 -- Notes:
---   Notifications are only generated for advisory completed maintenance.
---   notification_type = 'ADVISORY' for all generated notifications.
---   Each advisory maintenance record overlapping N bookings produces N rows.
+--   BOOKING_NOTIFICATION supports two notification types.
+--
+--   'ADVISORY':
+--     Generated when a booking request is made while an overlapping advisory
+--     maintenance record exists. Advisory maintenance does not block the
+--     booking request, but the user must be informed about the maintenance.
+--
+--   'OUT_OF_SERVICE':
+--     Generated when a booking request has already been approved and an
+--     overlapping maintenance record is later escalated from 'advisory' to
+--     'out_of_service'. The notification identifies the affected approved
+--     booking so the administrator can inform the user. The affected booking
+--     is then cancelled.
+--
+--   The same booking and maintenance pair may therefore have both notification
+--   types at different times because notification_type is part of the
+--   BOOKING_NOTIFICATION primary key.
 -- ============================================================================
 
 DECLARE @SpaceCode VARCHAR(20) = 'GSP001';
