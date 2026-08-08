@@ -462,7 +462,10 @@ GO
 --   use it).
 -- ============================================================================
 
-DECLARE @WeekdayCount INT;
+DECLARE @SemesterStart DATETIME = '2025-09-01';
+DECLARE @SemesterEnd   DATETIME = '2026-02-01';
+DECLARE @WeekdayCount  INT;
+
 ;WITH DateSeries AS (
     SELECT @SemesterStart AS d
   UNION ALL
@@ -473,7 +476,7 @@ DECLARE @WeekdayCount INT;
 SELECT @WeekdayCount = COUNT(*)
 FROM DateSeries
 WHERE DATEPART(WEEKDAY, d) NOT IN (1, 7)
-OPTION (MAXRECURSION 0)
+OPTION (MAXRECURSION 0);
 
 SELECT
   st.space_type_name,

@@ -6,7 +6,7 @@
 -- Default output
 --   * exactly 100,000 BOOKING_REQUEST rows with the reserved GB######### IDs;
 --   * three complete academic years: 2023-09-01 through 2026-08-31;
---   * 2,000 requester accounts, four processing/staff accounts, 50 spaces;
+--   * 2,000 requester accounts, three processing/staff accounts, 50 spaces;
 --   * decisions, completed usage sessions, cancellations, no-shows,
 --     rejections, pending requests, maintenance at both impact levels, and
 --     booking notifications;
@@ -21,7 +21,8 @@
 --   GF#####       facilities            GB#########  bookings
 --   GD#########   decisions             GSN######### usage sessions
 --   GM#########   maintenance records   ADVISORY     booking notifications
---   GSTAFF01, GSTAFF02, GMANAGER01, GSYSTEM01 are generated service accounts.
+--   GSTAFF01, GSTAFF02, GMANAGER01 are generated staff/manager accounts.
+--   Legacy GSYSTEM01 is removed on rerun but is no longer recreated or used.
 -- ============================================================================
 
 USE campus_space_management;
@@ -122,10 +123,6 @@ BEGIN TRY
     WHERE SUBSTRING(space_code, 1, 3) = 'GSP'
       AND TRY_CONVERT(INT, SUBSTRING(space_code, 4, 17)) IS NOT NULL;
 
-    -- AUTO_USAGE_POLICY is keyed by (space_type_id, role_id) and was left
-    -- empty by the Phase 1 migration, so the generated policies own it.
-    DELETE FROM dbo.AUTO_USAGE_POLICY;
-
     DELETE FROM dbo.SPACES
     WHERE SUBSTRING(space_code, 1, 3) = 'GSP'
       AND TRY_CONVERT(INT, SUBSTRING(space_code, 4, 17)) IS NOT NULL;
@@ -178,9 +175,7 @@ BEGIN TRY
         ('GSTAFF02', @staff_role, 'Generated Facility Staff 02',
          'gstaff02@g08.example', '0908000002', 'Facilities', 'active'),
         ('GMANAGER01', @manager_role, 'Generated Facility Manager 01',
-         'gmanager01@g08.example', '0908000003', 'Facilities', 'active'),
-        ('GSYSTEM01', @manager_role, 'Generated Automatic Booking Service',
-         'gsystem01@g08.example', NULL, 'System', 'active');
+         'gmanager01@g08.example', '0908000003', 'Facilities', 'active');
 
     INSERT INTO dbo.USERS (
         user_id, role_id, full_name, email, phone_number, department, account_status
@@ -281,29 +276,52 @@ BEGIN TRY
     WHERE LEFT(s.space_code, 3) = 'GSP'
       AND x.space_number IS NOT NULL;
 
+    -- Add the generator's default policies without deleting or overwriting
+    -- unrelated policies that may already exist. This keeps the script rerunnable
+    -- while preserving externally managed AUTO_USAGE_POLICY rows.
+    ;WITH desired_policy AS (
+        SELECT st.space_type_id, @student_role AS role_id
+        FROM dbo.SPACE_TYPE AS st
+        WHERE st.space_type_name IN ('classroom', 'computer_laboratory', 'meeting_room', 'project_laboratory')
+
+        UNION ALL
+
+        SELECT st.space_type_id, @lecturer_role
+        FROM dbo.SPACE_TYPE AS st
+
+        UNION ALL
+
+        SELECT st.space_type_id, @ta_role
+        FROM dbo.SPACE_TYPE AS st
+        WHERE st.space_type_name IN ('classroom', 'computer_laboratory', 'meeting_room', 'project_laboratory')
+
+        UNION ALL
+
+        SELECT st.space_type_id, @staff_role
+        FROM dbo.SPACE_TYPE AS st
+        WHERE st.space_type_name = 'meeting_room'
+
+        UNION ALL
+
+        SELECT st.space_type_id, @admin_role
+        FROM dbo.SPACE_TYPE AS st
+        WHERE st.space_type_name IN ('classroom', 'meeting_room', 'auditorium')
+
+        UNION ALL
+
+        SELECT st.space_type_id, @manager_role
+        FROM dbo.SPACE_TYPE AS st
+        WHERE st.space_type_name IN ('meeting_room', 'auditorium')
+    )
     INSERT INTO dbo.AUTO_USAGE_POLICY (space_type_id, role_id)
-    SELECT st.space_type_id, @student_role
-    FROM dbo.SPACE_TYPE AS st
-    WHERE st.space_type_name IN ('classroom', 'computer_laboratory', 'meeting_room', 'project_laboratory')
-    UNION ALL
-    SELECT st.space_type_id, @lecturer_role
-    FROM dbo.SPACE_TYPE AS st
-    UNION ALL
-    SELECT st.space_type_id, @ta_role
-    FROM dbo.SPACE_TYPE AS st
-    WHERE st.space_type_name IN ('classroom', 'computer_laboratory', 'meeting_room', 'project_laboratory')
-    UNION ALL
-    SELECT st.space_type_id, @staff_role
-    FROM dbo.SPACE_TYPE AS st
-    WHERE st.space_type_name = 'meeting_room'
-    UNION ALL
-    SELECT st.space_type_id, @admin_role
-    FROM dbo.SPACE_TYPE AS st
-    WHERE st.space_type_name IN ('classroom', 'meeting_room', 'auditorium')
-    UNION ALL
-    SELECT st.space_type_id, @manager_role
-    FROM dbo.SPACE_TYPE AS st
-    WHERE st.space_type_name IN ('meeting_room', 'auditorium');
+    SELECT dp.space_type_id, dp.role_id
+    FROM desired_policy AS dp
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM dbo.AUTO_USAGE_POLICY AS existing_policy
+        WHERE existing_policy.space_type_id = dp.space_type_id
+          AND existing_policy.role_id = dp.role_id
+    );
 
     -- ----------------------------------------------------------------------
     -- Booking seed: two non-overlapping daily slots per generated space.
@@ -400,27 +418,29 @@ BEGIN TRY
         END
     )) AS attrs(booking_type, duration_hours)
     CROSS APPLY (VALUES (
+        -- Deliberately generate both policy-eligible and non-eligible role/type
+        -- pairs. BOOKING_DECISION.is_automatic is derived later from the actual
+        -- AUTO_USAGE_POLICY table, never from this selection pattern itself.
         CASE st.space_type_name
             WHEN 'classroom' THEN CASE
-                WHEN seq.space_cycle % 2 = 0 THEN 1 + ((nums.n * 17) % 1200)
-                ELSE 1201 + ((nums.n * 17) % 400)
+                WHEN seq.space_cycle % 2 = 0 THEN 1 + ((nums.n * 17) % 1200)       -- student: eligible
+                ELSE 1961 + ((nums.n * 17) % 40)                                  -- manager: staff workflow
             END
             WHEN 'computer_laboratory' THEN CASE
-                WHEN seq.space_cycle % 2 = 0 THEN 1 + ((nums.n * 17) % 1200)
-                ELSE 1601 + ((nums.n * 17) % 200)
+                WHEN seq.space_cycle % 2 = 0 THEN 1 + ((nums.n * 17) % 1200)       -- student: eligible
+                ELSE 1881 + ((nums.n * 17) % 80)                                  -- administrator: staff workflow
             END
             WHEN 'meeting_room' THEN CASE
-                WHEN seq.space_cycle % 2 = 0 THEN 1201 + ((nums.n * 17) % 400)
-                ELSE 1881 + ((nums.n * 17) % 80)
+                WHEN seq.space_cycle % 2 = 0 THEN 1201 + ((nums.n * 17) % 400)     -- lecturer: eligible
+                ELSE 1801 + ((nums.n * 17) % 80)                                  -- facility staff: eligible
             END
             WHEN 'project_laboratory' THEN CASE
-                WHEN seq.space_cycle % 2 = 0 THEN 1 + ((nums.n * 17) % 1200)
-                ELSE 1601 + ((nums.n * 17) % 200)
+                WHEN seq.space_cycle % 2 = 0 THEN 1601 + ((nums.n * 17) % 200)     -- teaching assistant: eligible
+                ELSE 1881 + ((nums.n * 17) % 80)                                  -- administrator: staff workflow
             END
-            ELSE CASE seq.space_cycle % 3
-                WHEN 0 THEN 1201 + ((nums.n * 17) % 400)
-                WHEN 1 THEN 1881 + ((nums.n * 17) % 80)
-                ELSE 1961 + ((nums.n * 17) % 40)
+            ELSE CASE
+                WHEN seq.space_cycle % 2 = 0 THEN 1201 + ((nums.n * 17) % 400)     -- lecturer: eligible
+                ELSE 1 + ((nums.n * 17) % 1200)                                   -- student: staff workflow
             END
         END
     )) AS usr(user_number);
@@ -436,6 +456,8 @@ BEGIN TRY
 
     -- Pending requests have no decision. Cancelled rows retain their historical
     -- approved decision, while current conflict queries exclude cancellation.
+    -- AUTO_USAGE_POLICY is the single source of truth for automatic processing.
+    -- Automatic decisions have no deciding staff member; manual decisions do.
     INSERT INTO dbo.BOOKING_DECISION (
         decision_id, booking_id, is_approved, is_automatic,
         decided_by_staff, decision_reason, decision_time
@@ -444,13 +466,9 @@ BEGIN TRY
         CONCAT('GD', RIGHT(CONCAT('000000000', b.n), 9)),
         b.booking_id,
         CONVERT(BIT, CASE WHEN b.status = 'rejected' THEN 0 ELSE 1 END),
-        CONVERT(BIT, CASE
-            WHEN b.space_type_name IN ('meeting_room', 'project_laboratory')
-             AND ((b.n - 1) / @SpaceCount) % 2 = 0 THEN 1 ELSE 0
-        END),
+        CONVERT(BIT, CASE WHEN policy.role_id IS NOT NULL THEN 1 ELSE 0 END),
         CASE
-            WHEN b.space_type_name IN ('meeting_room', 'project_laboratory')
-             AND ((b.n - 1) / @SpaceCount) % 2 = 0 THEN 'GSYSTEM01'
+            WHEN policy.role_id IS NOT NULL THEN NULL
             WHEN b.n % 3 = 0 THEN 'GMANAGER01'
             WHEN b.n % 2 = 0 THEN 'GSTAFF02'
             ELSE 'GSTAFF01'
@@ -462,10 +480,19 @@ BEGIN TRY
                 THEN 'operating_condition_not_satisfied'
             WHEN b.status = 'cancelled'
                 THEN 'approved_before_later_cancellation'
-            ELSE 'usage_policy_and_availability_checks_passed'
+            WHEN policy.role_id IS NOT NULL
+                THEN 'usage_policy_and_availability_checks_passed'
+            ELSE 'staff_approval_and_availability_checks_passed'
         END,
         DATEADD(DAY, -(1 + b.n % 30), b.start_time)
     FROM #BookingSeed AS b
+    JOIN dbo.USERS AS requester
+      ON requester.user_id = b.user_id
+    JOIN dbo.SPACES AS booked_space
+      ON booked_space.space_code = b.space_code
+    LEFT JOIN dbo.AUTO_USAGE_POLICY AS policy
+      ON policy.role_id = requester.role_id
+     AND policy.space_type_id = booked_space.space_type_id
     WHERE b.status <> 'pending';
 
     INSERT INTO dbo.USAGE_SESSION (
@@ -623,6 +650,35 @@ BEGIN TRY
     )
         THROW 52016, 'A generated usage session references a rejected decision.', 1;
 
+    -- Automatic/manual workflow must agree exactly with AUTO_USAGE_POLICY.
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.BOOKING_DECISION AS d
+        JOIN dbo.BOOKING_REQUEST AS br ON br.booking_id = d.booking_id
+        JOIN dbo.USERS AS u ON u.user_id = br.user_id
+        JOIN dbo.SPACES AS s ON s.space_code = br.space_code
+        LEFT JOIN dbo.AUTO_USAGE_POLICY AS p
+          ON p.role_id = u.role_id
+         AND p.space_type_id = s.space_type_id
+        WHERE LEFT(d.decision_id, 2) = 'GD'
+          AND d.is_automatic <> CONVERT(BIT, CASE WHEN p.role_id IS NOT NULL THEN 1 ELSE 0 END)
+    )
+        THROW 52019, 'A generated decision does not match AUTO_USAGE_POLICY eligibility.', 1;
+
+    -- Automatic decisions are system-produced and therefore have no staff
+    -- decision maker; manual decisions must identify the responsible staff user.
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.BOOKING_DECISION AS d
+        WHERE LEFT(d.decision_id, 2) = 'GD'
+          AND (
+              (d.is_automatic = 1 AND d.decided_by_staff IS NOT NULL)
+              OR
+              (d.is_automatic = 0 AND d.decided_by_staff IS NULL)
+          )
+    )
+        THROW 52020, 'Generated decided_by_staff values do not match the processing workflow.', 1;
+
     -- Because every generated request occupies one of two separated daily
     -- slots, checking the previous approved interval per space is sufficient.
     IF EXISTS (
@@ -677,6 +733,10 @@ BEGIN TRY
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending_bookings,
         (SELECT COUNT_BIG(*) FROM dbo.BOOKING_DECISION
          WHERE LEFT(decision_id, 2) = 'GD') AS generated_decisions,
+        (SELECT COUNT_BIG(*) FROM dbo.BOOKING_DECISION
+         WHERE LEFT(decision_id, 2) = 'GD' AND is_automatic = 1) AS automatic_decisions,
+        (SELECT COUNT_BIG(*) FROM dbo.BOOKING_DECISION
+         WHERE LEFT(decision_id, 2) = 'GD' AND is_automatic = 0) AS manual_decisions,
         (SELECT COUNT_BIG(*) FROM dbo.USAGE_SESSION
          WHERE LEFT(session_id, 3) = 'GSN') AS generated_usage_sessions,
         (SELECT COUNT_BIG(*) FROM dbo.MAINTENANCE_RECORD
