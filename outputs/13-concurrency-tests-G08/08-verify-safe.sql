@@ -1,4 +1,6 @@
 -- 08-verify-safe.sql
+-- Expected: exactly one safe booking is approved and no approved overlap exists.
+
 USE campus_space_management;
 GO
 
@@ -6,6 +8,7 @@ SET NOCOUNT ON;
 
 SELECT
     br.booking_id,
+    br.space_code,
     br.start_time,
     br.end_time,
     br.status,
@@ -13,7 +16,10 @@ SELECT
 FROM dbo.BOOKING_REQUEST AS br
 LEFT JOIN dbo.BOOKING_DECISION AS d
   ON d.booking_id = br.booking_id
-WHERE br.booking_id IN ('G08_SAFE_B1', 'G08_SAFE_B2')
+WHERE br.booking_id IN (
+    'G08_SAFE_B1',
+    'G08_SAFE_B2'
+)
 ORDER BY br.booking_id;
 
 DECLARE @approved_count INT = (
@@ -22,7 +28,10 @@ DECLARE @approved_count INT = (
     JOIN dbo.BOOKING_DECISION AS d
       ON d.booking_id = br.booking_id
      AND d.is_approved = 1
-    WHERE br.booking_id IN ('G08_SAFE_B1', 'G08_SAFE_B2')
+    WHERE br.booking_id IN (
+        'G08_SAFE_B1',
+        'G08_SAFE_B2'
+    )
 );
 
 DECLARE @overlap_count INT = (
@@ -39,8 +48,14 @@ DECLARE @overlap_count INT = (
     JOIN dbo.BOOKING_DECISION AS db
       ON db.booking_id = b.booking_id
      AND db.is_approved = 1
-    WHERE a.booking_id IN ('G08_SAFE_B1', 'G08_SAFE_B2')
-      AND b.booking_id IN ('G08_SAFE_B1', 'G08_SAFE_B2')
+    WHERE a.booking_id IN (
+        'G08_SAFE_B1',
+        'G08_SAFE_B2'
+    )
+      AND b.booking_id IN (
+        'G08_SAFE_B1',
+        'G08_SAFE_B2'
+    )
       AND a.status <> 'cancelled'
       AND b.status <> 'cancelled'
 );
@@ -50,10 +65,14 @@ SELECT
     @overlap_count AS overlapping_approved_pair_count;
 
 IF @approved_count <> 1
-    THROW 52603, 'Protected test failed: exactly one booking must be approved.', 1;
+    THROW 52603,
+        'Protected test failed: exactly one booking must be approved.',
+        1;
 
 IF @overlap_count <> 0
-    THROW 52604, 'Protected test failed: an overlapping approved pair exists.', 1;
+    THROW 52604,
+        'Protected test failed: an overlapping approved pair exists.',
+        1;
 
-PRINT 'PASS: the application lock prevented the concurrent overlap.';
+PRINT 'PASS: BOOKING_REQUEST + SPACES update locks prevented the concurrent overlap.';
 GO

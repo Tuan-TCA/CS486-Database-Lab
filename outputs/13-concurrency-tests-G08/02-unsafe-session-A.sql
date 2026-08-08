@@ -1,5 +1,7 @@
 -- 02-unsafe-session-A.sql
--- Run first in Window A. Run Session B while this script waits.
+-- Run first in Window A.
+-- During the 12-second delay, run 03-unsafe-session-B.sql in Window B.
+
 USE campus_space_management;
 GO
 
@@ -13,31 +15,43 @@ BEGIN TRY
     DECLARE
         @space_code VARCHAR(20),
         @start_time DATETIME2(0),
-        @end_time DATETIME2(0);
+        @end_time   DATETIME2(0);
 
+    ------------------------------------------------------------
+    -- Unsafe read: no UPDLOCK on the booking and no per-space
+    -- serialization lock.
+    ------------------------------------------------------------
     SELECT
-        @space_code = space_code,
-        @start_time = start_time,
-        @end_time = end_time
-    FROM dbo.BOOKING_REQUEST
-    WHERE booking_id = 'G08_UNSAFE_B1';
+        @space_code = br.space_code,
+        @start_time = br.start_time,
+        @end_time = br.end_time
+    FROM dbo.BOOKING_REQUEST AS br
+    WHERE br.booking_id = 'G08_UNSAFE_B1';
 
+    ------------------------------------------------------------
+    -- Unsafe check-then-act overlap test.
+    ------------------------------------------------------------
     IF EXISTS (
         SELECT 1
-        FROM dbo.BOOKING_REQUEST AS br
-        JOIN dbo.BOOKING_DECISION AS d
-          ON d.booking_id = br.booking_id
-         AND d.is_approved = 1
-        WHERE br.space_code = @space_code
-          AND br.status <> 'cancelled'
-          AND br.start_time < @end_time
-          AND @start_time < br.end_time
+        FROM dbo.BOOKING_REQUEST AS existing_booking
+        JOIN dbo.BOOKING_DECISION AS existing_decision
+          ON existing_decision.booking_id = existing_booking.booking_id
+         AND existing_decision.is_approved = 1
+        WHERE existing_booking.space_code = @space_code
+          AND existing_booking.booking_id <> 'G08_UNSAFE_B1'
+          AND existing_booking.status <> 'cancelled'
+          AND existing_booking.start_time < @end_time
+          AND @start_time < existing_booking.end_time
     )
         THROW 52600, 'Session A unexpectedly found an existing conflict.', 1;
 
     PRINT 'Session A found no conflict. Run 03-unsafe-session-B.sql now.';
+
     WAITFOR DELAY '00:00:12';
 
+    ------------------------------------------------------------
+    -- Session A acts on the old result without re-checking.
+    ------------------------------------------------------------
     INSERT INTO dbo.BOOKING_DECISION (
         decision_id,
         booking_id,
@@ -62,11 +76,13 @@ BEGIN TRY
     WHERE booking_id = 'G08_UNSAFE_B1';
 
     COMMIT TRANSACTION;
-    PRINT 'Session A committed.';
+
+    PRINT 'Session A committed G08_UNSAFE_B1.';
 END TRY
 BEGIN CATCH
     IF XACT_STATE() <> 0
         ROLLBACK TRANSACTION;
+
     THROW;
 END CATCH;
 GO

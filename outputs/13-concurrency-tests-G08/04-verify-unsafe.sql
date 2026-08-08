@@ -1,4 +1,6 @@
 -- 04-verify-unsafe.sql
+-- Expected: both unsafe bookings are approved and form one overlapping pair.
+
 USE campus_space_management;
 GO
 
@@ -6,6 +8,7 @@ SET NOCOUNT ON;
 
 SELECT
     br.booking_id,
+    br.space_code,
     br.start_time,
     br.end_time,
     br.status,
@@ -13,7 +16,10 @@ SELECT
 FROM dbo.BOOKING_REQUEST AS br
 LEFT JOIN dbo.BOOKING_DECISION AS d
   ON d.booking_id = br.booking_id
-WHERE br.booking_id IN ('G08_UNSAFE_B1', 'G08_UNSAFE_B2')
+WHERE br.booking_id IN (
+    'G08_UNSAFE_B1',
+    'G08_UNSAFE_B2'
+)
 ORDER BY br.booking_id;
 
 DECLARE @approved_count INT = (
@@ -22,7 +28,10 @@ DECLARE @approved_count INT = (
     JOIN dbo.BOOKING_DECISION AS d
       ON d.booking_id = br.booking_id
      AND d.is_approved = 1
-    WHERE br.booking_id IN ('G08_UNSAFE_B1', 'G08_UNSAFE_B2')
+    WHERE br.booking_id IN (
+        'G08_UNSAFE_B1',
+        'G08_UNSAFE_B2'
+    )
 );
 
 DECLARE @overlap_count INT = (
@@ -39,8 +48,14 @@ DECLARE @overlap_count INT = (
     JOIN dbo.BOOKING_DECISION AS db
       ON db.booking_id = b.booking_id
      AND db.is_approved = 1
-    WHERE a.booking_id IN ('G08_UNSAFE_B1', 'G08_UNSAFE_B2')
-      AND b.booking_id IN ('G08_UNSAFE_B1', 'G08_UNSAFE_B2')
+    WHERE a.booking_id IN (
+        'G08_UNSAFE_B1',
+        'G08_UNSAFE_B2'
+    )
+      AND b.booking_id IN (
+        'G08_UNSAFE_B1',
+        'G08_UNSAFE_B2'
+    )
       AND a.status <> 'cancelled'
       AND b.status <> 'cancelled'
 );
@@ -50,7 +65,9 @@ SELECT
     @overlap_count AS overlapping_approved_pair_count;
 
 IF @approved_count <> 2 OR @overlap_count <> 1
-    THROW 52602, 'Unsafe conflict was not reproduced; repeat the session timing.', 1;
+    THROW 52602,
+        'Unsafe conflict was not reproduced; reset and repeat the session timing.',
+        1;
 
-PRINT 'PASS: the unsafe scripts produced two overlapping approved bookings.';
+PRINT 'PASS: unsafe check-then-act produced two overlapping approved bookings.';
 GO

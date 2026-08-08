@@ -1,5 +1,7 @@
 -- 06-safe-session-A.sql
--- Run first in Window A. Run Session B during the 12-second hold.
+-- Run first in Window A.
+-- During the 12-second hold, run 07-safe-session-B.sql in Window B.
+
 USE campus_space_management;
 GO
 
@@ -8,6 +10,5 @@ EXEC dbo.usp_G08_ApproveBookingConcurrentSafe
     @is_automatic = 0,
     @decided_by_staff = 'G08_STAFF_1',
     @decision_reason = 'Protected Session A',
-    @lock_timeout_ms = 20000,
     @test_hold_seconds = 12;
 GO
