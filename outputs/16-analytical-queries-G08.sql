@@ -7,7 +7,7 @@
 -- commented expected output derived from the deterministic data generator
 -- (14-data-generator-G08.sql, which creates exactly 100,000 bookings).
 --
--- Query-to-requirement traceability (doc 09 §6.5):
+-- Query-to-requirement traceability:
 --   01  total approved booking hours per space        -> BOOKING_DECISION, SPACE_TYPE
 --   02  approved booking distribution weekday/hour   -> BOOKING_DECISION
 --   03  available-space search                       -> BOOKING_DECISION, MAINTENANCE_RECORD
@@ -67,16 +67,16 @@ DECLARE @SemesterStart DATETIME = '2025-09-01';
 DECLARE @SemesterEnd   DATETIME = '2026-02-01';
 
 SELECT
-    s.space_code,
-    s.space_name,
-    st.space_type_name,
-    COUNT(*) AS approved_booking_count,
-    CAST(SUM(DATEDIFF(MINUTE, br.start_time, br.end_time)) / 60.0
+  s.space_code,
+  s.space_name,
+  st.space_type_name,
+  COUNT(*) AS approved_booking_count,
+  CAST(SUM(DATEDIFF(MINUTE, br.start_time, br.end_time)) / 60.0
          AS DECIMAL(10,2)) AS total_approved_hours
 FROM BOOKING_REQUEST AS br
-JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
-JOIN SPACES AS s ON s.space_code = br.space_code
-JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
+  JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
+  JOIN SPACES AS s ON s.space_code = br.space_code
+  JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
 WHERE bd.is_approved = 1
   AND br.status <> 'cancelled'
   AND br.start_time >= @SemesterStart
@@ -127,16 +127,13 @@ GO
 --   Phase 1 bookings may add a few off-slot rows (e.g. a 09:00 booking).
 -- ============================================================================
 
-DECLARE @SemesterStart DATETIME = '2025-09-01';
-DECLARE @SemesterEnd   DATETIME = '2026-02-01';
-
 SELECT
-    DATENAME(WEEKDAY, br.start_time) AS weekday_name,
-    DATEPART(WEEKDAY, br.start_time) AS weekday_number,
-    DATEPART(HOUR, br.start_time)    AS start_hour,
-    COUNT(*)                         AS booking_count
+  DATENAME(WEEKDAY, br.start_time) AS weekday_name,
+  DATEPART(WEEKDAY, br.start_time) AS weekday_number,
+  DATEPART(HOUR, br.start_time)    AS start_hour,
+  COUNT(*)                         AS booking_count
 FROM BOOKING_REQUEST AS br
-JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
+  JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
 WHERE bd.is_approved = 1
   AND br.status <> 'cancelled'
   AND br.start_time >= @SemesterStart
@@ -159,7 +156,7 @@ GO
 --   Students, Lecturers, Teaching Assistants, Facility Staff
 --
 -- Why useful:
---   Core space search query — finds spaces matching capacity, facilities, and
+--   Helps find spaces matching capacity, facilities, and
 --   time constraints.
 --
 -- Expected Output:
@@ -186,61 +183,65 @@ GO
 --   Advisory maintenance does NOT exclude a space (just flagged).
 -- ============================================================================
 
-DECLARE @RequestedStart     DATETIME = '2026-10-01 09:00';
-DECLARE @RequestedEnd       DATETIME = '2026-10-01 12:00';
-DECLARE @MinCapacity        INT = 30;
+DECLARE @RequestedStart    DATETIME = '2026-10-01 09:00';
+DECLARE @RequestedEnd      DATETIME = '2026-10-01 12:00';
+DECLARE @MinCapacity       INT = 30;
 
 DECLARE @RequiredFacilities TABLE (facility_name VARCHAR(100));
-INSERT INTO @RequiredFacilities VALUES ('projector'), ('computer');
+INSERT INTO @RequiredFacilities
+VALUES
+  ('projector'),
+  ('computer');
 
-DECLARE @RequiredFacilityCount INT = (SELECT COUNT(*) FROM @RequiredFacilities);
+DECLARE @RequiredFacilityCount INT = (SELECT COUNT(*)
+FROM @RequiredFacilities);
 
 SELECT
-    s.space_code,
-    s.space_name,
-    st.space_type_name,
-    s.capacity,
-    s.building,
-    CASE WHEN EXISTS (
-        SELECT 1 FROM MAINTENANCE_RECORD AS m
-        WHERE m.space_code = s.space_code
-          AND m.impact_level = 'advisory'
-          AND m.status IN ('pending', 'in_progress')
-          AND m.start_time < @RequestedEnd
-          AND (m.end_time IS NULL OR m.end_time > @RequestedStart)
-    ) THEN 'YES' ELSE 'NO' END AS has_advisory_maintenance
+  s.space_code,
+  s.space_name,
+  st.space_type_name,
+  s.capacity,
+  s.building,
+  CASE WHEN EXISTS (
+    SELECT 1
+    FROM MAINTENANCE_RECORD AS m
+    WHERE m.space_code = s.space_code
+      AND m.impact_level = 'advisory'
+      AND m.status IN ('pending', 'in_progress')
+      AND m.start_time < @RequestedEnd
+      AND (m.end_time IS NULL OR m.end_time > @RequestedStart)
+  ) THEN 'YES' ELSE 'NO' END AS has_advisory_maintenance
 FROM SPACES AS s
-JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
+  JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
 WHERE s.current_status = 'available'
   AND s.capacity >= @MinCapacity
   AND (
-      @RequiredFacilityCount = 0
-      OR @RequiredFacilityCount = (
-          SELECT COUNT(DISTINCT f.facility_name)
-          FROM FACILITY AS f
-          JOIN @RequiredFacilities AS rf ON f.facility_name = rf.facility_name
-          WHERE f.space_code = s.space_code
-      )
+    @RequiredFacilityCount = 0
+    OR @RequiredFacilityCount = (
+      SELECT COUNT(DISTINCT f.facility_name)
+      FROM FACILITY AS f
+        JOIN @RequiredFacilities AS rf ON f.facility_name = rf.facility_name
+      WHERE f.space_code = s.space_code
+    )
   )
   AND NOT EXISTS (
-      SELECT 1
-      FROM BOOKING_REQUEST AS existing_br
-      JOIN BOOKING_DECISION AS existing_bd
-        ON existing_bd.booking_id = existing_br.booking_id
-      WHERE existing_br.space_code = s.space_code
-        AND existing_bd.is_approved = 1
-        AND existing_br.status <> 'cancelled'
-        AND existing_br.start_time < @RequestedEnd
-        AND existing_br.end_time   > @RequestedStart
+    SELECT 1
+    FROM BOOKING_REQUEST AS existing_br
+      JOIN BOOKING_DECISION AS existing_bd ON existing_bd.booking_id = existing_br.booking_id
+    WHERE existing_br.space_code = s.space_code
+      AND existing_bd.is_approved = 1
+      AND existing_br.status <> 'cancelled'
+      AND existing_br.start_time < @RequestedEnd
+      AND existing_br.end_time   > @RequestedStart
   )
   AND NOT EXISTS (
-      SELECT 1
-      FROM MAINTENANCE_RECORD AS m
-      WHERE m.space_code = s.space_code
-        AND m.impact_level = 'out_of_service'
-        AND m.status IN ('pending', 'in_progress')
-        AND m.start_time < @RequestedEnd
-        AND (m.end_time IS NULL OR m.end_time > @RequestedStart)
+    SELECT 1
+    FROM MAINTENANCE_RECORD AS m
+    WHERE m.space_code = s.space_code
+      AND m.impact_level = 'out_of_service'
+      AND m.status IN ('pending', 'in_progress')
+      AND m.start_time < @RequestedEnd
+      AND (m.end_time IS NULL OR m.end_time > @RequestedStart)
   )
 ORDER BY s.capacity, s.space_code;
 GO
@@ -282,27 +283,24 @@ GO
 DECLARE @MaintenanceId VARCHAR(20) = 'GM900000001';
 
 SELECT
-    br.booking_id,
-    br.user_id,
-    u.full_name,
-    u.email,
-    br.space_code,
-    br.start_time,
-    br.end_time,
-    br.purpose,
-    br.status,
-    m.maintenance_id,
-    m.problem_description,
-    m.impact_level AS current_impact_level
+  br.booking_id,
+  br.user_id,
+  u.full_name,
+  u.email,
+  br.space_code,
+  br.start_time,
+  br.end_time,
+  br.purpose,
+  br.status,
+  m.maintenance_id,
+  m.problem_description,
+  m.impact_level AS current_impact_level
 FROM MAINTENANCE_RECORD AS m
-JOIN BOOKING_REQUEST AS br
-  ON br.space_code = m.space_code
- AND br.start_time < ISNULL(m.end_time, '2099-12-31')
- AND br.end_time   > m.start_time
-JOIN BOOKING_DECISION AS bd
-  ON bd.booking_id = br.booking_id
-JOIN USERS AS u
-  ON u.user_id = br.user_id
+  JOIN BOOKING_REQUEST AS br ON br.space_code = m.space_code
+    AND br.start_time < ISNULL(m.end_time, '2099-12-31')
+    AND br.end_time   > m.start_time
+  JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
+  JOIN USERS AS u ON u.user_id = br.user_id
 WHERE m.maintenance_id = @MaintenanceId
   AND bd.is_approved = 1
   AND br.status NOT IN ('cancelled', 'completed', 'no_show')
@@ -340,21 +338,20 @@ GO
 -- ============================================================================
 
 SELECT
-    st.space_type_name,
-    COUNT(*) AS total_decisions,
-    SUM(CASE WHEN bd.is_automatic = 1 AND bd.is_approved = 1 THEN 1 ELSE 0 END)
+  st.space_type_name,
+  COUNT(*) AS total_decisions,
+  SUM(CASE WHEN bd.is_automatic = 1 AND bd.is_approved = 1 THEN 1 ELSE 0 END)
         AS auto_approved,
-    SUM(CASE WHEN bd.is_automatic = 0 AND bd.is_approved = 1 THEN 1 ELSE 0 END)
+  SUM(CASE WHEN bd.is_automatic = 0 AND bd.is_approved = 1 THEN 1 ELSE 0 END)
         AS staff_approved,
-    SUM(CASE WHEN bd.is_approved = 0 THEN 1 ELSE 0 END)
+  SUM(CASE WHEN bd.is_approved = 0 THEN 1 ELSE 0 END)
         AS rejected,
-    CAST(100.0 * SUM(CASE WHEN bd.is_automatic = 1 THEN 1 ELSE 0 END)
-         / NULLIF(COUNT(*), 0) AS DECIMAL(5,2))
-        AS automatic_pct
+  CAST(100.0 * SUM(CASE WHEN bd.is_automatic = 1 THEN 1 ELSE 0 END)
+         / NULLIF(COUNT(*), 0) AS DECIMAL(5,2)) AS automatic_pct
 FROM BOOKING_DECISION AS bd
-JOIN BOOKING_REQUEST AS br ON br.booking_id = bd.booking_id
-JOIN SPACES AS s ON s.space_code = br.space_code
-JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
+  JOIN BOOKING_REQUEST AS br ON br.booking_id = bd.booking_id
+  JOIN SPACES AS s ON s.space_code = br.space_code
+  JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
 GROUP BY st.space_type_name
 ORDER BY automatic_pct DESC;
 GO
@@ -390,19 +387,19 @@ GO
 DECLARE @SpaceCode VARCHAR(20) = 'GSP001';
 
 SELECT
-    bn.booking_id,
-    bn.maintenance_id,
-    bn.notification_type,
-    bn.notification_time,
-    br.start_time AS booking_start,
-    br.end_time   AS booking_end,
-    br.status     AS booking_status,
-    m.problem_description,
-    m.impact_level,
-    m.status AS maintenance_status
+  bn.booking_id,
+  bn.maintenance_id,
+  bn.notification_type,
+  bn.notification_time,
+  br.start_time AS booking_start,
+  br.end_time   AS booking_end,
+  br.status     AS booking_status,
+  m.problem_description,
+  m.impact_level,
+  m.status AS maintenance_status
 FROM BOOKING_NOTIFICATION AS bn
-JOIN BOOKING_REQUEST AS br ON br.booking_id = bn.booking_id
-JOIN MAINTENANCE_RECORD AS m ON m.maintenance_id = bn.maintenance_id
+  JOIN BOOKING_REQUEST AS br ON br.booking_id = bn.booking_id
+  JOIN MAINTENANCE_RECORD AS m ON m.maintenance_id = bn.maintenance_id
 WHERE br.space_code = @SpaceCode
 ORDER BY bn.notification_time DESC;
 GO
@@ -441,14 +438,13 @@ GO
 --   use it).
 -- ============================================================================
 
-DECLARE @SemesterStart DATE = '2025-09-01';
-DECLARE @SemesterEnd   DATE = '2026-02-01';
-
 DECLARE @WeekdayCount INT;
 ;WITH DateSeries AS (
     SELECT @SemesterStart AS d
-    UNION ALL
-    SELECT DATEADD(DAY, 1, d) FROM DateSeries WHERE d < DATEADD(DAY, -2, @SemesterEnd)
+  UNION ALL
+    SELECT DATEADD(DAY, 1, d)
+    FROM DateSeries
+    WHERE d < DATEADD(DAY, -2, @SemesterEnd)
 )
 SELECT @WeekdayCount = COUNT(*)
 FROM DateSeries
@@ -456,28 +452,24 @@ WHERE DATEPART(WEEKDAY, d) NOT IN (1, 7)
 OPTION (MAXRECURSION 0)
 
 SELECT
-    st.space_type_name,
-    COUNT(DISTINCT s.space_code) AS space_count,
-    @WeekdayCount AS weekdays_in_semester,
-    COUNT(DISTINCT s.space_code) * @WeekdayCount * 10 AS total_available_hours,
-    CAST(SUM(CASE WHEN bd.is_approved = 1 AND br.status <> 'cancelled'
+  st.space_type_name,
+  COUNT(DISTINCT s.space_code) AS space_count,
+  @WeekdayCount AS weekdays_in_semester,
+  COUNT(DISTINCT s.space_code) * @WeekdayCount * 10 AS total_available_hours,
+  CAST(SUM(CASE WHEN bd.is_approved = 1 AND br.status <> 'cancelled'
                   THEN DATEDIFF(MINUTE, br.start_time, br.end_time)
-                  ELSE 0 END) / 60.0 AS DECIMAL(10,2))
-        AS total_booked_hours,
-    CAST(100.00 * SUM(CASE WHEN bd.is_approved = 1 AND br.status <> 'cancelled'
+                  ELSE 0 END) / 60.0 AS DECIMAL(10,2)) AS total_booked_hours,
+  CAST(100.00 * SUM(CASE WHEN bd.is_approved = 1 AND br.status <> 'cancelled'
                            THEN DATEDIFF(MINUTE, br.start_time, br.end_time)
                            ELSE 0 END) / 60.0
          / NULLIF(COUNT(DISTINCT s.space_code) * @WeekdayCount * 10, 0)
-         AS DECIMAL(5,2))
-        AS utilization_pct
+         AS DECIMAL(5,2)) AS utilization_pct
 FROM SPACES AS s
-JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
-LEFT JOIN BOOKING_REQUEST AS br
-  ON br.space_code = s.space_code
- AND br.start_time >= @SemesterStart
- AND br.start_time <  @SemesterEnd
-LEFT JOIN BOOKING_DECISION AS bd
-  ON bd.booking_id = br.booking_id
+  JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
+  LEFT JOIN BOOKING_REQUEST AS br ON br.space_code = s.space_code
+    AND br.start_time >= @SemesterStart
+    AND br.start_time <  @SemesterEnd
+  LEFT JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
 GROUP BY st.space_type_name
 ORDER BY utilization_pct DESC;
 GO
@@ -518,21 +510,20 @@ GO
 -- ============================================================================
 
 SELECT
-    r.role_name,
-    COUNT(br.booking_id) AS total_requests,
-    SUM(CASE WHEN bd.is_approved = 1 THEN 1 ELSE 0 END) AS approved,
-    SUM(CASE WHEN bd.is_approved = 0 THEN 1 ELSE 0 END) AS rejected,
-    SUM(CASE WHEN br.status = 'completed' THEN 1 ELSE 0 END) AS completed,
-    SUM(CASE WHEN br.status = 'no_show'     THEN 1 ELSE 0 END) AS no_shows,
-    SUM(CASE WHEN br.status = 'cancelled'   THEN 1 ELSE 0 END) AS cancelled,
-    SUM(CASE WHEN br.status = 'pending'     THEN 1 ELSE 0 END) AS pending,
-    CAST(100.0 * SUM(CASE WHEN bd.is_approved = 1 THEN 1 ELSE 0 END)
-         / NULLIF(COUNT(br.booking_id), 0) AS DECIMAL(5,2))
-        AS approval_rate_pct
+  r.role_name,
+  COUNT(br.booking_id) AS total_requests,
+  SUM(CASE WHEN bd.is_approved = 1 THEN 1 ELSE 0 END) AS approved,
+  SUM(CASE WHEN bd.is_approved = 0 THEN 1 ELSE 0 END) AS rejected,
+  SUM(CASE WHEN br.status = 'completed' THEN 1 ELSE 0 END) AS completed,
+  SUM(CASE WHEN br.status = 'no_show'     THEN 1 ELSE 0 END) AS no_shows,
+  SUM(CASE WHEN br.status = 'cancelled'   THEN 1 ELSE 0 END) AS cancelled,
+  SUM(CASE WHEN br.status = 'pending'     THEN 1 ELSE 0 END) AS pending,
+  CAST(100.0 * SUM(CASE WHEN bd.is_approved = 1 THEN 1 ELSE 0 END)
+         / NULLIF(COUNT(br.booking_id), 0) AS DECIMAL(5,2)) AS approval_rate_pct
 FROM USERS AS u
-JOIN ROLE AS r ON r.role_id = u.role_id
-JOIN BOOKING_REQUEST AS br ON br.user_id = u.user_id
-LEFT JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
+  JOIN ROLE AS r ON r.role_id = u.role_id
+  JOIN BOOKING_REQUEST AS br ON br.user_id = u.user_id
+  LEFT JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
 GROUP BY r.role_name
 ORDER BY total_requests DESC;
 GO
@@ -565,22 +556,20 @@ GO
 -- ============================================================================
 
 SELECT
-    m.impact_level,
-    COUNT(*) AS total_records,
-    SUM(CASE WHEN m.status = 'completed' THEN 1 ELSE 0 END) AS completed_records,
-    SUM(CASE WHEN m.status IN ('pending', 'in_progress') THEN 1 ELSE 0 END)
+  m.impact_level,
+  COUNT(*) AS total_records,
+  SUM(CASE WHEN m.status = 'completed' THEN 1 ELSE 0 END) AS completed_records,
+  SUM(CASE WHEN m.status IN ('pending', 'in_progress') THEN 1 ELSE 0 END)
         AS still_active,
-    SUM(CASE WHEN m.status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
-    CAST(AVG(
-        CASE WHEN m.status = 'completed' AND m.end_time IS NOT NULL
+  SUM(CASE WHEN m.status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled,
+  CAST(AVG(CASE WHEN m.status = 'completed' AND m.end_time IS NOT NULL
              THEN CAST(DATEDIFF(MINUTE, m.start_time, m.end_time) AS FLOAT)
-        END
-    ) / 60.0 AS DECIMAL(10,2)) AS avg_resolution_hours,
-    (SELECT COUNT(DISTINCT bn.booking_id)
-     FROM BOOKING_NOTIFICATION AS bn
-     JOIN MAINTENANCE_RECORD AS m2 ON m2.maintenance_id = bn.maintenance_id
-     WHERE m2.impact_level = m.impact_level
-    ) AS bookings_notified
+        END) / 60.0 AS DECIMAL(10,2)) AS avg_resolution_hours,
+  (SELECT COUNT(DISTINCT bn.booking_id)
+  FROM BOOKING_NOTIFICATION AS bn
+    JOIN MAINTENANCE_RECORD AS m2 ON m2.maintenance_id = bn.maintenance_id
+  WHERE m2.impact_level = m.impact_level
+  ) AS bookings_notified
 FROM MAINTENANCE_RECORD AS m
 GROUP BY m.impact_level
 ORDER BY m.impact_level;
@@ -618,18 +607,18 @@ GO
 -- ============================================================================
 
 SELECT TOP 10
-    s.space_code,
-    s.space_name,
-    st.space_type_name,
-    COUNT(*) AS rejected_booking_count,
-    SUM(CASE WHEN bd.decision_reason = 'capacity_exceeded' THEN 1 ELSE 0 END)
+  s.space_code,
+  s.space_name,
+  st.space_type_name,
+  COUNT(*) AS rejected_booking_count,
+  SUM(CASE WHEN bd.decision_reason = 'capacity_exceeded' THEN 1 ELSE 0 END)
         AS capacity_rejections,
-    SUM(CASE WHEN bd.decision_reason <> 'capacity_exceeded' THEN 1 ELSE 0 END)
+  SUM(CASE WHEN bd.decision_reason <> 'capacity_exceeded' THEN 1 ELSE 0 END)
         AS other_rejections
 FROM BOOKING_DECISION AS bd
-JOIN BOOKING_REQUEST AS br ON br.booking_id = bd.booking_id
-JOIN SPACES AS s ON s.space_code = br.space_code
-JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
+  JOIN BOOKING_REQUEST AS br ON br.booking_id = bd.booking_id
+  JOIN SPACES AS s ON s.space_code = br.space_code
+  JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
 WHERE bd.is_approved = 0
 GROUP BY s.space_code, s.space_name, st.space_type_name
 ORDER BY rejected_booking_count DESC;
