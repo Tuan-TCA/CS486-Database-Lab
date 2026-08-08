@@ -8,3 +8,4 @@
 *.toc
 *.nav
 *.out
+output/*.mmd

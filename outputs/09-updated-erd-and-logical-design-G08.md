@@ -1,569 +1,488 @@
-# 09 — Updated ERD and Logical Design (G08)
+# 09 - Updated ERD and Logical Design (G08)
 
-## 1. Purpose and scope
+## 1. Design objectives
 
-This document updates the Phase 1 ERD and relational design in
-`02-erd-design-G08.md` and `03-logical-design-G08.md` for the Phase 2
-requirements. The update supports:
+This document presents the updated conceptual Entity–Relationship Diagram (ERD) and logical schema for Phase 2 of the Campus Space Management System. The updated design extends the Phase 1 database to support the revised maintenance rules, concurrent booking and approval operations, and the additional analytical queries required by the Phase 2 specification.
 
-- `advisory` and `out_of_service` maintenance impact levels;
-- acknowledgement of every active advisory shown to a requester at booking
-  time;
-- both automatic and staff booking decisions;
-- safe concurrent approval of requests for the same space;
-- finding approved bookings affected by out-of-service maintenance; and
-- the new room-availability and booking-history reports.
+The objectives of the updated logical design are to:
 
-The schema records the data needed by these rules. Cross-row rules—especially
-the booking conflict rule—must additionally be enforced by transactional SQL,
-as described in Section 8.
+- support `advisory` and `out_of_service` maintenance impact levels;
+- record requester acknowledgements for active advisory maintenance;
+- support both automatic and staff booking decisions through a unified `BOOKING_DECISION` relation;
+- support automatic booking processing for eligible user roles and space types;
+- preserve data consistency during concurrent booking and approval operations;
+- provide the data required by the analytical queries specified in Phase 2 without storing redundant derived information; and
+- maintain a normalized logical schema that can be directly implemented through schema migration from the Phase 1 database.
 
-## 2. Summary of changes from Phase 1
+## 2. Design assumptions
 
-| Phase 1 design | Phase 2 update | Reason |
-|---|---|---|
-| `USERS.role` was free text | Add `ROLES`; replace `role` with `role_id` | Gives policies and users a stable role reference |
-| `SPACES.usage_policy` was free text | Add `SPACE_USAGE_POLICY` | Makes allowed roles and automatic approval queryable |
-| `BOOKING_APPROVAL` represented staff approval only | Replace it with `BOOKING_DECISION` | Represents approval/rejection from either staff or the automatic process |
-| A maintenance record had no impact level | Add `MAINTENANCE_RECORD.impact_level` | Distinguishes advisory work from work that prevents booking |
-| Any active maintenance prevented booking | Only overlapping active `out_of_service` maintenance prevents approval | Implements the revised maintenance rule |
-| No advisory acknowledgement was stored | Add `ADVISORY_ACKNOWLEDGEMENT` | Proves which active advisories were shown for a booking |
-| `USAGE_SESSION` referred directly to a booking | It refers to the booking's approved decision | A usage session can only originate from a decided booking |
-| Booking status was directly editable | Treat it as a system-managed lifecycle value | Keeps decisions and lifecycle transitions consistent |
+- Every space belongs to exactly one predefined space type represented by the `SPACE_TYPE` relation.
+- `AUTO_USAGE_POLICY` identifies the (`space_type`, `role`) combinations that are eligible for automatic booking processing. Booking requests without a matching policy are processed through the staff approval workflow.
+- `BOOKING_REQUEST.status` represents the booking lifecycle and is maintained exclusively by the system. It is therefore treated as a read-only attribute in the logical model.
+- Booking availability is determined from both `SPACE.current_status` and active `MAINTENANCE_RECORD`s. The space status represents the operational state of the space, while maintenance records determine whether an overlapping booking is blocked by `out_of_service` maintenance or accompanied by active `advisory` maintenance.
+- A maintenance record is considered active while its status is `pending` or `in_progress`. Completed and cancelled maintenance records are retained for historical purposes but do not affect future booking decisions.
+- Semester boundaries are supplied as query parameters. No separate semester relation is introduced because it is not required by the Phase 2 specification.
 
-`SPACES.active_out_of_service_count` and
-`SPACES.active_advisory_count` appear in the conceptual diagram as derived
-attributes. They are not stored columns: they are calculated from open,
-currently active maintenance records to avoid update anomalies.
+## 3. Design changes from Phase 1
 
-## 3. Updated conceptual ERD
+Compared with the Phase 1 design, the logical model has been updated as follows:
+
+- Introduced the `ROLE` relation to normalize user roles.
+- Introduced the `SPACE_TYPE` relation and replaced the `space_type` attribute in `SPACE` with a foreign key.
+- Replaced the `usage_policy` attribute in `SPACE` with the `AUTO_USAGE_POLICY` relation, which identifies the (`space_type`, `role`) combinations eligible for automatic booking processing.
+- Replaced `BOOKING_APPROVAL` with `BOOKING_DECISION` to unify automatic and staff booking decisions in a single relation.
+- Updated `USAGE_SESSION` to reference `BOOKING_DECISION` instead of `BOOKING_REQUEST`.
+- Extended `MAINTENANCE_RECORD` with the `impact_level` attribute to distinguish between `advisory` and `out_of_service` maintenance.
+- Added `ADVISORY_ACKNOWLEDGEMENT` to record requester acknowledgements for active advisory maintenance.
+
+
+## 4. Updated conceptual ERD
 
 ```mermaid
 erDiagram
-    ROLES {
-        int role_id PK
-        string role_name UK
-    }
 
-    USERS {
-        string user_id PK
-        string full_name
-        string email UK
-        string phone_number
-        int role_id FK
-        string department
-        string account_status
-    }
+USER {
+    string user_id PK
+    int role_id FK
+    string full_name
+    string email
+    string phone_number
+    string department
+    string account_status
+}
 
-    SPACES {
-        string space_code PK
-        string space_name
-        string space_type
-        string building
-        int floor
-        string room_number
-        int capacity
-        string current_status
-        int active_out_of_service_count "derived"
-        int active_advisory_count "derived"
-    }
+ROLE {
+    int role_id PK
+    string role_name
+}
 
-    FACILITY {
-        string facility_id PK
-        string space_code FK
-        string facility_name
-        string description
-    }
+SPACE_TYPE {
+    int space_type_id PK
+    string space_type_name
+}
 
-    SPACE_USAGE_POLICY {
-        string space_code PK,FK
-        int role_id PK,FK
-        boolean auto_approval_enabled
-    }
+SPACE {
+    string space_code PK
+    int space_type_id FK
+    string space_name
+    string building
+    int floor
+    string room_number
+    int capacity
+    string current_status
+}
 
-    BOOKING_REQUEST {
-        string booking_id PK
-        string user_id FK
-        string space_code FK
-        datetime requested_start_time
-        datetime requested_end_time
-        string purpose
-        int expected_participants
-        string booking_type
-        string status "system managed"
-    }
+AUTO_USAGE_POLICY {
+    int space_type_id PK,FK
+    int role_id PK,FK
+}
 
-    BOOKING_DECISION {
-        string decision_id PK
-        string booking_id FK,UK
-        boolean is_approved
-        string decision_source
-        string decided_by_user_id FK
-        datetime decision_time
-        string decision_reason
-    }
+FACILITY {
+    string facility_id PK
+    string space_code FK
+    string facility_name
+    string description
+}
 
-    USAGE_SESSION {
-        string session_id PK
-        string decision_id FK,UK
-        datetime actual_start_time
-        datetime actual_end_time
-        string checked_in_by_user_id FK
-        string completed_by_user_id FK
-        string initial_condition
-        string final_condition
-        string usage_notes
-    }
+BOOKING_REQUEST {
+    string booking_id PK
+    string user_id FK
+    string space_code FK
+    datetime start_time
+    datetime end_time
+    string purpose
+    int expected_participants
+    string booking_type
+    string status[[read_only]]
+}
 
-    MAINTENANCE_RECORD {
-        string maintenance_id PK
-        string space_code FK
-        string reporter_user_id FK
-        string assigned_staff_user_id FK
-        string problem_description
-        datetime start_time
-        datetime completion_time
-        string status
-        string result_note
-        string impact_level
-    }
+BOOKING_DECISION {
+    string decision_id PK
+    string booking_id FK
+    boolean is_approved
+    boolean is_automatic
+    string decided_by_staff FK
+    string decision_reason
+    datetime decision_time
+}
 
-    ADVISORY_ACKNOWLEDGEMENT {
-        string booking_id PK,FK
-        string maintenance_id PK,FK
-        datetime acknowledged_at
-    }
+USAGE_SESSION {
+    string session_id PK
+    string decision_id FK
+    string checked_in_by_staff FK
+    string completed_by_staff FK
+    datetime start_time
+    datetime end_time
+    string initial_condition
+    string final_condition
+    string usage_note
+}
 
-    ROLES ||--o{ USERS : classifies
-    ROLES ||--o{ SPACE_USAGE_POLICY : is_allowed_by
-    SPACES ||--o{ SPACE_USAGE_POLICY : has
-    SPACES ||--o{ FACILITY : contains
-    USERS ||--o{ BOOKING_REQUEST : submits
-    SPACES ||--o{ BOOKING_REQUEST : receives
-    BOOKING_REQUEST ||--o| BOOKING_DECISION : receives
-    USERS o|--o{ BOOKING_DECISION : makes
-    BOOKING_DECISION ||--o| USAGE_SESSION : authorizes
-    USERS ||--o{ USAGE_SESSION : checks_in
-    USERS o|--o{ USAGE_SESSION : completes
-    SPACES ||--o{ MAINTENANCE_RECORD : has
-    USERS ||--o{ MAINTENANCE_RECORD : reports
-    USERS ||--o{ MAINTENANCE_RECORD : is_assigned
-    BOOKING_REQUEST ||--o{ ADVISORY_ACKNOWLEDGEMENT : records
-    MAINTENANCE_RECORD ||--o{ ADVISORY_ACKNOWLEDGEMENT : is_acknowledged_in
+MAINTENANCE_RECORD {
+    string maintenance_id PK
+    string space_code FK
+    string report_user FK
+    string assigned_staff FK
+    string problem_description
+    datetime start_time
+    datetime end_time
+    string status
+    string result_note
+    string impact_level
+}
+
+ADVISORY_ACKNOWLEDGEMENT {
+    string booking_id PK,FK
+    string maintenance_id PK,FK
+    datetime acknowledge_time
+}
+
+%% Relationships
+
+ROLE ||--o{ USER : assigned_to
+
+SPACE_TYPE ||--o{ SPACE : categorizes
+SPACE_TYPE ||--o{ AUTO_USAGE_POLICY : auto_policy
+
+ROLE ||--o{ AUTO_USAGE_POLICY : eligible_role
+
+SPACE ||--o{ BOOKING_REQUEST : receives
+SPACE ||--o{ FACILITY : contains
+SPACE ||--o{ MAINTENANCE_RECORD : has
+
+USER ||--o{ BOOKING_REQUEST : submits
+
+BOOKING_REQUEST ||--o| BOOKING_DECISION : results_in
+BOOKING_DECISION ||--o| USAGE_SESSION : creates
+
+BOOKING_REQUEST ||--o{ ADVISORY_ACKNOWLEDGEMENT : acknowledges
+MAINTENANCE_RECORD ||--o{ ADVISORY_ACKNOWLEDGEMENT : acknowledged_by
+
+USER ||--o{ BOOKING_DECISION : decides
+USER ||--o{ MAINTENANCE_RECORD : reports
+USER ||--o{ MAINTENANCE_RECORD : assigned_to
+USER ||--o{ USAGE_SESSION : checks_in
+USER ||--o{ USAGE_SESSION : completes
 ```
 
-### 3.1 Cardinalities and participation
-
-| Relationship | Cardinality | Participation rule |
-|---|---:|---|
-| `ROLES`–`USERS` | 1:N | Every user has exactly one role |
-| `ROLES`–`SPACE_USAGE_POLICY` | 1:N | Every policy references one role |
-| `SPACES`–`SPACE_USAGE_POLICY` | 1:N | A space may allow zero or many roles |
-| `SPACES`–`FACILITY` | 1:N | Every facility belongs to one space |
-| `USERS`–`BOOKING_REQUEST` | 1:N | Every booking is submitted by one user |
-| `SPACES`–`BOOKING_REQUEST` | 1:N | Every booking requests one space |
-| `BOOKING_REQUEST`–`BOOKING_DECISION` | 1:0..1 | A pending request has no decision; a decided request has one |
-| `USERS`–`BOOKING_DECISION` | 1:0..N | Staff decisions have a user; automatic decisions do not |
-| `BOOKING_DECISION`–`USAGE_SESSION` | 1:0..1 | Only an approved decision may authorize one session |
-| `SPACES`–`MAINTENANCE_RECORD` | 1:N | Every maintenance record concerns one space |
-| `BOOKING_REQUEST`–`ADVISORY_ACKNOWLEDGEMENT` | 1:N | A booking may acknowledge many advisories |
-| `MAINTENANCE_RECORD`–`ADVISORY_ACKNOWLEDGEMENT` | 1:N | An advisory may be acknowledged for many bookings |
-
-The two foreign keys in `ADVISORY_ACKNOWLEDGEMENT` implement the M:N
-relationship between bookings and maintenance advisories. Their combination is
-the relation's primary key, so the same advisory cannot be acknowledged twice
-for the same booking.
-
-## 4. Updated relational schema summary
-
-| Relation | Primary key | Foreign keys | Other candidate keys |
-|---|---|---|---|
-| `ROLES` | `role_id` | — | `role_name` |
-| `USERS` | `user_id` | `role_id` | `email` |
-| `SPACES` | `space_code` | — | (`building`, `room_number`) |
-| `FACILITY` | `facility_id` | `space_code` | — |
-| `SPACE_USAGE_POLICY` | (`space_code`, `role_id`) | `space_code`, `role_id` | — |
-| `BOOKING_REQUEST` | `booking_id` | `user_id`, `space_code` | — |
-| `BOOKING_DECISION` | `decision_id` | `booking_id`, `decided_by_user_id` | `booking_id` |
-| `USAGE_SESSION` | `session_id` | `decision_id`, `checked_in_by_user_id`, `completed_by_user_id` | `decision_id` |
-| `MAINTENANCE_RECORD` | `maintenance_id` | `space_code`, `reporter_user_id`, `assigned_staff_user_id` | — |
-| `ADVISORY_ACKNOWLEDGEMENT` | (`booking_id`, `maintenance_id`) | `booking_id`, `maintenance_id` | — |
 
 ## 5. Relation definitions
 
-The definitions below are logical definitions. SQL Server-specific types,
-defaults, indexes, transactions, and migration statements belong in
-`10-schema-migration-G08.sql`.
+This section defines the logical relations derived from the conceptual ERD. Each relation represents one conceptual entity and specifies the operational information maintained by the database. Together, these relations provide the foundation for the booking, maintenance, and reporting functions introduced in Phase 2.
 
-### 5.1 `ROLES`
+### 5.1 `ROLE`
 
 ```text
-ROLES(
-    role_id                 INT,
-    role_name               VARCHAR(50)
+ROLE(
+    role_id,
+    role_name
 )
 ```
 
-- Primary key: `role_id`
-- Candidate key: `role_name`
-- `role_name` is required and unique.
+The `ROLE` relation defines the predefined user roles recognized by the system. Each user is assigned exactly one role, and the role is used when determining eligibility for automatic booking processing.
 
-### 5.2 `USERS`
+---
+
+### 5.2 `USER`
 
 ```text
-USERS(
-    user_id                 VARCHAR(20),
-    full_name               VARCHAR(100),
-    email                   VARCHAR(100),
-    phone_number            VARCHAR(20),
-    role_id                 INT,
-    department              VARCHAR(100),
-    account_status          VARCHAR(30)
+USER(
+    user_id,
+    role_id,
+    full_name,
+    email,
+    phone_number,
+    department,
+    account_status
 )
 ```
 
-- Primary key: `user_id`
-- Candidate key: `email`
-- Foreign key: `role_id` → `ROLES(role_id)`
-- `full_name`, `email`, `role_id`, and `account_status` are required.
-- `account_status` is restricted to `active`, `inactive`, or `suspended`.
+The `USER` relation stores user accounts together with their assigned roles and account status. A user may submit booking requests, report maintenance issues, perform staff booking decisions, and manage usage sessions depending on the assigned role.
 
-### 5.3 `SPACES`
+---
+
+### 5.3 `SPACE_TYPE`
 
 ```text
-SPACES(
-    space_code              VARCHAR(20),
-    space_name              VARCHAR(100),
-    space_type              VARCHAR(50),
-    building                VARCHAR(50),
-    floor                   INT,
-    room_number             VARCHAR(20),
-    capacity                INT,
-    current_status          VARCHAR(30)
+SPACE_TYPE(
+    space_type_id,
+    space_type_name
 )
 ```
 
-- Primary key: `space_code`
-- Candidate key: (`building`, `room_number`)
-- `capacity > 0`.
-- `current_status` is restricted to `available`, `in_use`,
-  `temporarily_closed`, or `retired`.
-- `under_maintenance` is removed as a space-wide status. Maintenance
-  availability is determined from overlapping `MAINTENANCE_RECORD` rows and
-  their impact levels. This permits several simultaneous maintenance records
-  with different impacts.
+The `SPACE_TYPE` relation classifies spaces into predefined categories. Each space belongs to exactly one space type, allowing booking policies to be defined for groups of similar spaces instead of individual spaces.
 
-### 5.4 `FACILITY`
+---
+
+### 5.4 `SPACE`
+
+```text
+SPACE(
+    space_code,
+    space_type_id,
+    space_name,
+    building,
+    floor,
+    room_number,
+    capacity,
+    current_status
+)
+```
+
+The `SPACE` relation stores the physical characteristics and operational status of each space. Besides its descriptive information, a space is associated with facilities, maintenance records, and booking requests throughout its lifetime.
+
+The `current_status` attribute represents the operational state of the space. Maintenance availability is evaluated together with active maintenance records rather than from this attribute alone.
+
+---
+
+### 5.5 `AUTO_USAGE_POLICY`
+
+```text
+AUTO_USAGE_POLICY(
+    space_type_id,
+    role_id
+)
+```
+
+The `AUTO_USAGE_POLICY` relation identifies the (`space_type`, `role`) combinations that are eligible for automatic booking processing.
+
+If a booking request matches a record in this relation, the request follows the automatic approval workflow. Otherwise, it follows the staff approval workflow. The relation therefore determines only the processing path and does not represent the final booking decision.
+
+---
+
+### 5.6 `FACILITY`
 
 ```text
 FACILITY(
-    facility_id             VARCHAR(20),
-    space_code              VARCHAR(20),
-    facility_name           VARCHAR(100),
-    description             VARCHAR(MAX)
+    facility_id,
+    space_code,
+    facility_name,
+    description
 )
 ```
 
-- Primary key: `facility_id`
-- Foreign key: `space_code` → `SPACES(space_code)`
-- `space_code` and `facility_name` are required.
-- The room finder uses this relation to ensure that a candidate space contains
-  every facility in the requested list.
+The `FACILITY` relation stores the facilities available in each space. Facility information supports space search and booking selection based on user requirements.
 
-### 5.5 `SPACE_USAGE_POLICY`
+---
 
-```text
-SPACE_USAGE_POLICY(
-    space_code              VARCHAR(20),
-    role_id                 INT,
-    auto_approval_enabled   BIT
-)
-```
-
-- Primary key: (`space_code`, `role_id`)
-- Foreign key: `space_code` → `SPACES(space_code)`
-- Foreign key: `role_id` → `ROLES(role_id)`
-- All attributes are required; `auto_approval_enabled` defaults to `0`.
-- A row means that the role may request the space. If the flag is `1`, a
-  policy-compliant request may enter the automatic decision path. A `1` value
-  does not bypass maintenance or booking-conflict checks.
-
-This relation replaces the unstructured `SPACES.usage_policy` attribute.
-
-### 5.6 `BOOKING_REQUEST`
+### 5.7 `BOOKING_REQUEST`
 
 ```text
 BOOKING_REQUEST(
-    booking_id              VARCHAR(20),
-    user_id                 VARCHAR(20),
-    space_code              VARCHAR(20),
-    requested_start_time    DATETIME2,
-    requested_end_time      DATETIME2,
-    purpose                 VARCHAR(MAX),
-    expected_participants   INT,
-    booking_type            VARCHAR(50),
-    status                  VARCHAR(30)
+    booking_id,
+    user_id,
+    space_code,
+    start_time,
+    end_time,
+    purpose,
+    expected_participants,
+    booking_type,
+    status
 )
 ```
 
-- Primary key: `booking_id`
-- Foreign key: `user_id` → `USERS(user_id)`
-- Foreign key: `space_code` → `SPACES(space_code)`
-- `requested_end_time > requested_start_time`.
-- `expected_participants > 0` and must not exceed the selected space's
-  capacity when the request is approved.
-- `status` is restricted to `pending`, `approved`, `rejected`, `cancelled`,
-  `checked_in`, `completed`, or `no_show`.
-- `status` is system-managed through the booking procedures; clients must not
-  update it directly. It is retained because cancellation, check-in,
-  completion, and no-show are lifecycle states rather than approval outcomes.
+The `BOOKING_REQUEST` relation records booking requests submitted by users. Each request specifies the requested space, booking interval, intended purpose, and expected number of participants.
 
-Time periods use half-open interval semantics: `[start, end)`. Therefore, a
-booking ending at 10:00 does not overlap a booking starting at 10:00.
+The `status` attribute represents the booking lifecycle and is maintained exclusively by the system. It records the operational state of the booking request after each processing stage.
 
-### 5.7 `BOOKING_DECISION`
+---
+
+### 5.8 `BOOKING_DECISION`
 
 ```text
 BOOKING_DECISION(
-    decision_id             VARCHAR(20),
-    booking_id              VARCHAR(20),
-    is_approved             BIT,
-    decision_source         VARCHAR(20),
-    decided_by_user_id      VARCHAR(20) NULL,
-    decision_time           DATETIME2,
-    decision_reason         VARCHAR(MAX)
+    decision_id,
+    booking_id,
+    is_approved,
+    is_automatic,
+    decided_by_staff,
+    decision_reason,
+    decision_time
 )
 ```
 
-- Primary key: `decision_id`
-- Candidate key: `booking_id`
-- Foreign key: `booking_id` → `BOOKING_REQUEST(booking_id)`
-- Foreign key: `decided_by_user_id` → `USERS(user_id)`
-- `decision_source` is restricted to `staff` or `automatic`.
-- For a staff decision, `decided_by_user_id` is required and must reference an
-  authorized active staff user.
-- For an automatic decision, `decided_by_user_id` must be `NULL`.
-- The unique `booking_id` constraint limits a request to one decision.
-- `is_approved = 1` is allowed only after the common transactional maintenance
-  and booking-conflict checks succeed.
+The `BOOKING_DECISION` relation stores the outcome of each booking request. Every booking request may produce at most one booking decision, recording whether the request is approved or rejected.
 
-This relation replaces `BOOKING_APPROVAL`. It avoids inventing a “machine user”
-while retaining staff accountability.
+The relation provides a unified representation for both automatic and staff decisions. The `is_automatic` attribute distinguishes the processing workflow, while `decided_by_staff` records the responsible staff member when the decision is made manually.
 
-### 5.8 `USAGE_SESSION`
+---
+
+### 5.9 `USAGE_SESSION`
 
 ```text
 USAGE_SESSION(
-    session_id              VARCHAR(20),
-    decision_id             VARCHAR(20),
-    actual_start_time       DATETIME2,
-    actual_end_time         DATETIME2 NULL,
-    checked_in_by_user_id   VARCHAR(20),
-    completed_by_user_id    VARCHAR(20) NULL,
-    initial_condition       VARCHAR(MAX),
-    final_condition         VARCHAR(MAX),
-    usage_notes             VARCHAR(MAX)
+    session_id,
+    decision_id,
+    checked_in_by_staff,
+    completed_by_staff,
+    start_time,
+    end_time,
+    initial_condition,
+    final_condition,
+    usage_note
 )
 ```
 
-- Primary key: `session_id`
-- Candidate key: `decision_id`
-- Foreign key: `decision_id` → `BOOKING_DECISION(decision_id)`
-- Foreign keys: check-in and completion user IDs → `USERS(user_id)`
-- Only a decision with `is_approved = 1` may create a usage session.
-- `actual_end_time` is null until completion and otherwise must be greater than
-  or equal to `actual_start_time`.
+The `USAGE_SESSION` relation records the actual use of an approved booking. It captures check-in, completion, and the condition of the space before and after use, providing an operational history of space utilization.
 
-### 5.9 `MAINTENANCE_RECORD`
+---
+
+### 5.10 `MAINTENANCE_RECORD`
 
 ```text
 MAINTENANCE_RECORD(
-    maintenance_id          VARCHAR(20),
-    space_code              VARCHAR(20),
-    reporter_user_id        VARCHAR(20),
-    assigned_staff_user_id  VARCHAR(20),
-    problem_description     VARCHAR(MAX),
-    start_time              DATETIME2,
-    completion_time         DATETIME2 NULL,
-    status                  VARCHAR(30),
-    result_note             VARCHAR(MAX),
-    impact_level            VARCHAR(20)
+    maintenance_id,
+    space_code,
+    report_user,
+    assigned_staff,
+    problem_description,
+    start_time,
+    end_time,
+    status,
+    result_note,
+    impact_level
 )
 ```
 
-- Primary key: `maintenance_id`
-- Foreign key: `space_code` → `SPACES(space_code)`
-- Foreign keys: reporter and assigned staff IDs → `USERS(user_id)`
-- `impact_level` is required and restricted to `advisory` or
-  `out_of_service`.
-- `status` is restricted to `pending`, `in_progress`, `completed`, or
-  `cancelled`.
-- `completion_time` is null while the record is open and otherwise must be
-  greater than or equal to `start_time`.
-- Multiple maintenance records may overlap for the same space, irrespective of
-  whether their impact levels are equal or different.
+The `MAINTENANCE_RECORD` relation stores maintenance activities associated with each space. A maintenance record progresses through its own lifecycle independently of booking requests.
 
-For interval checks, a record affects `[start_time, completion_time)`. A null
-`completion_time` is treated as no known end. A maintenance record is active
-for operational checks when its status is `pending` or `in_progress` and its
-period overlaps the requested booking period.
+The `impact_level` attribute distinguishes between `advisory` and `out_of_service` maintenance. Multiple active maintenance records with different impact levels may exist simultaneously for the same space because different maintenance activities may affect the space in different ways.
 
-### 5.10 `ADVISORY_ACKNOWLEDGEMENT`
+---
+
+### 5.11 `ADVISORY_ACKNOWLEDGEMENT`
 
 ```text
 ADVISORY_ACKNOWLEDGEMENT(
-    booking_id              VARCHAR(20),
-    maintenance_id          VARCHAR(20),
-    acknowledged_at         DATETIME2
+    booking_id,
+    maintenance_id,
+    acknowledge_time
 )
 ```
 
-- Primary key: (`booking_id`, `maintenance_id`)
-- Foreign key: `booking_id` → `BOOKING_REQUEST(booking_id)`
-- Foreign key: `maintenance_id` → `MAINTENANCE_RECORD(maintenance_id)`
-- `acknowledged_at` is required.
-- A row may be inserted only when the maintenance record is an active
-  `advisory` for the booking's space and overlaps the requested interval.
-- Submission/automatic approval must run atomically with acknowledgement of
-  all advisories returned to the requester. A booking may proceed with
-  advisories only when each such advisory has an acknowledgement row.
+The `ADVISORY_ACKNOWLEDGEMENT` relation records that a requester acknowledged an active advisory maintenance record before the corresponding booking request was processed. This relation preserves the acknowledgement history independently of both booking decisions and maintenance records.
 
-The acknowledgement remains historical even if the maintenance is later
-completed, escalated, or downgraded.
 
-## 6. Derived data and reporting support
+## 6. Logical semantics and analytical-query support
 
-The following values are derived and must not be duplicated as stored columns:
+The logical schema stores only operational data. Concepts required for booking processing and analytical queries are derived from the stored relations rather than maintained as persistent attributes. The following definitions are used consistently throughout the remaining design documents.
 
-- active advisory and out-of-service counts per space;
-- approved duration (`requested_end_time - requested_start_time`);
-- weekday and hour buckets used by the demand report; and
-- the set of approved bookings affected by a maintenance escalation.
+### 6.1 Approved booking
 
-| Phase 2 report | Relations used |
-|---|---|
-| Approved booking hours by space and semester | `SPACES`, `BOOKING_REQUEST`, `BOOKING_DECISION` |
-| Approved booking count by weekday and hour | `BOOKING_REQUEST`, `BOOKING_DECISION` |
-| Available spaces by capacity, facilities, and interval | `SPACES`, `FACILITY`, `BOOKING_REQUEST`, `BOOKING_DECISION`, `MAINTENANCE_RECORD` |
-| Approved bookings affected by escalation | `MAINTENANCE_RECORD`, `BOOKING_REQUEST`, `BOOKING_DECISION`, `USERS` |
+A booking is considered approved when it has a corresponding `BOOKING_DECISION` with `is_approved = true`.
 
-Semester start and end are query parameters supplied by the academic calendar;
-they are not attributes of an individual booking. If the implementation later
-stores an institutional calendar, a separate `SEMESTERS` reference relation
-can supply those boundaries without changing these booking relationships.
+An approved booking remains part of the historical record even after its lifecycle changes to `checked_in`, `completed`, or `no_show`. Consequently, analytical queries such as booking utilization and total approved booking hours are based on booking decisions rather than on the current booking status.
 
-An approved booking is affected by an out-of-service maintenance record when:
+---
 
-```text
-booking.space_code = maintenance.space_code
-AND decision.is_approved = 1
-AND booking.status <> 'cancelled'
-AND booking.requested_start_time < COALESCE(maintenance.completion_time, infinity)
-AND maintenance.start_time < booking.requested_end_time
-```
+### 6.2 Automatic booking processing
 
-Here, “approved booking” is determined by `BOOKING_DECISION.is_approved`, not
-only by the current booking status. An approved request remains an approved
-decision when its lifecycle status later becomes `checked_in`, `completed`, or
-`no_show`. A cancelled request is excluded because it no longer reserves the
-space.
+A booking request follows the automatic approval workflow when the requester's role and the requested space type match a record in `AUTO_USAGE_POLICY`.
 
-When a maintenance record is changed from `advisory` to `out_of_service`, this
-predicate identifies already-approved overlapping bookings in the same
-transaction (or immediately afterward) so staff can contact their requesters.
-The bookings are identified for follow-up; the requirement does not state that
-they are automatically cancelled.
+If no matching record exists, the booking request follows the staff approval workflow. Regardless of the processing path, every booking request ultimately produces at most one `BOOKING_DECISION`, providing a unified representation of booking outcomes.
 
-The room finder returns a space only when all of the following are true:
+---
 
-1. its `current_status` permits booking;
-2. its capacity meets the requested capacity;
-3. it contains every requested facility;
-4. no approved booking for that space overlaps the requested interval; and
-5. no active `out_of_service` maintenance record overlaps the interval.
+### 6.3 Available space
 
-Active advisories do not remove a space from the result, but must be returned
-with it so that the requester can be informed and acknowledge them.
+A space is considered available for a requested booking interval when all of the following conditions are satisfied:
 
-## 7. Integrity and business rules
+- the current operational status of the space permits booking;
+- the space capacity satisfies the requested number of participants;
+- the space contains all required facilities;
+- no approved booking overlaps the requested interval; and
+- no active `out_of_service` maintenance record overlaps the requested interval.
 
-| Rule | Enforcement mechanism |
-|---|---|
-| Primary, candidate, and foreign keys | Declarative constraints |
-| Valid enumerated values and positive values | `CHECK` constraints |
-| Booking and maintenance start precedes end | `CHECK` constraints |
-| Staff decision references an authorized staff user | Transactional procedure/trigger plus FK |
-| Automatic decision is allowed by usage policy | Transactional procedure |
-| All active advisories are acknowledged | Submission/approval procedure |
-| Out-of-service maintenance blocks overlapping approval | Transactional procedure |
-| Two approved bookings cannot overlap for one space | Serialized approval procedure |
-| Only an approved decision creates a usage session | Transactional procedure/trigger |
-| Escalation returns affected approved bookings | Escalation procedure/query |
+Active `advisory` maintenance records do not exclude a space from the search result. Instead, they are presented to the requester and must be acknowledged before the booking request proceeds to the decision stage.
 
-Changing `SPACES.current_status` alone is insufficient for maintenance rules;
-the system must evaluate every relevant maintenance row. Likewise, an index can
-speed up a conflict search but cannot by itself prevent two concurrent
-transactions from both observing an empty result.
+---
+
+### 6.4 Bookings affected by maintenance escalation
+
+When an active maintenance record changes its impact level from `advisory` to `out_of_service`, the system identifies all approved bookings for the same space whose booking intervals overlap the maintenance period.
+
+The identified bookings support operational follow-up by facility staff. The logical model identifies the affected bookings but does not prescribe how they are subsequently handled.
+
+---
+
+### 6.5 Analytical-query support
+
+The logical schema directly supports the analytical queries required by the Phase 2 specification, including:
+
+- total approved booking hours for each space;
+- approved booking distributions by weekday and hour;
+- available-space search based on capacity, required facilities, and booking interval; and
+- identification of approved bookings affected by maintenance escalation.
+
+The database does not store report totals, booking durations, availability flags, or other analytical summaries because these values can be derived from the operational relations when queries are executed.
+
+
+## 7. Integrity constraints and business rules
+
+The logical schema enforces the Phase 2 business rules through a combination of declarative constraints and transactional procedures. Declarative constraints preserve the structural integrity of individual relations, while transactional procedures enforce rules involving multiple relations, temporal conditions, or concurrent operations.
+
+The primary integrity requirements are summarized below.
+
+| Business rule | Primary enforcement mechanism |
+| --- | --- |
+| Entity identity | `PRIMARY KEY` constraints |
+| Referential integrity | `FOREIGN KEY` constraints |
+| Valid status and impact values | `CHECK` constraints |
+| Valid booking and maintenance intervals | `CHECK` constraints |
+| One booking decision per booking request | `UNIQUE` constraint |
+| One usage session per booking decision | `UNIQUE` constraint |
+| Automatic processing eligibility | `AUTO_USAGE_POLICY` lookup |
+| Space capacity validation | Transactional approval procedure |
+| Advisory acknowledgement validation | Transactional approval procedure |
+| Maintenance availability validation | Transactional approval procedure |
+| Booking conflict prevention | Serialized approval procedure |
+| Booking lifecycle management | Stored procedures |
+
+Declarative constraints are sufficient for rules that involve a single relation, such as entity identity, referential integrity, enumerated values, and interval validity. However, rules involving booking conflicts, maintenance availability, advisory acknowledgements, or automatic booking eligibility require data from multiple relations and therefore cannot be enforced by declarative constraints alone.
+
+The booking approval procedure is responsible for validating these business rules before recording a `BOOKING_DECISION`. By centralizing validation in a single transactional workflow, both automatic and staff approval paths enforce identical business rules and produce consistent booking decisions.
+
+
 
 ## 8. Concurrency implications of the design
 
-Both automatic approval at submission and later staff approval must call the
-same database approval routine. Within one transaction, that routine must:
+Phase 2 introduces automatic booking processing together with concurrent booking and approval operations. Multiple users, staff members, and background processes may simultaneously submit booking requests, approve bookings, or update maintenance records for the same space. Without appropriate concurrency control, these concurrent operations may violate the business rules represented by the logical model.
 
-1. obtain a serialization lock for the requested `space_code` (for example,
-   SQL Server `sp_getapplock`, or an equivalent locked space row/range);
-2. reload the request and confirm that it is still pending;
-3. reject approval if an active `out_of_service` maintenance interval overlaps;
-4. reject approval if a non-cancelled booking with an approved decision
-   satisfies
-   `existing_start < new_end AND new_start < existing_end`;
-5. verify that the advisory set presented during submission was acknowledged;
-   and
-6. insert `BOOKING_DECISION` and change the system-managed booking status to
-   `approved` before committing.
+Both automatic and staff approval workflows produce the same `BOOKING_DECISION` relation and therefore must enforce the same validation rules. Regardless of the processing path, every booking request should be evaluated using a single approval procedure to ensure consistent behavior.
 
-The lock must cover the check and the writes, and it must be keyed by space so
-unrelated spaces can still be approved concurrently. Lock acquisition order
-must be consistent in every booking path to reduce deadlock risk. These details
-will be implemented and demonstrated in the Phase 2 concurrency scripts.
+Within one transaction, the approval procedure should validate:
 
-## 9. Initial physical-design guidance
+- whether the booking qualifies for automatic processing by checking `AUTO_USAGE_POLICY`;
+- whether the booking request is still pending;
+- whether the requester account is active;
+- whether the requested participant count does not exceed the space capacity;
+- whether the requested interval overlaps an approved booking;
+- whether the requested interval overlaps an active `out_of_service` maintenance record; and
+- whether every overlapping `advisory` maintenance record has been acknowledged before the booking decision is recorded.
 
-Exact indexes and before/after measurements belong in the index-tuning report,
-but this logical design exposes the required search keys:
+Only after all validations succeed should the procedure record a `BOOKING_DECISION` and update the corresponding booking status. If any validation fails, the booking request is rejected and the appropriate decision is recorded.
 
-- booking conflict: booking status/decision outcome, `space_code`, start time,
-  and end time;
-- room finder: space status and capacity; facility name and space; approved
-  booking intervals; out-of-service maintenance intervals;
-- approved-hours report: approved status and requested time range; and
-- escalation report: maintenance space/impact/interval joined to approved
-  booking space/interval.
+To prevent conflicting approvals, the validation phase and the decision-recording phase should execute within the same serialized transaction. Serializing approval operations for the same space prevents multiple transactions from simultaneously observing the space as available and subsequently approving overlapping bookings.
 
-Indexes are implementation aids, not replacements for the serialized approval
-transaction.
+The logical model defines the data and relationships required to support these operations. The implementation of transaction management, locking strategy, and concurrency testing is described in the subsequent implementation documents.
 
-## 10. Migration notes
 
-The migration from Phase 1 must preserve existing rows and should perform these
-transformations:
+## 9. Design consistency statement
 
-1. populate `ROLES` from the known Phase 1 role values and replace each user's
-   text role with its `role_id`;
-2. convert parseable `SPACES.usage_policy` values into
-   `SPACE_USAGE_POLICY`, documenting any manual mappings;
-3. add `impact_level` to maintenance records, assigning a documented default
-   of `out_of_service` to legacy rows because Phase 1 treated all maintenance
-   as booking-blocking;
-4. migrate each `BOOKING_APPROVAL` row to `BOOKING_DECISION`; derive
-   `is_approved` from the booking's Phase 1 status, mark its source as `staff`,
-   and retain the deciding user and notes;
-5. replace `USAGE_SESSION.booking_id` with the corresponding `decision_id`;
-6. create `ADVISORY_ACKNOWLEDGEMENT` empty, because Phase 1 had no advisory
-   acknowledgement facts to preserve; and
-7. remove the obsolete free-text role and usage-policy columns only after
-   validating row counts and foreign-key coverage.
+The updated logical design provides a complete and consistent representation of the Phase 2 database requirements. Every conceptual entity and relationship introduced by the revised specification is represented explicitly in the ERD and mapped directly to a logical relation.
 
-Legacy maintenance impact values must not be guessed as `advisory`: doing so
-would weaken the Phase 1 blocking rule and could make previously protected time
-periods bookable.
+The logical model separates operational data from derived information. Booking requests, booking decisions, usage sessions, maintenance records, and advisory acknowledgements are stored as independent relations, while concepts such as approved bookings, available spaces, and maintenance-affected bookings are derived from these operational relations when required. This approach minimizes data redundancy while preserving complete operational history.
+
+The design also separates structural constraints from operational business rules. Entity identity, referential integrity, and simple domain constraints can be enforced declaratively, whereas booking approval, maintenance validation, advisory acknowledgement, and booking-conflict prevention require transactional processing because they involve multiple relations and concurrent operations.
+
+The logical schema serves as the authoritative specification for the remaining implementation documents. Subsequent documents derive the physical schema, concurrency-control mechanisms, indexing strategy, and analytical queries directly from the logical model without introducing additional entities or changing the semantics defined in this document.
+
+Overall, the updated logical design is consistent with the conceptual ERD and satisfies the Phase 2 requirements by:
+
+- representing every conceptual entity as a logical relation;
+- preserving every relationship defined in the ERD through appropriate foreign keys;
+- supporting automatic and staff booking workflows through a unified `BOOKING_DECISION` relation;
+- identifying automatic booking eligibility through `AUTO_USAGE_POLICY`;
+- supporting the revised maintenance model using `impact_level` and `ADVISORY_ACKNOWLEDGEMENT`;
+- preserving complete historical information for booking, maintenance, decision, acknowledgement, and usage records; and
+- providing a normalized foundation for schema migration, concurrency control, and analytical-query implementation.
