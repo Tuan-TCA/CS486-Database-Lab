@@ -98,7 +98,7 @@ BOOKING_REQUEST {
     string purpose
     int expected_participants
     string booking_type
-    string status[[read_only]]
+    string status
 }
 
 BOOKING_DECISION {
