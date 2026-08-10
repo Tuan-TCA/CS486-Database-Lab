@@ -1,9 +1,9 @@
 -- 01-setup.sql
 -- Creates isolated rows used only by the G08 concurrency demonstration.
 
+
 USE campus_space_management;
 GO
-
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
