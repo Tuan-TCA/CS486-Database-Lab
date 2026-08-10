@@ -1,0 +1,6 @@
+report-phase2/*.aux
+report-phase2/*.fdb_latexmk
+report-phase2/*.fls
+report-phase2/*.log
+report-phase2/*.synctex.gz
+report-phase2/*.toc

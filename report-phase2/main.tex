@@ -1,0 +1,116 @@
+\documentclass[12pt]{scrartcl}
+\usepackage[sexy,noasy]{evan}
+\usepackage[margin=1in]{geometry}
+
+\parindent 0pt
+\setcounter{secnumdepth}{3}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{placeins}
+\usepackage{tabularx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{enumitem}
+
+\definecolor{reportblue}{RGB}{31,56,100}
+\definecolor{codegreen}{RGB}{0,120,0}
+\definecolor{codegray}{RGB}{100,100,100}
+\definecolor{codepurple}{RGB}{130,0,160}
+\definecolor{codeback}{RGB}{246,246,241}
+
+\lstdefinestyle{sqlstyle}{
+  language=SQL,
+  backgroundcolor=\color{codeback},
+  commentstyle=\color{codegreen},
+  keywordstyle=\color{reportblue}\bfseries,
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{codepurple},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  keepspaces=true,
+  numbers=left,
+  numbersep=6pt,
+  showstringspaces=false,
+  tabsize=2
+}
+\lstset{style=sqlstyle}
+
+\newcommand{\coursename}{CS486 - Introduction to Database System}
+\newcommand{\reporttitle}{Campus Space Management System}
+\newcommand{\reportname}{Phase 2 Report}
+\newcommand{\studentname}{Tran Canh Anh Tuan 24125048\\Le Dat Phuc An 24125052\\Vong Chi Van 24125049\\Pham Nguyen Minh Quan 24125041}
+\newcommand{\teachername}{Nguyen Ngoc Toan, MSc.\\Nguyen Ngoc Minh Chau, MSc.\\Le Thi Nhan, PhD}
+\newcommand{\artifact}[1]{\nolinkurl{#1}}
+
+\graphicspath{{image/}}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=reportblue,
+  urlcolor=reportblue,
+  citecolor=reportblue,
+  pdftitle={G08 Phase 2 Report},
+  pdfauthor={Group 08}
+}
+
+\begin{document}
+
+\begin{titlepage}
+  \begin{center}
+    \textsc{\LARGE UNIVERSITY OF SCIENCE, VNU-HCM}\\[0.5cm]
+    \textsc{\large FACULTY OF INFORMATION TECHNOLOGY}\\[0.2cm]
+    \textsc{\large ADVANCED PROGRAM IN COMPUTER SCIENCE}
+
+    \vspace*{0.8cm}
+    \includegraphics[width=3.1cm]{hcmus_logo.png}
+    \vspace*{0.8cm}
+
+    {\LARGE\bfseries\uppercase{\coursename}\\[0.4cm]}
+    {\large\bfseries\reportname}\\[1.2cm]
+
+    \rule{\linewidth}{0.3mm}\\[0.4cm]
+    {\huge\bfseries\color{reportblue}\reporttitle\\[0.4cm]}
+    \rule{\linewidth}{0.3mm}\\[1.5cm]
+
+    \begin{minipage}[t]{0.48\textwidth}
+      \begin{flushleft}\large
+        \emph{Students:}\\
+        \studentname
+      \end{flushleft}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.48\textwidth}
+      \begin{flushright}\large
+        \emph{Lecturers:}\\
+        \teachername
+      \end{flushright}
+    \end{minipage}
+
+    \vfill
+    {\textbf{\large 2026}}
+  \end{center}
+\end{titlepage}
+
+\renewcommand{\contentsname}{Summary}
+\tableofcontents
+\newpage
+
+\input{src/10_introduction.tex}
+\input{src/20_requirements_design.tex}
+\input{src/30_concurrency.tex}
+\input{src/40_data_queries.tex}
+\input{src/50_indexing.tex}
+\input{src/60_normalization_agent.tex}
+\input{src/70_conclusion.tex}
+
+\end{document}

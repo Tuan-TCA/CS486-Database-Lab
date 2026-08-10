@@ -1,0 +1,61 @@
+\section{Introduction}
+
+\subsection{Background and Phase 2 Objectives}
+
+Phase 2 extends the Campus Space Management System after a one-semester pilot. The original database treated every active maintenance record as a complete booking block. The revised requirements distinguish disruptive maintenance from advisory work, introduce automatic approval for selected role--space-type combinations, require correctness under concurrent approval, and add analytical reporting over a substantially larger history.
+
+The implementation therefore has five objectives:
+
+\begin{itemize}
+  \item represent advisory and out-of-service maintenance separately;
+  \item preserve proof that requesters were notified about active advisories;
+  \item prevent overlapping approvals even when automatic and staff workflows run concurrently;
+  \item support four required operational and analytical reports; and
+  \item demonstrate measurable indexing improvements on at least 100,000 bookings.
+\end{itemize}
+
+\subsection{Group Members and Contributions}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}p{2.2cm}X}
+    \toprule
+    \textbf{Member} & \textbf{Student ID} & \textbf{Phase 2 contributions}\\
+    \midrule
+    Tran Canh Anh Tuan & 24125048 &
+    Shared updated ERD and logical design (09); requirement-change analysis and concurrency design, implementation, and tests (08, 11--13).\\
+    Le Dat Phuc An & 24125052 &
+    Shared updated ERD and logical design (09); schema migration, data generation, and analytical queries (10, 14, 16).\\
+    Vong Chi Van & 24125049 &
+    Shared updated ERD and logical design (09); requirement-change analysis and concurrency design, implementation, and tests (08, 11--13).\\
+    Pham Nguyen Minh Quan & 24125041 &
+    Shared updated ERD and logical design (09); index tuning and analytical-query refinement (15, 16).\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Group membership and deliverable ownership.}
+  \label{tab:contributions}
+\end{table}
+
+\subsection{Phase 2 Deliverables}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{>{\ttfamily\raggedright\arraybackslash}p{2.1cm}X}
+    \toprule
+    \textbf{Output} & \textbf{Purpose}\\
+    \midrule
+    08 & Requirement-change and concurrency-conflict analysis\\
+    09 & Updated ERD and logical schema\\
+    10 & Data-preserving migration from the Phase 1 schema\\
+    11--13 & Concurrency design, protected procedure, and two-session tests\\
+    14 & Deterministic three-academic-year data generator\\
+    15 & Indexing experiment and before/after measurements\\
+    16 & Four required analytical queries considered in this report\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Phase 2 artifact summary.}
+\end{table}
+
+This report is based on the submitted artifacts and the captured SQL Server test evidence. SQL excerpts are intentionally shortened; the complete executable statements remain in the \artifact{outputs/} directory.

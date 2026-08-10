@@ -1,0 +1,130 @@
+\section{Concurrency Design and Test Results}
+
+\subsection{Identified Conflict}
+
+The critical anomaly is a check-then-act race. Consider two pending requests for the same space:
+
+\[
+  A=[09{:}00,11{:}00), \qquad B=[10{:}00,12{:}00).
+\]
+
+Without a shared serialization resource, Session A and Session B can both read \emph{no approved overlap} before either transaction inserts its decision. The unique constraint on \texttt{BOOKING\_DECISION.booking\_id} cannot prevent this outcome because the sessions decide two different booking identifiers.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{cXX}
+    \toprule
+    \textbf{Step} & \textbf{Session A} & \textbf{Session B}\\
+    \midrule
+    1 & Checks overlap; none exists & \\
+    2 & & Checks overlap; none exists\\
+    3 & Inserts approval A & Inserts approval B\\
+    4 & Commits & Commits\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Unsafe concurrent check-and-write schedule.}
+\end{table}
+
+The required invariant uses half-open intervals: two approved, non-cancelled bookings for one \texttt{space\_code} must never satisfy
+
+\[
+  existing.start < candidate.end
+  \quad\land\quad
+  candidate.start < existing.end.
+\]
+
+\subsection{Protected Approval Protocol}
+
+The protected approval procedure uses pessimistic SQL Server locking in one transaction:
+
+\begin{enumerate}
+  \item Read the target \texttt{BOOKING\_REQUEST} with \texttt{UPDLOCK}. This keeps its space, interval, and pending status stable.
+  \item Lock the existing \texttt{SPACES} row for that \texttt{space\_code} with \texttt{UPDLOCK}.
+  \item Check approved, non-cancelled overlapping bookings.
+  \item Insert the decision and update the request to \texttt{approved}.
+  \item Commit, releasing both update locks.
+\end{enumerate}
+
+\begin{lstlisting}[caption={Core locking order in the protected approval procedure.}]
+BEGIN TRANSACTION;
+
+SELECT @space_code = br.space_code,
+       @start_time = br.start_time,
+       @end_time = br.end_time,
+       @status = br.status
+FROM dbo.BOOKING_REQUEST AS br WITH (UPDLOCK)
+WHERE br.booking_id = @booking_id;
+
+SELECT @space_lock_code = s.space_code
+FROM dbo.SPACES AS s WITH (UPDLOCK)
+WHERE s.space_code = @space_code;
+
+-- overlap check, decision insert, and status update
+COMMIT TRANSACTION;
+\end{lstlisting}
+
+All approval routes, including automatic approval, call the same procedure. Competing requests for the same space therefore request incompatible update locks on one common row. Requests for different spaces lock different rows and can still proceed concurrently. The fixed order \texttt{BOOKING\_REQUEST} then \texttt{SPACES} also reduces deadlock risk.
+
+\subsection{Unsafe Test}
+
+The unsafe scripts deliberately bypass the protected procedure. Session A pauses after its availability check, Session B performs the same check and commits, and Session A then commits its stale decision. Figure~\ref{fig:unsafe-result} records the resulting violation.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{unsafe-session.png}
+  \caption{Unsafe verification: both requests are approved and one overlapping approved pair exists.}
+  \label{fig:unsafe-result}
+\end{figure}
+
+The verification reports
+
+\[
+  approved\_booking\_count=2,\qquad
+  overlapping\_approved\_pair\_count=1.
+\]
+
+\subsection{Protected Test}
+
+In the protected run, Session A acquires both update locks and holds them for twelve seconds. Figure~\ref{fig:safe-a} shows its successful decision.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{safe-session-a.png}
+  \caption{Protected Session A approves the first request while holding the booking and space locks.}
+  \label{fig:safe-a}
+\end{figure}
+
+Session B can lock its distinct request row but must wait for the same \texttt{SPACES} row. After Session A commits, Session B rechecks the database, detects the committed overlap, and receives application error 52105, as shown in Figure~\ref{fig:safe-b}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{safe-session-b.png}
+  \caption{Protected Session B receives the expected overlap error after waiting for the space lock.}
+  \label{fig:safe-b}
+\end{figure}
+
+The final assertion in Figure~\ref{fig:safe-final} confirms that the first request is approved, the second remains pending, and no overlapping approved pair exists.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{safe-session.png}
+  \caption{Final protected-state verification.}
+  \label{fig:safe-final}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Test} & \textbf{Approved bookings} & \textbf{Overlapping approved pairs}\\
+    \midrule
+    Unsafe workflow & 2 & 1\\
+    Protected workflow & 1 & 0\\
+    \bottomrule
+  \end{tabular}
+  \caption{Observed concurrency-test results.}
+  \label{tab:concurrency-results}
+\end{table}
+
+The test demonstrates both sides of the claim: the unprotected check can violate the invariant, while the common per-space update lock serializes the check-and-write section and prevents the violation.

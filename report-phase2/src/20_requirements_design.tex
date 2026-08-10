@@ -1,0 +1,139 @@
+\section{Requirement Changes and Database Evolution}
+
+\subsection{Maintenance Impact Levels}
+
+The revised rule separates maintenance into two impact levels:
+
+\begin{description}[style=nextline]
+  \item[\texttt{out\_of\_service}]
+  The space is unusable. An active record blocks every booking whose half-open interval overlaps the maintenance interval.
+
+  \item[\texttt{advisory}]
+  The space remains bookable. Every active advisory at booking time must be communicated to the requester, and the database must retain evidence of that communication.
+\end{description}
+
+Several active records can coexist for one space. An open record can also be escalated or downgraded. Escalation to \texttt{out\_of\_service} does not erase earlier approvals; instead, staff must be able to retrieve the affected bookings and contact their requesters.
+
+\subsection{Affected Concepts and Rules}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.3cm}X}
+    \toprule
+    \textbf{Concept} & \textbf{Phase 2 change}\\
+    \midrule
+    \texttt{MAINTENANCE\_RECORD} &
+    Adds \texttt{impact\_level}; overlapping active out-of-service work blocks approval, while advisory work permits approval and requires notification.\\
+    \texttt{BOOKING\_NOTIFICATION} &
+    Associates a booking and maintenance record with a notification type and timestamp, preserving advisory and escalation history.\\
+    \texttt{BOOKING\_DECISION} &
+    Replaces the approval-only relation and represents automatic and staff decisions uniformly.\\
+    \texttt{ROLE}, \texttt{SPACE\_TYPE} &
+    Normalize policy dimensions that were stored as text in Phase 1.\\
+    \texttt{AUTO\_USAGE\_POLICY} &
+    Defines which role and space-type combinations are eligible for automatic processing.\\
+    Approval workflow &
+    Every approval path must use the same atomic availability-check-and-write protocol.\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Principal requirement-driven design changes.}
+\end{table}
+
+\subsection{Updated Conceptual Overview}
+
+The Phase 2 design contains eleven relations. Figure~\ref{fig:schema-overview} emphasizes foreign-key dependencies and the common data flow from requests to decisions, sessions, maintenance notifications, and reports.
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    entity/.style={draw=reportblue, rounded corners, fill=blue!4, minimum width=3.2cm, minimum height=0.85cm, align=center, font=\ttfamily\bfseries},
+    rel/.style={-{Latex[length=2.5mm]}, thick, draw=reportblue!75}
+  ]
+    \node[entity] (role) at (0,5.2) {ROLE};
+    \node[entity] (users) at (0,3.5) {USERS};
+    \node[entity] (stype) at (4.2,5.2) {SPACE\_TYPE};
+    \node[entity] (policy) at (2.1,1.7) {AUTO\_USAGE\_POLICY};
+    \node[entity] (spaces) at (6.4,3.5) {SPACES};
+    \node[entity] (facility) at (9.8,5.2) {FACILITY};
+    \node[entity] (booking) at (6.4,1.7) {BOOKING\_REQUEST};
+    \node[entity] (decision) at (10.5,1.7) {BOOKING\_DECISION};
+    \node[entity] (session) at (14.5,1.7) {USAGE\_SESSION};
+    \node[entity] (maint) at (6.4,-0.2) {MAINTENANCE\_RECORD};
+    \node[entity] (notice) at (10.5,-0.2) {BOOKING\_NOTIFICATION};
+
+    \draw[rel] (role) -- (users);
+    \draw[rel] (role) -- (policy);
+    \draw[rel] (stype) -- (policy);
+    \draw[rel] (stype) -- (spaces);
+    \draw[rel] (spaces) -- (facility);
+    \draw[rel] (users) -- (booking);
+    \draw[rel] (spaces) -- (booking);
+    \draw[rel] (booking) -- (decision);
+    \draw[rel] (decision) -- (session);
+    \draw[rel] (spaces) -- (maint);
+    \draw[rel] (booking) -- (notice);
+    \draw[rel] (maint) -- (notice);
+    \draw[rel] (users) to[bend right=18] (decision);
+    \draw[rel] (users) to[bend right=24] (maint);
+  \end{tikzpicture}}
+  \caption{Phase 2 schema overview; arrows point from referenced concepts toward dependent records.}
+  \label{fig:schema-overview}
+\end{figure}
+
+\begin{table}[H]
+  \centering
+  \scriptsize
+  \begin{tabularx}{\textwidth}{>{\ttfamily\raggedright\arraybackslash}p{3.5cm}>{\raggedright\arraybackslash}p{3.1cm}X}
+    \toprule
+    \textbf{Relation} & \textbf{Primary key} & \textbf{Important foreign/candidate keys}\\
+    \midrule
+    ROLE & role\_id & role\_name is unique\\
+    USERS & user\_id & role\_id; email is unique\\
+    SPACE\_TYPE & space\_type\_id & space\_type\_name is unique\\
+    SPACES & space\_code & space\_type\_id; (building, room\_number) is unique\\
+    AUTO\_USAGE\_POLICY & (space\_type\_id, role\_id) & both columns are foreign keys\\
+    FACILITY & facility\_id & space\_code\\
+    BOOKING\_REQUEST & booking\_id & user\_id, space\_code\\
+    BOOKING\_DECISION & decision\_id & booking\_id is unique; decided\_by\_staff\\
+    USAGE\_SESSION & session\_id & decision\_id is unique; two staff references\\
+    MAINTENANCE\_RECORD & maintenance\_id & space\_code and three user-role references\\
+    BOOKING\_NOTIFICATION & (booking\_id, maintenance\_id, notification\_type) & booking\_id and maintenance\_id\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Updated relation and key summary.}
+  \label{tab:relation-summary}
+\end{table}
+
+\subsection{Schema Migration}
+
+Output 10 applies the changes on top of the Phase 1 database rather than rebuilding it. Textual roles and space types are first copied into lookup tables; the original rows then receive foreign-key identifiers. Approval records are transformed into booking decisions before the old approval table is removed. Usage sessions are reconnected through their decisions, and new policy and notification relations begin empty because Phase 1 contained no equivalent facts.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.8cm}X}
+    \toprule
+    \textbf{Migration operation} & \textbf{Preservation approach}\\
+    \midrule
+    Normalize roles and space types &
+    Insert distinct Phase 1 values, populate new identifiers by joins, enforce non-null foreign keys, then remove text columns.\\
+    Replace booking approval &
+    Insert one \texttt{BOOKING\_DECISION} for each existing approval, preserving its identifier, booking, staff member, reason, and time.\\
+    Reconnect usage sessions &
+    Resolve each session's booking to the migrated decision, enforce a unique decision reference, and remove the former booking reference.\\
+    Extend maintenance &
+    Add \texttt{impact\_level} with \texttt{out\_of\_service} as the migration default, preserving the stricter Phase 1 behavior.\\
+    Add new concepts &
+    Create empty automatic-policy and booking-notification relations because no reliable Phase 1 facts exist to infer.\\
+    Verify &
+    Finish with table row counts; expected migrated Phase 1 counts include 20 users, 12 spaces, 30 requests, 25 decisions, 16 sessions, and 12 maintenance records.\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Data-preserving migration strategy.}
+\end{table}
+
+\subsection{Integrity Boundary}
+
+Primary keys, foreign keys, uniqueness, and check constraints enforce structural rules such as valid identifiers and time order. Availability, interval overlap, maintenance impact, automatic-policy eligibility, and advisory notification require multiple rows or relations. Those rules are therefore enforced inside transactional procedures rather than by declarative constraints alone.

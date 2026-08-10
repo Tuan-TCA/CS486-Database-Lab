@@ -1,0 +1,161 @@
+\section{Generated Data and Required Analytical Queries}
+
+\subsection{Data Generation}
+
+Output 14 is a deterministic and rerunnable Microsoft SQL Server generator. It creates exactly 100,000 booking requests in a reserved identifier namespace while preserving migrated Phase 1 rows. The generated period is 1 September 2023 through 31 August 2026, covering three complete academic years.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.2cm}X}
+    \toprule
+    \textbf{Coverage dimension} & \textbf{Generated evidence}\\
+    \midrule
+    Scale & 100,000 generated requests; the tuning database contains 100,030 requests after retaining Phase 1 data.\\
+    Users and spaces & 2,000 requesters, three processing/staff accounts, and 50 generated spaces.\\
+    Booking lifecycle & Approved, rejected, pending, completed, cancelled, and no-show cases.\\
+    Processing modes & Automatic and staff decisions consistent with \texttt{AUTO\_USAGE\_POLICY}.\\
+    Maintenance & Advisory and out-of-service records, including overlapping active work and notification records.\\
+    Integrity checks & Assertions verify the row count, date span, lifecycle coverage, policy consistency, absence of approved overlaps, and advisory-notification completeness.\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Generated dataset characteristics.}
+\end{table}
+
+The performance experiment reports 100,030 booking requests, 98,025 booking decisions, 782 maintenance records, 182 facilities, 62 spaces, and six space types. This scale is sufficient to make scan-versus-seek differences visible.
+
+\subsection{Query 01: Approved Booking Hours per Space}
+
+\textbf{Business question.} What is the total approved booking time for every space during a supplied semester?
+
+\textbf{Users.} Facility Manager.
+
+The query joins requests to approved decisions, spaces, and space types. It excludes later cancellations, applies a half-open semester boundary, and aggregates duration in minutes before converting it to decimal hours.
+
+\begin{lstlisting}[caption={Core of Query 01.}]
+SELECT s.space_code, s.space_name, st.space_type_name,
+       COUNT(*) AS approved_booking_count,
+       CAST(SUM(DATEDIFF(MINUTE, br.start_time, br.end_time))
+            / 60.0 AS DECIMAL(10,2)) AS total_approved_hours
+FROM BOOKING_REQUEST AS br
+JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
+JOIN SPACES AS s ON s.space_code = br.space_code
+JOIN SPACE_TYPE AS st ON st.space_type_id = s.space_type_id
+WHERE bd.is_approved = 1
+  AND br.status <> 'cancelled'
+  AND br.start_time >= @SemesterStart
+  AND br.start_time < @SemesterEnd
+GROUP BY s.space_code, s.space_name, st.space_type_name;
+\end{lstlisting}
+
+\subsection{Query 02: Approved Bookings by Weekday and Hour}
+
+\textbf{Business question.} How are approved booking decisions distributed by weekday and hour during a supplied semester?
+
+\textbf{Users.} Facility Manager and Department Administrator.
+
+The implementation uses \texttt{BOOKING\_DECISION.decision\_time}, filters an optional hour interval, and groups by the SQL Server weekday name, weekday number, and hour. Cancelled bookings are excluded even if their historical decision was approved.
+
+\begin{lstlisting}[caption={Core of Query 02.}]
+SELECT DATENAME(WEEKDAY, bd.decision_time) AS weekday_name,
+       DATEPART(WEEKDAY, bd.decision_time) AS weekday_number,
+       DATEPART(HOUR, bd.decision_time) AS decision_hour,
+       COUNT(*) AS booking_count
+FROM BOOKING_DECISION AS bd
+JOIN BOOKING_REQUEST AS br ON br.booking_id = bd.booking_id
+WHERE bd.is_approved = 1
+  AND br.status <> 'cancelled'
+  AND bd.decision_time >= @SemesterStart
+  AND bd.decision_time < @SemesterEnd
+  AND DATEPART(HOUR, bd.decision_time)
+      BETWEEN @FromHour AND @ToHour
+GROUP BY DATENAME(WEEKDAY, bd.decision_time),
+         DATEPART(WEEKDAY, bd.decision_time),
+         DATEPART(HOUR, bd.decision_time);
+\end{lstlisting}
+
+\subsection{Query 03: Available-Space Finder}
+
+\textbf{Business question.} Which available spaces meet a required capacity and complete facility list during a requested time interval?
+
+\textbf{Users.} Students, lecturers, teaching assistants, and facility staff.
+
+A result must meet all five conditions: operational status, adequate capacity, every requested facility, no approved non-cancelled overlap, and no active out-of-service maintenance overlap. Advisory maintenance does not remove a result; it is returned as a warning flag.
+
+\begin{lstlisting}[caption={Key predicates in Query 03.}]
+WHERE s.current_status = 'available'
+  AND s.capacity >= @MinCapacity
+  AND @RequiredFacilityCount = (
+      SELECT COUNT(DISTINCT f.facility_name)
+      FROM FACILITY AS f
+      JOIN @RequiredFacilities AS rf
+        ON rf.facility_name = f.facility_name
+      WHERE f.space_code = s.space_code
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM BOOKING_REQUEST AS br
+      JOIN BOOKING_DECISION AS bd
+        ON bd.booking_id = br.booking_id
+      WHERE br.space_code = s.space_code
+        AND bd.is_approved = 1
+        AND br.status <> 'cancelled'
+        AND br.start_time < @RequestedEnd
+        AND br.end_time > @RequestedStart
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM MAINTENANCE_RECORD AS m
+      WHERE m.space_code = s.space_code
+        AND m.impact_level = 'out_of_service'
+        AND m.status IN ('pending', 'in_progress')
+        AND m.start_time < @RequestedEnd
+        AND (m.end_time IS NULL
+             OR m.end_time > @RequestedStart)
+  );
+\end{lstlisting}
+
+\subsection{Query 04: Bookings Affected by Maintenance Escalation}
+
+\textbf{Business question.} Which previously approved bookings were affected when a selected advisory record was escalated to out-of-service?
+
+\textbf{Users.} Facility Staff and Facility Manager.
+
+The notification table supplies durable evidence of an actual escalation. The report selects \texttt{OUT\_OF\_SERVICE} notifications for the chosen maintenance identifier, requires an approved decision, and returns requester contact details, booking times, decision time, escalation time, and maintenance details.
+
+\begin{lstlisting}[caption={Core of Query 04.}]
+SELECT br.booking_id, u.full_name, u.email,
+       br.space_code, br.start_time, br.end_time,
+       br.status AS booking_status,
+       bd.decision_time,
+       bn.notification_time AS escalation_time,
+       m.problem_description, m.impact_level
+FROM BOOKING_NOTIFICATION AS bn
+JOIN BOOKING_REQUEST AS br ON br.booking_id = bn.booking_id
+JOIN BOOKING_DECISION AS bd ON bd.booking_id = br.booking_id
+JOIN MAINTENANCE_RECORD AS m
+  ON m.maintenance_id = bn.maintenance_id
+JOIN USERS AS u ON u.user_id = br.user_id
+WHERE bn.maintenance_id = @MaintenanceId
+  AND bn.notification_type = 'OUT_OF_SERVICE'
+  AND bd.is_approved = 1
+ORDER BY bn.notification_time, br.start_time;
+\end{lstlisting}
+
+\subsection{Requirement Traceability}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{c>{\raggedright\arraybackslash}p{5.1cm}X}
+    \toprule
+    \textbf{Query} & \textbf{Required report} & \textbf{Principal relations}\\
+    \midrule
+    01 & Approved hours for each space & Requests, decisions, spaces, space types\\
+    02 & Approved count by weekday and hour & Decisions and requests\\
+    03 & Capacity/facility/time room finder & Spaces, facilities, requests, decisions, maintenance\\
+    04 & Bookings affected by escalation & Notifications, maintenance, decisions, requests, users\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Traceability of the four required analytical queries.}
+\end{table}

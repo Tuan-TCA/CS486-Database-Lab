@@ -125,7 +125,7 @@ The Update locks remain held until the transaction ends.
 | Existing lock | Another `S` | Another `U` | Another `X` |
 |---|---:|---:|---:|
 | `S` | Compatible | Compatible | Blocked |
-| `U` | Compatible | Blocked | Blocked |
+| `U` | Blocked | Blocked | Blocked |
 | `X` | Blocked | Blocked | Blocked |
 
 The key rule for this design is:

@@ -1,0 +1,116 @@
+\section{Normalization Validation}
+
+\subsection{Functional Dependencies and Candidate Keys}
+
+The following dependencies are derived from the implemented identifiers and uniqueness constraints. The phrase \emph{all non-key attributes} means every remaining descriptive attribute of that relation.
+
+\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{4.1cm}>{\raggedright\arraybackslash}p{6.8cm}}
+  \caption{Candidate keys and principal functional dependencies.}
+  \label{tab:functional-dependencies}\\
+  \toprule
+  \textbf{Relation} & \textbf{Candidate key(s)} & \textbf{Non-trivial functional dependencies}\\
+  \midrule
+  \endfirsthead
+  \toprule
+  \textbf{Relation} & \textbf{Candidate key(s)} & \textbf{Non-trivial functional dependencies}\\
+  \midrule
+  \endhead
+  \nolinkurl{ROLE} &
+  role\_id; role\_name &
+  role\_id $\rightarrow$ role\_name; role\_name $\rightarrow$ role\_id\\
+  \nolinkurl{USERS} &
+  user\_id; email &
+  user\_id $\rightarrow$ all non-key attributes; email $\rightarrow$ all other attributes\\
+  \nolinkurl{SPACE_TYPE} &
+  space\_type\_id; space\_type\_name &
+  space\_type\_id $\rightarrow$ space\_type\_name; space\_type\_name $\rightarrow$ space\_type\_id\\
+  \nolinkurl{SPACES} &
+  space\_code; (building, room\_number) &
+  Each candidate key $\rightarrow$ all non-key attributes\\
+  \nolinkurl{AUTO_USAGE_POLICY} &
+  (space\_type\_id, role\_id) &
+  No non-key attributes; only trivial dependencies\\
+  \nolinkurl{FACILITY} &
+  facility\_id &
+  facility\_id $\rightarrow$ space\_code, facility\_name, description\\
+  \nolinkurl{BOOKING_REQUEST} &
+  booking\_id &
+  booking\_id $\rightarrow$ all non-key attributes\\
+  \nolinkurl{BOOKING_DECISION} &
+  decision\_id; booking\_id &
+  decision\_id $\rightarrow$ all non-key attributes; booking\_id $\rightarrow$ all other attributes\\
+  \nolinkurl{USAGE_SESSION} &
+  session\_id; decision\_id &
+  session\_id $\rightarrow$ all non-key attributes; decision\_id $\rightarrow$ all other attributes\\
+  \nolinkurl{MAINTENANCE_RECORD} &
+  maintenance\_id &
+  maintenance\_id $\rightarrow$ all non-key attributes\\
+  \nolinkurl{BOOKING_NOTIFICATION} &
+  (booking\_id, maintenance\_id, notification\_type) &
+  Composite key $\rightarrow$ notification\_time\\
+  \bottomrule
+\end{longtable}
+\normalsize
+
+Foreign keys do not create reverse functional dependencies. For example, a role can belong to many users and a space can have many requests. Conditional rules such as \emph{automatic decisions have no deciding staff member} are business constraints, not additional functional dependencies.
+
+\subsection{Normal-Form Proof}
+
+\textbf{First Normal Form.} All implemented columns contain atomic scalar values. Repeating sets such as required facilities and automatic policies are represented by separate rows and relations.
+
+\textbf{Second Normal Form.} Relations with single-column keys have no possible partial dependency. \texttt{AUTO\_USAGE\_POLICY} has no non-key attributes. In \texttt{BOOKING\_NOTIFICATION}, \texttt{notification\_time} describes one complete booking--maintenance--notification-type event and depends on the full composite key.
+
+\textbf{Third Normal Form.} Every non-trivial dependency listed in Table~\ref{tab:functional-dependencies} has a candidate key as its determinant. No non-key attribute determines another non-key attribute within the same relation. Lookup descriptions such as role name and space-type name are stored only in their lookup relations, eliminating the Phase 1 transitive dependencies.
+
+Consequently, every relation satisfies 3NF. Under the documented dependency set, every non-trivial determinant is also a superkey, so the relations satisfy the stronger Boyce--Codd Normal Form as well.
+
+\section{LLM and Agent Improvement Process}
+
+\subsection{Model and Framework}
+
+The project used \textbf{DeepSeek V4 Flash} through the \textbf{OpenCode} framework. The LLM was used as a research and drafting assistant within a human-supervised process; final deliverables were reviewed and finalized by the group.
+
+The framework separates reusable knowledge from experiment artifacts:
+
+\begin{itemize}
+  \item the Global Agent stores project-wide terminology, invariants, consistency rules, and verification behavior;
+  \item section-specific Skills store task methods and checklists;
+  \item experiment results provide material for evaluation rather than becoming submissions directly; and
+  \item human evaluation determines which reusable improvements are accepted.
+\end{itemize}
+
+\subsection{Improvement Cycle}
+
+\begin{enumerate}
+  \item Read the specification, current Agent knowledge, and relevant Skill.
+  \item Generate an experiment result for one deliverable.
+  \item Evaluate requirement coverage, naming consistency, SQL correctness, and unsupported assumptions.
+  \item Record the weakness, root cause, and reusable correction.
+  \item Refine the relevant knowledge and regenerate.
+  \item Human-review the final repository artifact.
+\end{enumerate}
+
+For Phase 2, the review emphasis expanded in three directions. Concurrency claims required both an unsafe reproduction and a protected two-session result. Performance claims required repeatable measurements and execution-plan evidence rather than relying only on optimizer suggestions. Requirement traceability was extended from the ERD through migration, maintenance notification, approval locking, and the four required analytical queries.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.8cm}X}
+    \toprule
+    \textbf{Evaluation concern} & \textbf{Reusable improvement}\\
+    \midrule
+    Concurrent correctness &
+    State the invariant, reproduce the race, define one lock order, and verify the final database state.\\
+    Migration safety &
+    Populate replacement columns and tables before removing Phase 1 structures; verify preserved counts.\\
+    Large-data validity &
+    Make generation deterministic, namespace generated identifiers, and assert coverage/invariants inside the script.\\
+    Query performance &
+    Compare identical semantics before and after indexing using repeated reads, timings, and plan operators.\\
+    Index discipline &
+    Evaluate selectivity, storage, and write cost before accepting a missing-index recommendation.\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Representative Phase 2 agent-improvement lessons.}
+\end{table}

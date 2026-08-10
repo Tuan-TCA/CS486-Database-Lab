@@ -1,0 +1,130 @@
+\section{Indexing and Query Tuning}
+
+\subsection{Scope and Methodology}
+
+The tuning experiment evaluates four workloads: the booking-conflict check, the Query 03 room finder, Query 01, and Query 02. The same generated database and query semantics were used before and after indexing.
+
+The database ran Microsoft SQL Server 2022 at compatibility level 160. Each phase removed or created only the experimental indexes, refreshed statistics with \texttt{FULLSCAN}, warmed the workload, recompiled benchmark procedures, and measured each target five times. The complete baseline and tuned sequence was repeated three times. Logical reads, CPU time, elapsed time, access operators, index usage, and storage were recorded.
+
+\subsection{Selected Indexes}
+
+\begin{table}[H]
+  \centering
+  \scriptsize
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.8cm}X}
+    \toprule
+    \textbf{Index} & \textbf{Workload rationale}\\
+    \midrule
+    \nolinkurl{IX_G08_BR_Space_Start} &
+    Keys \texttt{BOOKING\_REQUEST} by \texttt{(space\_code,start\_time)} and includes end time/status for conflict and room-finder overlap checks.\\
+    \nolinkurl{IX_G08_BR_Start} &
+    Keys requests by \texttt{start\_time} and covers space, end time, and status for Query 01 semester access and a narrower Query 02 scan.\\
+    \nolinkurl{IX_G08_BD_Approved_Booking} &
+    Filtered approved-only \texttt{booking\_id} lookup for conflict checks and joins.\\
+    \nolinkurl{IX_G08_BD_Approved_DecisionTime} &
+    Filtered approved-only decision-time range with included booking identifier for Query 02.\\
+    \nolinkurl{IX_G08_Facility_Space_Name} &
+    Supports direct facility lookup by space and required facility name.\\
+    \nolinkurl{IX_G08_Maint_Space_Impact_Status_Start} &
+    Narrows maintenance by space, impact, active status, and interval start while covering the interval end.\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Final workload-specific index set.}
+  \label{tab:index-set}
+\end{table}
+
+\subsection{Before-and-After Results}
+
+\begin{table}[H]
+  \centering
+  \scriptsize
+  \begin{tabular}{lrrrrrr}
+    \toprule
+    \textbf{Target} &
+    \multicolumn{2}{c}{\textbf{Logical reads}} &
+    \textbf{Reduction} &
+    \multicolumn{2}{c}{\textbf{Elapsed ms}} &
+    \textbf{Reduction}\\
+    \cmidrule(lr){2-3}\cmidrule(lr){5-6}
+    & \textbf{Before} & \textbf{After} & & \textbf{Before} & \textbf{After} &\\
+    \midrule
+    Conflict check & 55.00 & 14.00 & 74.55\% & 0.31 & 0.08 & 73.12\%\\
+    Room finder & 35,152.20 & 953.40 & 97.29\% & 787.54 & 15.42 & 98.04\%\\
+    Query 01 & 2,760.00 & 641.00 & 76.78\% & 42.31 & 28.73 & 32.10\%\\
+    Query 02 & 2,677.00 & 829.00 & 69.03\% & 41.38 & 31.03 & 25.00\%\\
+    \bottomrule
+  \end{tabular}
+  \caption{Average performance before and after indexing.}
+  \label{tab:index-performance}
+\end{table}
+
+\begin{figure}[H]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      ymode=log,
+      log basis y=10,
+      width=0.94\textwidth,
+      height=7.2cm,
+      bar width=12pt,
+      ylabel={Average elapsed time (ms, log scale)},
+      symbolic x coords={Conflict,Room finder,Query 01,Query 02},
+      xtick=data,
+      x tick label style={rotate=18,anchor=east},
+      ymin=0.05,
+      ymax=1500,
+      grid=major,
+      legend style={at={(0.5,-0.24)},anchor=north,legend columns=2},
+      nodes near coords,
+      nodes near coords style={font=\scriptsize,rotate=90,anchor=west},
+      every axis plot/.append style={fill opacity=0.85}
+    ]
+      \addplot[fill=reportblue] coordinates {
+        (Conflict,0.31) (Room finder,787.54) (Query 01,42.31) (Query 02,41.38)
+      };
+      \addplot[fill=green!55!black] coordinates {
+        (Conflict,0.08) (Room finder,15.42) (Query 01,28.73) (Query 02,31.03)
+      };
+      \legend{Before indexing,After indexing}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{Elapsed-time comparison for the four tuned workloads.}
+  \label{fig:index-chart}
+\end{figure}
+
+\subsection{Execution-Plan Interpretation}
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.0cm}XX}
+    \toprule
+    \textbf{Target} & \textbf{Before} & \textbf{After}\\
+    \midrule
+    Conflict check &
+    Clustered request scan and decision lookup &
+    Selective request and approved-decision seeks\\
+    Room finder &
+    Repeated clustered scans of requests, facilities, and maintenance &
+    Seeks on all repeated large/correlated accesses; the inexpensive 62-row space scan remains\\
+    Query 01 &
+    Clustered scans of both large booking relations &
+    Semester range seek on requests and narrow approved-only decision scan\\
+    Query 02 &
+    Clustered scans of decisions and requests &
+    Approved decision-time range seek and narrower covered request scan\\
+    \bottomrule
+  \end{tabularx}
+  \caption{Important execution-plan changes.}
+\end{table}
+
+The strongest change is the room finder: average elapsed time falls from 787.54 ms to 15.42 ms, while logical reads fall by 97.29\%. Query 02 retains a residual \texttt{DATEPART(HOUR, decision\_time)} expression, so its indexing gain is limited by grouping and computation after the semester range has been selected.
+
+\subsection{Trade-offs and Recommendation}
+
+All six indexes were selected by SQL Server during measured runs. Together they use approximately 19.07 MB. The two request indexes account for most of the space and increase booking-write maintenance, but their key orders serve different access patterns: same-space interval checks versus semester ranges.
+
+SQL Server also suggested a standalone request-status index. It was rejected because the condition \texttt{status <> 'cancelled'} qualifies roughly 93,029 of 100,030 requests and is therefore not selective. Treating missing-index output as evidence rather than an automatic instruction avoids storage and write overhead with little expected benefit.
+
+The final recommendation is to retain the six measured workload-specific indexes, monitor their write cost and fragmentation, and reconsider them only if booking volume or report patterns change materially.
