@@ -411,7 +411,55 @@ DROP TABLE BOOKING_APPROVAL;
 GO
 
 -- =====================================================
--- Step 12: Post-migration verification
+-- Step 12: Create Trigger for Automated Approval
+--
+-- Automatically approves booking requests that match the
+-- requirements defined in AUTO_USAGE_POLICY.
+-- =====================================================
+
+GO
+CREATE TRIGGER trg_G08_AutoApproveBooking
+ON BOOKING_REQUEST
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @booking_id VARCHAR(20);
+
+    DECLARE cur_auto_approve CURSOR LOCAL FOR
+        SELECT i.booking_id
+        FROM inserted i
+        JOIN USERS u ON i.user_id = u.user_id
+        JOIN SPACES s ON i.space_code = s.space_code
+        JOIN AUTO_USAGE_POLICY p ON p.role_id = u.role_id AND p.space_type_id = s.space_type_id
+        WHERE i.status = 'pending';
+
+    OPEN cur_auto_approve;
+    FETCH NEXT FROM cur_auto_approve INTO @booking_id;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Execute the concurrent-safe approval procedure for this booking.
+        -- Note: If this procedure throws an error (e.g., due to overlapping time),
+        -- it rolls back the transaction. Since this trigger is part of the INSERT
+        -- statement's transaction, the INSERT will fail and be rolled back.
+        EXEC dbo.usp_G08_ApproveBookingConcurrentSafe
+            @booking_id = @booking_id,
+            @is_automatic = 1,
+            @decided_by_staff = NULL,
+            @decision_reason = 'Automated approval based on policy';
+
+        FETCH NEXT FROM cur_auto_approve INTO @booking_id;
+    END
+
+    CLOSE cur_auto_approve;
+    DEALLOCATE cur_auto_approve;
+END;
+GO
+
+-- =====================================================
+-- Step 13: Post-migration verification
 --
 -- Expected row counts:
 --   ROLE                  6
