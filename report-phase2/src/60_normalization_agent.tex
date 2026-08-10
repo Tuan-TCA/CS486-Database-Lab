@@ -1,116 +1,576 @@
-\section{Normalization Validation}
+% ============================================================
+% Functional Dependencies and Normalization
+% ============================================================
 
-\subsection{Functional Dependencies and Candidate Keys}
+\section{Functional Dependencies and Normalization}
 
-The following dependencies are derived from the implemented identifiers and uniqueness constraints. The phrase \emph{all non-key attributes} means every remaining descriptive attribute of that relation.
+This section analyzes the functional dependencies (FDs) of the
+relational schema and verifies whether the database satisfies the
+Third Normal Form (3NF). The analysis is based on the primary keys,
+foreign keys, and attribute dependencies represented in the ERD.
 
-\small
-\begin{longtable}{>{\raggedright\arraybackslash}p{3.6cm}>{\raggedright\arraybackslash}p{4.1cm}>{\raggedright\arraybackslash}p{6.8cm}}
-  \caption{Candidate keys and principal functional dependencies.}
-  \label{tab:functional-dependencies}\\
-  \toprule
-  \textbf{Relation} & \textbf{Candidate key(s)} & \textbf{Non-trivial functional dependencies}\\
-  \midrule
-  \endfirsthead
-  \toprule
-  \textbf{Relation} & \textbf{Candidate key(s)} & \textbf{Non-trivial functional dependencies}\\
-  \midrule
-  \endhead
-  \nolinkurl{ROLE} &
-  role\_id; role\_name &
-  role\_id $\rightarrow$ role\_name; role\_name $\rightarrow$ role\_id\\
-  \nolinkurl{USERS} &
-  user\_id; email &
-  user\_id $\rightarrow$ all non-key attributes; email $\rightarrow$ all other attributes\\
-  \nolinkurl{SPACE_TYPE} &
-  space\_type\_id; space\_type\_name &
-  space\_type\_id $\rightarrow$ space\_type\_name; space\_type\_name $\rightarrow$ space\_type\_id\\
-  \nolinkurl{SPACES} &
-  space\_code; (building, room\_number) &
-  Each candidate key $\rightarrow$ all non-key attributes\\
-  \nolinkurl{AUTO_USAGE_POLICY} &
-  (space\_type\_id, role\_id) &
-  No non-key attributes; only trivial dependencies\\
-  \nolinkurl{FACILITY} &
-  facility\_id &
-  facility\_id $\rightarrow$ space\_code, facility\_name, description\\
-  \nolinkurl{BOOKING_REQUEST} &
-  booking\_id &
-  booking\_id $\rightarrow$ all non-key attributes\\
-  \nolinkurl{BOOKING_DECISION} &
-  decision\_id; booking\_id &
-  decision\_id $\rightarrow$ all non-key attributes; booking\_id $\rightarrow$ all other attributes\\
-  \nolinkurl{USAGE_SESSION} &
-  session\_id; decision\_id &
-  session\_id $\rightarrow$ all non-key attributes; decision\_id $\rightarrow$ all other attributes\\
-  \nolinkurl{MAINTENANCE_RECORD} &
-  maintenance\_id &
-  maintenance\_id $\rightarrow$ all non-key attributes\\
-  \nolinkurl{BOOKING_NOTIFICATION} &
-  (booking\_id, maintenance\_id, notification\_type) &
-  Composite key $\rightarrow$ notification\_time\\
-  \bottomrule
-\end{longtable}
-\normalsize
+\subsection{Functional Dependencies}
 
-Foreign keys do not create reverse functional dependencies. For example, a role can belong to many users and a space can have many requests. Conditional rules such as \emph{automatic decisions have no deciding staff member} are business constraints, not additional functional dependencies.
+A functional dependency $X \rightarrow Y$ means that the values of
+attributes $X$ uniquely determine the values of attributes $Y$.
 
-\subsection{Normal-Form Proof}
+For this database, the functional dependencies are derived from the
+candidate keys and the semantic meaning of each entity. Foreign keys
+alone do not introduce additional functional dependencies in a
+relation when the attributes determined by the referenced relation are
+not stored in the child relation.
 
-\textbf{First Normal Form.} All implemented columns contain atomic scalar values. Repeating sets such as required facilities and automatic policies are represented by separate rows and relations.
-
-\textbf{Second Normal Form.} Relations with single-column keys have no possible partial dependency. \texttt{AUTO\_USAGE\_POLICY} has no non-key attributes. In \texttt{BOOKING\_NOTIFICATION}, \texttt{notification\_time} describes one complete booking--maintenance--notification-type event and depends on the full composite key.
-
-\textbf{Third Normal Form.} Every non-trivial dependency listed in Table~\ref{tab:functional-dependencies} has a candidate key as its determinant. No non-key attribute determines another non-key attribute within the same relation. Lookup descriptions such as role name and space-type name are stored only in their lookup relations, eliminating the Phase 1 transitive dependencies.
-
-Consequently, every relation satisfies 3NF. Under the documented dependency set, every non-trivial determinant is also a superkey, so the relations satisfy the stronger Boyce--Codd Normal Form as well.
-
-\section{LLM and Agent Improvement Process}
-
-\subsection{Model and Framework}
-
-The project used \textbf{DeepSeek V4 Flash} through the \textbf{OpenCode} framework. The LLM was used as a research and drafting assistant within a human-supervised process; final deliverables were reviewed and finalized by the group.
-
-The framework separates reusable knowledge from experiment artifacts:
-
-\begin{itemize}
-  \item the Global Agent stores project-wide terminology, invariants, consistency rules, and verification behavior;
-  \item section-specific Skills store task methods and checklists;
-  \item experiment results provide material for evaluation rather than becoming submissions directly; and
-  \item human evaluation determines which reusable improvements are accepted.
-\end{itemize}
-
-\subsection{Improvement Cycle}
-
-\begin{enumerate}
-  \item Read the specification, current Agent knowledge, and relevant Skill.
-  \item Generate an experiment result for one deliverable.
-  \item Evaluate requirement coverage, naming consistency, SQL correctness, and unsupported assumptions.
-  \item Record the weakness, root cause, and reusable correction.
-  \item Refine the relevant knowledge and regenerate.
-  \item Human-review the final repository artifact.
-\end{enumerate}
-
-For Phase 2, the review emphasis expanded in three directions. Concurrency claims required both an unsafe reproduction and a protected two-session result. Performance claims required repeatable measurements and execution-plan evidence rather than relying only on optimizer suggestions. Requirement traceability was extended from the ERD through migration, maintenance notification, approval locking, and the four required analytical queries.
+The following table summarizes the main functional dependencies.
 
 \begin{table}[H]
-  \centering
-  \small
-  \begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.8cm}X}
-    \toprule
-    \textbf{Evaluation concern} & \textbf{Reusable improvement}\\
-    \midrule
-    Concurrent correctness &
-    State the invariant, reproduce the race, define one lock order, and verify the final database state.\\
-    Migration safety &
-    Populate replacement columns and tables before removing Phase 1 structures; verify preserved counts.\\
-    Large-data validity &
-    Make generation deterministic, namespace generated identifiers, and assert coverage/invariants inside the script.\\
-    Query performance &
-    Compare identical semantics before and after indexing using repeated reads, timings, and plan operators.\\
-    Index discipline &
-    Evaluate selectivity, storage, and write cost before accepting a missing-index recommendation.\\
-    \bottomrule
-  \end{tabularx}
-  \caption{Representative Phase 2 agent-improvement lessons.}
+\centering
+\small
+\caption{Functional Dependencies of the Relational Schema}
+\label{tab:functional-dependencies}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Relation} & \textbf{Candidate Key} & \textbf{Functional Dependency} \\ \hline
+
+\texttt{SPACE\_TYPE}
+&
+\texttt{space\_type\_id}
+&
+\texttt{space\_type\_id} $\rightarrow$ \texttt{space\_type\_name}
+\\ \hline
+
+\texttt{ROLE}
+&
+\texttt{role\_id}
+&
+\texttt{role\_id} $\rightarrow$ \texttt{role\_name}
+\\ \hline
+
+\texttt{SPACE}
+&
+\texttt{space\_code}
+&
+\texttt{space\_code} $\rightarrow$
+\texttt{space\_type\_id, space\_name, building, floor,
+room\_number, capacity, current\_status}
+\\ \hline
+
+\texttt{USERS}
+&
+\texttt{user\_id}
+&
+\texttt{user\_id} $\rightarrow$
+\texttt{role\_id, full\_name, email, phone\_number,
+department, account\_status}
+\\ \hline
+
+\texttt{FACILITY}
+&
+\texttt{facility\_id}
+&
+\texttt{facility\_id} $\rightarrow$
+\texttt{space\_code, facility\_name, description}
+\\ \hline
+
+\texttt{BOOKING\_REQUEST}
+&
+\texttt{booking\_id}
+&
+\texttt{booking\_id} $\rightarrow$
+\texttt{user\_id, space\_code, start\_time, end\_time,
+purpose, expected\_participants, booking\_type, status}
+\\ \hline
+
+\texttt{BOOKING\_DECISION}
+&
+\texttt{decision\_id}
+&
+\texttt{decision\_id} $\rightarrow$
+\texttt{booking\_id, is\_approved, is\_automatic,
+decided\_by\_staff, decision\_reason, decision\_time}
+\\ \hline
+
+\texttt{MAINTENANCE\_RECORD}
+&
+\texttt{maintenance\_id}
+&
+\texttt{maintenance\_id} $\rightarrow$
+\texttt{space\_code, report\_user, assigned\_staff,
+problem\_description, start\_time, end\_time, status,
+result\_note, impact\_level}
+\\ \hline
+
+\texttt{USAGE\_SESSION}
+&
+\texttt{session\_id}
+&
+\texttt{session\_id} $\rightarrow$
+\texttt{decision\_id, checked\_in\_by\_staff,
+completed\_by\_staff, start\_time, end\_time,
+initial\_condition, final\_condition, usage\_note}
+\\ \hline
+
+\texttt{BOOKING\_NOTIFICATION}
+&
+\begin{tabular}{c}
+\texttt{(booking\_id, maintenance\_id,}\\
+\texttt{notification\_type)}
+\end{tabular}
+&
+\begin{tabular}{c}
+\texttt{(booking\_id, maintenance\_id,}\\
+\texttt{notification\_type)}
+$\rightarrow$ \texttt{notification\_time}
+\end{tabular}
+\\ \hline
+
+\texttt{AUTO\_USAGE\_POLICY}
+&
+\texttt{(space\_type\_id, role\_id)}
+&
+No non-trivial FD involving non-key attributes.
+\\ \hline
+
+\end{tabular}
 \end{table}
+
+\subsection{Important Observation about Foreign Keys}
+
+Foreign keys do not automatically create functional dependencies from
+the foreign key to the attributes of the referenced relation.
+
+For example, the following dependency exists in the
+\texttt{SPACE\_TYPE} relation:
+
+\[
+\texttt{space\_type\_id}
+\rightarrow
+\texttt{space\_type\_name}.
+\]
+
+However, \texttt{space\_type\_id} in \texttt{SPACE} does not determine
+\texttt{space\_type\_name} because \texttt{space\_type\_name} is not an
+attribute of \texttt{SPACE}. It is stored in the
+\texttt{SPACE\_TYPE} relation.
+
+Similarly,
+
+\[
+\texttt{role\_id} \rightarrow \texttt{role\_name}
+\]
+
+holds in \texttt{ROLE}, but it does not create a transitive dependency
+inside \texttt{USERS}, because \texttt{role\_name} is not stored in
+\texttt{USERS}.
+
+This separation prevents unnecessary redundancy between related
+entities.
+
+\subsection{First Normal Form (1NF)}
+
+A relation is in First Normal Form if:
+
+\begin{enumerate}
+    \item every attribute contains atomic values;
+    \item there are no repeating groups; and
+    \item each tuple can be uniquely identified by a key.
+\end{enumerate}
+
+All relations in the proposed schema satisfy these requirements.
+Each attribute represents a single value, and each relation has a
+defined primary key.
+
+For example, \texttt{BOOKING\_REQUEST} stores one value for
+\texttt{start\_time}, one value for \texttt{end\_time}, one value for
+\texttt{purpose}, and so on. No attribute contains a repeating group
+of values.
+
+Therefore,
+
+\[
+\boxed{\text{All relations are in 1NF.}}
+\]
+
+\subsection{Second Normal Form (2NF)}
+
+A relation is in Second Normal Form if:
+
+\begin{enumerate}
+    \item it is already in 1NF; and
+    \item every non-prime attribute is fully functionally dependent on
+    the whole candidate key.
+\end{enumerate}
+
+Most relations in the proposed schema have a single-attribute
+candidate key, such as:
+
+\[
+\texttt{space\_code},\quad
+\texttt{user\_id},\quad
+\texttt{booking\_id},\quad
+\texttt{decision\_id},\quad
+\texttt{maintenance\_id},\quad
+\texttt{session\_id}.
+\]
+
+For a single-attribute key, a partial dependency cannot occur because
+there is no proper subset of the key.
+
+The two relations with composite keys are
+\texttt{BOOKING\_NOTIFICATION} and \texttt{AUTO\_USAGE\_POLICY}.
+
+For \texttt{BOOKING\_NOTIFICATION}:
+
+\[
+(\texttt{booking\_id},\texttt{maintenance\_id},
+\texttt{notification\_type})
+\rightarrow
+\texttt{notification\_time}.
+\]
+
+The only non-key attribute, \texttt{notification\_time}, depends on the
+complete composite key. There is no FD from a proper subset of the key
+to \texttt{notification\_time} specified by the ERD.
+
+For \texttt{AUTO\_USAGE\_POLICY}, the relation contains only its
+composite primary key and no non-key attributes. Therefore, partial
+dependency is impossible.
+
+Consequently,
+
+\[
+\boxed{\text{All relations are in 2NF.}}
+\]
+
+\subsection{Third Normal Form (3NF)}
+
+A relation is in Third Normal Form if, for every non-trivial functional
+dependency
+
+\[
+X \rightarrow A,
+\]
+
+at least one of the following conditions holds:
+
+\begin{enumerate}
+    \item $X$ is a superkey; or
+    \item $A$ is a prime attribute.
+\end{enumerate}
+
+The schema satisfies the stronger condition that every determinant of
+a non-trivial FD is a candidate key.
+
+\subsubsection{Verification of Individual Relations}
+
+\paragraph{\texttt{SPACE\_TYPE}}
+
+The only non-trivial FD is:
+
+\[
+\texttt{space\_type\_id}
+\rightarrow
+\texttt{space\_type\_name}.
+\]
+
+Since \texttt{space\_type\_id} is the primary key, it is a superkey.
+
+Therefore, \texttt{SPACE\_TYPE} is in 3NF.
+
+\paragraph{\texttt{ROLE}}
+
+\[
+\texttt{role\_id}
+\rightarrow
+\texttt{role\_name}.
+\]
+
+Since \texttt{role\_id} is the primary key, the determinant is a
+superkey. Therefore, \texttt{ROLE} is in 3NF.
+
+\paragraph{\texttt{SPACE}}
+
+\[
+\texttt{space\_code}
+\rightarrow
+\{
+\texttt{space\_type\_id},
+\texttt{space\_name},
+\texttt{building},
+\texttt{floor},
+\texttt{room\_number},
+\texttt{capacity},
+\texttt{current\_status}
+\}.
+\]
+
+The determinant \texttt{space\_code} is the primary key. Therefore,
+all non-trivial dependencies satisfy the 3NF condition.
+
+\paragraph{\texttt{USERS}}
+
+\[
+\texttt{user\_id}
+\rightarrow
+\{
+\texttt{role\_id},
+\texttt{full\_name},
+\texttt{email},
+\texttt{phone\_number},
+\texttt{department},
+\texttt{account\_status}
+\}.
+\]
+
+The determinant is the primary key \texttt{user\_id}. Therefore,
+\texttt{USERS} is in 3NF.
+
+\paragraph{\texttt{FACILITY}}
+
+\[
+\texttt{facility\_id}
+\rightarrow
+\{
+\texttt{space\_code},
+\texttt{facility\_name},
+\texttt{description}
+\}.
+\]
+
+Since \texttt{facility\_id} is the primary key, the relation satisfies
+3NF.
+
+\paragraph{\texttt{BOOKING\_REQUEST}}
+
+\[
+\texttt{booking\_id}
+\rightarrow
+\{
+\texttt{user\_id},
+\texttt{space\_code},
+\texttt{start\_time},
+\texttt{end\_time},
+\texttt{purpose},
+\texttt{expected\_participants},
+\texttt{booking\_type},
+\texttt{status}
+\}.
+\]
+
+The determinant is the primary key \texttt{booking\_id}. Therefore,
+\texttt{BOOKING\_REQUEST} is in 3NF.
+
+\paragraph{\texttt{BOOKING\_DECISION}}
+
+\[
+\texttt{decision\_id}
+\rightarrow
+\{
+\texttt{booking\_id},
+\texttt{is\_approved},
+\texttt{is\_automatic},
+\texttt{decided\_by\_staff},
+\texttt{decision\_reason},
+\texttt{decision\_time}
+\}.
+\]
+
+The determinant \texttt{decision\_id} is the primary key. Therefore,
+the relation satisfies 3NF.
+
+\paragraph{\texttt{MAINTENANCE\_RECORD}}
+
+\[
+\texttt{maintenance\_id}
+\rightarrow
+\{
+\texttt{space\_code},
+\texttt{report\_user},
+\texttt{assigned\_staff},
+\texttt{problem\_description},
+\texttt{start\_time},
+\texttt{end\_time},
+\texttt{status},
+\texttt{result\_note},
+\texttt{impact\_level}
+\}.
+\]
+
+The determinant is the primary key \texttt{maintenance\_id}.
+Therefore, \texttt{MAINTENANCE\_RECORD} is in 3NF.
+
+\paragraph{\texttt{USAGE\_SESSION}}
+
+\[
+\texttt{session\_id}
+\rightarrow
+\{
+\texttt{decision\_id},
+\texttt{checked\_in\_by\_staff},
+\texttt{completed\_by\_staff},
+\texttt{start\_time},
+\texttt{end\_time},
+\texttt{initial\_condition},
+\texttt{final\_condition},
+\texttt{usage\_note}
+\}.
+\]
+
+The determinant \texttt{session\_id} is the primary key. Therefore,
+\texttt{USAGE\_SESSION} is in 3NF.
+
+\paragraph{\texttt{BOOKING\_NOTIFICATION}}
+
+The candidate key is:
+
+\[
+K =
+(\texttt{booking\_id},
+\texttt{maintenance\_id},
+\texttt{notification\_type}).
+\]
+
+The non-trivial FD is:
+
+\[
+K \rightarrow \texttt{notification\_time}.
+\]
+
+The determinant is the complete candidate key and is therefore a
+superkey. Hence, \texttt{BOOKING\_NOTIFICATION} satisfies 3NF.
+
+\paragraph{\texttt{AUTO\_USAGE\_POLICY}}
+
+The candidate key is:
+
+\[
+K =
+(\texttt{space\_type\_id},\texttt{role\_id}).
+\]
+
+The relation contains no non-key attributes. Therefore, there is no
+non-trivial FD whose right-hand side is a non-prime attribute.
+Consequently, the relation trivially satisfies 3NF.
+
+\subsection{Summary of Normalization Analysis}
+
+Table~\ref{tab:normalization-summary} summarizes the normalization
+status of all relations.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Normalization Summary}
+\label{tab:normalization-summary}
+\begin{tabular}{|l|c|c|c|l|}
+\hline
+\textbf{Relation} & \textbf{1NF} & \textbf{2NF} & \textbf{3NF}
+& \textbf{Reason} \\ \hline
+
+\texttt{SPACE\_TYPE}
+& Yes & Yes & Yes
+& Key determines all attributes \\ \hline
+
+\texttt{ROLE}
+& Yes & Yes & Yes
+& Key determines all attributes \\ \hline
+
+\texttt{SPACE}
+& Yes & Yes & Yes
+& Single-attribute key \\ \hline
+
+\texttt{USERS}
+& Yes & Yes & Yes
+& Single-attribute key \\ \hline
+
+\texttt{FACILITY}
+& Yes & Yes & Yes
+& Single-attribute key \\ \hline
+
+\texttt{BOOKING\_REQUEST}
+& Yes & Yes & Yes
+& Single-attribute key \\ \hline
+
+\texttt{BOOKING\_DECISION}
+& Yes & Yes & Yes
+& Single-attribute key \\ \hline
+
+\texttt{MAINTENANCE\_RECORD}
+& Yes & Yes & Yes
+& Single-attribute key \\ \hline
+
+\texttt{USAGE\_SESSION}
+& Yes & Yes & Yes
+& Single-attribute key \\ \hline
+
+\texttt{BOOKING\_NOTIFICATION}
+& Yes & Yes & Yes
+& Full composite-key dependency \\ \hline
+
+\texttt{AUTO\_USAGE\_POLICY}
+& Yes & Yes & Yes
+& No non-key attributes \\ \hline
+
+\end{tabular}
+\end{table}
+
+\subsection{Proof of 3NF}
+
+For every relation in the proposed database, the non-trivial
+functional dependencies identified from the ERD have a determinant
+that is a candidate key and therefore a superkey.
+
+Formally, for every non-trivial FD
+
+\[
+X \rightarrow A,
+\]
+
+in the schema,
+
+\[
+X \text{ is a superkey}.
+\]
+
+Therefore, the 3NF condition is satisfied for every relation:
+
+\[
+\boxed{
+\forall X \rightarrow A,\quad
+X \text{ is a superkey}
+}
+\]
+
+Thus,
+
+\[
+\boxed{
+\text{The complete relational schema satisfies 3NF.}
+}
+\]
+
+In fact, under the functional dependencies identified above, the
+schema satisfies the stronger Boyce--Codd Normal Form (BCNF), because
+every determinant of a non-trivial functional dependency is a
+candidate key.
+
+\[
+\boxed{
+\text{3NF is satisfied, and the relations are also in BCNF.}
+}
+\]
+
+\subsection{Need for Further Decomposition}
+
+No further decomposition is required to achieve 3NF because the
+current relational schema already satisfies 3NF.
+
+The decomposition of descriptive information into separate relations
+such as \texttt{ROLE}, \texttt{SPACE\_TYPE}, and \texttt{SPACE} also
+prevents redundant storage of attributes that belong to different
+entities. For example, the role name is stored only in
+\texttt{ROLE}, while \texttt{USERS} stores only the corresponding
+foreign key \texttt{role\_id}.
+
+Therefore, the final schema preserves the entity structure represented
+by the ERD while avoiding partial and transitive dependencies within
+the individual relations.
