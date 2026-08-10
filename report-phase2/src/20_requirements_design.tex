@@ -46,39 +46,8 @@ The Phase 2 design contains eleven relations. Figure~\ref{fig:schema-overview} e
 
 \begin{figure}[H]
   \centering
-  \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}[
-    entity/.style={draw=reportblue, rounded corners, fill=blue!4, minimum width=3.2cm, minimum height=0.85cm, align=center, font=\ttfamily\bfseries},
-    rel/.style={-{Latex[length=2.5mm]}, thick, draw=reportblue!75}
-  ]
-    \node[entity] (role) at (0,5.2) {ROLE};
-    \node[entity] (users) at (0,3.5) {USERS};
-    \node[entity] (stype) at (4.2,5.2) {SPACE\_TYPE};
-    \node[entity] (policy) at (2.1,1.7) {AUTO\_USAGE\_POLICY};
-    \node[entity] (spaces) at (6.4,3.5) {SPACES};
-    \node[entity] (facility) at (9.8,5.2) {FACILITY};
-    \node[entity] (booking) at (6.4,1.7) {BOOKING\_REQUEST};
-    \node[entity] (decision) at (10.5,1.7) {BOOKING\_DECISION};
-    \node[entity] (session) at (14.5,1.7) {USAGE\_SESSION};
-    \node[entity] (maint) at (6.4,-0.2) {MAINTENANCE\_RECORD};
-    \node[entity] (notice) at (10.5,-0.2) {BOOKING\_NOTIFICATION};
-
-    \draw[rel] (role) -- (users);
-    \draw[rel] (role) -- (policy);
-    \draw[rel] (stype) -- (policy);
-    \draw[rel] (stype) -- (spaces);
-    \draw[rel] (spaces) -- (facility);
-    \draw[rel] (users) -- (booking);
-    \draw[rel] (spaces) -- (booking);
-    \draw[rel] (booking) -- (decision);
-    \draw[rel] (decision) -- (session);
-    \draw[rel] (spaces) -- (maint);
-    \draw[rel] (booking) -- (notice);
-    \draw[rel] (maint) -- (notice);
-    \draw[rel] (users) to[bend right=18] (decision);
-    \draw[rel] (users) to[bend right=24] (maint);
-  \end{tikzpicture}}
-  \caption{Phase 2 schema overview; arrows point from referenced concepts toward dependent records.}
+  \includegraphics[width=\textwidth]{architecture.jpg}
+  \caption{Updated Schema Overview}
   \label{fig:schema-overview}
 \end{figure}
 
