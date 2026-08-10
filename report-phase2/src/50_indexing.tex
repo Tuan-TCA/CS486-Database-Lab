@@ -6,7 +6,7 @@ The tuning experiment evaluates four workloads: the booking-conflict check, the 
 
 The database ran Microsoft SQL Server 2022 at compatibility level 160. Each phase removed or created only the experimental indexes, refreshed statistics with \texttt{FULLSCAN}, warmed the workload, recompiled benchmark procedures, and measured each target five times. The complete baseline and tuned sequence was repeated three times. Logical reads, CPU time, elapsed time, access operators, index usage, and storage were recorded.
 
-The tuning folder also contains a read-only index-inventory diagnostic. It lists index type, uniqueness, primary-key status, and unique-constraint status for the five workload tables, making the baseline access structures explicit before interpreting scan and seek behavior. The updated benchmark harness otherwise preserves the measured workloads and result methodology used below.
+The tuning folder contains a read-only index-inventory diagnostic. It lists index type, uniqueness, primary-key status, and unique-constraint status for the five workload tables, making the baseline access structures explicit before interpreting scan and seek behavior. The benchmark harness preserves the measured workloads and result methodology used below.
 
 \subsection{Selected Indexes}
 

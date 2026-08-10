@@ -19,8 +19,9 @@ Without a shared serialization resource, Session A and Session B can both read \
     \midrule
     1 & Checks overlap; none exists & \\
     2 & & Checks overlap; none exists\\
-    3 & Inserts approval A & Inserts approval B\\
-    4 & Commits & Commits\\
+    3 & Inserts approval A & \\
+    4 & & Inserts approval B\\
+    5 & Commits & Commits\\
     \bottomrule
   \end{tabularx}
   \caption{Unsafe concurrent check-and-write schedule.}
@@ -36,7 +37,7 @@ The required invariant uses half-open intervals: two approved, non-cancelled boo
 
 \subsection{Protected Approval Protocol}
 
-The protected approval script now explicitly selects the target database before creating the procedure. The procedure uses pessimistic SQL Server locking in one transaction:
+The protected approval script selects the target database before creating the procedure. The procedure uses pessimistic SQL Server locking in one transaction:
 
 \begin{enumerate}
   \item Read the target \texttt{BOOKING\_REQUEST} with \texttt{UPDLOCK}. This keeps its space, interval, and pending status stable.
@@ -64,9 +65,8 @@ WHERE s.space_code = @space_code;
 COMMIT TRANSACTION;
 \end{lstlisting}
 
-The normal automatic path calls this procedure from \nolinkurl{trg_G08_ProcessNewBooking}, and staff approval should use the same procedure. The updated migration also installs \nolinkurl{trg_G08_ValidateApprovedBooking} as a safety net for direct or manual approved-decision writes. That trigger obtains an update lock on the same \texttt{SPACES} row before checking maintenance and booking overlap, so bypassing the procedure does not bypass the central invariant.
 
-Competing requests for the same space therefore request incompatible update locks on one common row. Requests for different spaces lock different rows and can still proceed concurrently. The fixed procedure order \texttt{BOOKING\_REQUEST} then \texttt{SPACES} reduces deadlock risk, while the validation trigger supplies database-level defense in depth.
+Competing requests for the same space therefore request incompatible update locks on one common row. Requests for different spaces lock different rows and can still proceed concurrently. The fixed procedure order \texttt{BOOKING\_REQUEST} then \texttt{SPACES} reduces deadlock risk.
 
 \subsection{Unsafe Test}
 

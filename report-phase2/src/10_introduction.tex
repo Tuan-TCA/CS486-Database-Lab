@@ -2,7 +2,7 @@
 
 \subsection{Background and Phase 2 Objectives}
 
-Phase 2 extends the Campus Space Management System after a one-semester pilot. The original database treated every active maintenance record as a complete booking block. The revised requirements distinguish disruptive maintenance from advisory work, introduce automatic approval for selected role--space-type combinations, require correctness under concurrent approval, and add analytical reporting over a substantially larger history.
+Phase 2 extends the Campus Space Management System after a one-semester pilot. The original database treated every active maintenance record as a complete booking block. The Phase 2 requirements distinguish disruptive maintenance from advisory work, introduce automatic approval for selected role--space-type combinations, require correctness under concurrent approval, and add analytical reporting over a substantially larger history.
 
 The implementation therefore has five objectives:
 
@@ -24,13 +24,13 @@ The implementation therefore has five objectives:
     \textbf{Member} & \textbf{Student ID} & \textbf{Phase 2 contributions}\\
     \midrule
     Tran Canh Anh Tuan & 24125048 &
-    Shared updated ERD and logical design (09); requirement-change analysis and concurrency design, implementation, and tests (08, 11--13).\\
+    Shared Phase 2 ERD and logical design (09); requirement-change analysis and concurrency design, implementation, and tests (08, 11--13).\\
     Le Dat Phuc An & 24125052 &
-    Shared updated ERD and logical design (09); schema migration, data generation, and analytical queries (10, 14, 16).\\
+    Shared Phase 2 ERD and logical design (09); schema migration, data generation, and analytical queries (10, 14, 16).\\
     Vong Chi Van & 24125049 &
-    Shared updated ERD and logical design (09); requirement-change analysis and concurrency design, implementation, and tests (08, 11--13).\\
+    Shared Phase 2 ERD and logical design (09); requirement-change analysis and concurrency design, implementation, and tests (08, 11--13).\\
     Pham Nguyen Minh Quan & 24125041 &
-    Shared updated ERD and logical design (09); index tuning and analytical-query refinement (15, 16).\\
+    Shared Phase 2 ERD and logical design (09); index tuning and analytical-query refinement (15, 16).\\
     \bottomrule
   \end{tabularx}
   \caption{Group membership and deliverable ownership.}
@@ -42,13 +42,14 @@ The implementation therefore has five objectives:
 \begin{table}[H]
   \centering
   \small
-  \begin{tabularx}{\textwidth}{>{\ttfamily\raggedright\arraybackslash}p{2.1cm}X}
+  \begin{tabularx}{\textwidth}{>{\ttfamily\raggedright\arraybackslash}p{2.6cm}X}
     \toprule
-    \textbf{Output} & \textbf{Purpose}\\
+    \textbf{Artifact} & \textbf{Purpose}\\
     \midrule
     08 & Requirement-change and concurrency-conflict analysis\\
-    09 & Updated ERD and logical schema\\
-    10 & Data-preserving migration and operational trigger layer\\
+    09 & Phase 2 ERD and logical schema\\
+    10 & Data-preserving migration from the Phase 1 schema\\
+    triggers.sql & Four operational triggers for booking, maintenance, schedule, and usage rules\\
     11--13 & Concurrency design, protected procedure, and two-session tests\\
     14 & Deterministic three-academic-year data generator\\
     15 & Indexing experiment and before/after measurements\\
@@ -58,4 +59,4 @@ The implementation therefore has five objectives:
   \caption{Phase 2 artifact summary.}
 \end{table}
 
-This report is based on the submitted artifacts and the captured SQL Server test evidence. SQL excerpts are intentionally shortened; the complete executable statements remain in the \artifact{outputs/} directory.
+This report is based on the submitted artifacts and the captured SQL Server test evidence. SQL excerpts are intentionally shortened; the complete executable statements are stored in \artifact{outputs/}, including \artifact{outputs/triggers.sql}.

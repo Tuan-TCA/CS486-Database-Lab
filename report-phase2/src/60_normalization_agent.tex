@@ -24,10 +24,10 @@ The following table summarizes the main functional dependencies.
 
 \begin{table}[H]
 \centering
-\small
+\scriptsize
 \caption{Functional Dependencies of the Relational Schema}
 \label{tab:functional-dependencies}
-\begin{tabular}{|l|l|l|}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.4cm}|>{\raggedright\arraybackslash}p{3.7cm}|>{\raggedright\arraybackslash}X|}
 \hline
 \textbf{Relation} & \textbf{Candidate Key} & \textbf{Functional Dependency} \\ \hline
 
@@ -111,13 +111,15 @@ initial\_condition, final\_condition, usage\_note}
 
 \texttt{BOOKING\_NOTIFICATION}
 &
-\begin{tabular}{c}
-\texttt{(booking\_id, maintenance\_id,}\\
+\begin{tabular}{@{}c@{}}
+\texttt{(booking\_id,}\\
+\texttt{maintenance\_id,}\\
 \texttt{notification\_type)}
 \end{tabular}
 &
-\begin{tabular}{c}
-\texttt{(booking\_id, maintenance\_id,}\\
+\begin{tabular}{@{}c@{}}
+\texttt{(booking\_id,}\\
+\texttt{maintenance\_id,}\\
 \texttt{notification\_type)}
 $\rightarrow$ \texttt{notification\_time}
 \end{tabular}
@@ -130,7 +132,7 @@ $\rightarrow$ \texttt{notification\_time}
 No non-trivial FD involving non-key attributes.
 \\ \hline
 
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \subsection{Important Observation about Foreign Keys}
@@ -147,8 +149,8 @@ For example, the following dependency exists in the
 \texttt{space\_type\_name}.
 \]
 
-However, \texttt{space\_type\_id} in \texttt{SPACE} does not determine
-\texttt{space\_type\_name} because \texttt{space\_type\_name} is not an
+However, \nolinkurl{space_type_id} in \texttt{SPACE} does not determine
+\nolinkurl{space_type_name} because \nolinkurl{space_type_name} is not an
 attribute of \texttt{SPACE}. It is stored in the
 \texttt{SPACE\_TYPE} relation.
 
@@ -204,19 +206,18 @@ Most relations in the proposed schema have a single-attribute
 candidate key, such as:
 
 \[
-\texttt{space\_code},\quad
-\texttt{user\_id},\quad
-\texttt{booking\_id},\quad
-\texttt{decision\_id},\quad
-\texttt{maintenance\_id},\quad
-\texttt{session\_id}.
+\begin{aligned}
+&\texttt{space\_code},\quad \texttt{user\_id},\quad
+\texttt{booking\_id},\quad \texttt{decision\_id},\\
+&\texttt{maintenance\_id},\quad \texttt{session\_id}.
+\end{aligned}
 \]
 
 For a single-attribute key, a partial dependency cannot occur because
 there is no proper subset of the key.
 
 The two relations with composite keys are
-\texttt{BOOKING\_NOTIFICATION} and \texttt{AUTO\_USAGE\_POLICY}.
+\nolinkurl{BOOKING_NOTIFICATION} and \nolinkurl{AUTO_USAGE_POLICY}.
 
 For \texttt{BOOKING\_NOTIFICATION}:
 
@@ -290,17 +291,12 @@ superkey. Therefore, \texttt{ROLE} is in 3NF.
 \paragraph{\texttt{SPACE}}
 
 \[
-\texttt{space\_code}
-\rightarrow
-\{
-\texttt{space\_type\_id},
-\texttt{space\_name},
-\texttt{building},
-\texttt{floor},
-\texttt{room\_number},
-\texttt{capacity},
-\texttt{current\_status}
-\}.
+\begin{aligned}
+\texttt{space\_code} \rightarrow \{&
+\texttt{space\_type\_id},\ \texttt{space\_name},\ \texttt{building},\\
+&\texttt{floor},\ \texttt{room\_number},\ \texttt{capacity},\\
+&\texttt{current\_status}\}.
+\end{aligned}
 \]
 
 The determinant \texttt{space\_code} is the primary key. Therefore,
@@ -309,16 +305,12 @@ all non-trivial dependencies satisfy the 3NF condition.
 \paragraph{\texttt{USERS}}
 
 \[
-\texttt{user\_id}
-\rightarrow
-\{
-\texttt{role\_id},
-\texttt{full\_name},
-\texttt{email},
-\texttt{phone\_number},
-\texttt{department},
-\texttt{account\_status}
-\}.
+\begin{aligned}
+\texttt{user\_id} \rightarrow \{&
+\texttt{role\_id},\ \texttt{full\_name},\ \texttt{email},\\
+&\texttt{phone\_number},\ \texttt{department},\\
+&\texttt{account\_status}\}.
+\end{aligned}
 \]
 
 The determinant is the primary key \texttt{user\_id}. Therefore,
@@ -327,13 +319,11 @@ The determinant is the primary key \texttt{user\_id}. Therefore,
 \paragraph{\texttt{FACILITY}}
 
 \[
-\texttt{facility\_id}
-\rightarrow
-\{
-\texttt{space\_code},
-\texttt{facility\_name},
-\texttt{description}
-\}.
+\begin{aligned}
+\texttt{facility\_id} \rightarrow \{&
+\texttt{space\_code},\ \texttt{facility\_name},\\
+&\texttt{description}\}.
+\end{aligned}
 \]
 
 Since \texttt{facility\_id} is the primary key, the relation satisfies
@@ -342,18 +332,12 @@ Since \texttt{facility\_id} is the primary key, the relation satisfies
 \paragraph{\texttt{BOOKING\_REQUEST}}
 
 \[
-\texttt{booking\_id}
-\rightarrow
-\{
-\texttt{user\_id},
-\texttt{space\_code},
-\texttt{start\_time},
-\texttt{end\_time},
-\texttt{purpose},
-\texttt{expected\_participants},
-\texttt{booking\_type},
-\texttt{status}
-\}.
+\begin{aligned}
+\texttt{booking\_id} \rightarrow \{&
+\texttt{user\_id},\ \texttt{space\_code},\ \texttt{start\_time},\\
+&\texttt{end\_time},\ \texttt{purpose},\ \texttt{expected\_participants},\\
+&\texttt{booking\_type},\ \texttt{status}\}.
+\end{aligned}
 \]
 
 The determinant is the primary key \texttt{booking\_id}. Therefore,
@@ -362,16 +346,12 @@ The determinant is the primary key \texttt{booking\_id}. Therefore,
 \paragraph{\texttt{BOOKING\_DECISION}}
 
 \[
-\texttt{decision\_id}
-\rightarrow
-\{
-\texttt{booking\_id},
-\texttt{is\_approved},
-\texttt{is\_automatic},
-\texttt{decided\_by\_staff},
-\texttt{decision\_reason},
-\texttt{decision\_time}
-\}.
+\begin{aligned}
+\texttt{decision\_id} \rightarrow \{&
+\texttt{booking\_id},\ \texttt{is\_approved},\ \texttt{is\_automatic},\\
+&\texttt{decided\_by\_staff},\ \texttt{decision\_reason},\\
+&\texttt{decision\_time}\}.
+\end{aligned}
 \]
 
 The determinant \texttt{decision\_id} is the primary key. Therefore,
@@ -380,19 +360,12 @@ the relation satisfies 3NF.
 \paragraph{\texttt{MAINTENANCE\_RECORD}}
 
 \[
-\texttt{maintenance\_id}
-\rightarrow
-\{
-\texttt{space\_code},
-\texttt{report\_user},
-\texttt{assigned\_staff},
-\texttt{problem\_description},
-\texttt{start\_time},
-\texttt{end\_time},
-\texttt{status},
-\texttt{result\_note},
-\texttt{impact\_level}
-\}.
+\begin{aligned}
+\texttt{maintenance\_id} \rightarrow \{&
+\texttt{space\_code},\ \texttt{report\_user},\ \texttt{assigned\_staff},\\
+&\texttt{problem\_description},\ \texttt{start\_time},\ \texttt{end\_time},\\
+&\texttt{status},\ \texttt{result\_note},\ \texttt{impact\_level}\}.
+\end{aligned}
 \]
 
 The determinant is the primary key \texttt{maintenance\_id}.
@@ -401,18 +374,12 @@ Therefore, \texttt{MAINTENANCE\_RECORD} is in 3NF.
 \paragraph{\texttt{USAGE\_SESSION}}
 
 \[
-\texttt{session\_id}
-\rightarrow
-\{
-\texttt{decision\_id},
-\texttt{checked\_in\_by\_staff},
-\texttt{completed\_by\_staff},
-\texttt{start\_time},
-\texttt{end\_time},
-\texttt{initial\_condition},
-\texttt{final\_condition},
-\texttt{usage\_note}
-\}.
+\begin{aligned}
+\texttt{session\_id} \rightarrow \{&
+\texttt{decision\_id},\ \texttt{checked\_in\_by\_staff},\\
+&\texttt{completed\_by\_staff},\ \texttt{start\_time},\ \texttt{end\_time},\\
+&\texttt{initial\_condition},\ \texttt{final\_condition},\ \texttt{usage\_note}\}.
+\end{aligned}
 \]
 
 The determinant \texttt{session\_id} is the primary key. Therefore,

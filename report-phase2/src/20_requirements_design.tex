@@ -2,7 +2,7 @@
 
 \subsection{Maintenance Impact Levels}
 
-The revised rule separates maintenance into two impact levels:
+The Phase 2 rule separates maintenance into two impact levels:
 
 \begin{description}[style=nextline]
   \item[\texttt{out\_of\_service}]
@@ -40,14 +40,14 @@ Several active records can coexist for one space. An open record can also be esc
   \caption{Principal requirement-driven design changes.}
 \end{table}
 
-\subsection{Updated Conceptual Overview}
+\subsection{Phase 2 Conceptual Overview}
 
 The Phase 2 design contains eleven relations. Figure~\ref{fig:schema-overview} emphasizes foreign-key dependencies and the common data flow from requests to decisions, sessions, maintenance notifications, and reports.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{architecture.jpg}
-  \caption{Updated Schema Overview}
+  \includegraphics[width=\textwidth,height=0.82\textheight,keepaspectratio]{image/bruh.png}
+  \caption{Phase 2 Schema Overview}
   \label{fig:schema-overview}
 \end{figure}
 
@@ -71,13 +71,13 @@ The Phase 2 design contains eleven relations. Figure~\ref{fig:schema-overview} e
     BOOKING\_NOTIFICATION & (booking\_id, maintenance\_id, notification\_type) & booking\_id and maintenance\_id\\
     \bottomrule
   \end{tabularx}
-  \caption{Updated relation and key summary.}
+  \caption{Phase 2 relation and key summary.}
   \label{tab:relation-summary}
 \end{table}
 
 \subsection{Schema Migration}
 
-Output 10 applies the changes on top of the Phase 1 database rather than rebuilding it. Textual roles and space types are first copied into lookup tables; the original rows then receive foreign-key identifiers. Approval records are transformed into booking decisions before the old approval table is removed. Usage sessions are reconnected through their decisions, and new policy and notification relations begin empty because Phase 1 contained no equivalent facts. After the structural migration, Step 12 installs five triggers that automate and defend the cross-table business rules.
+Output 10 applies the changes on top of the Phase 1 database rather than rebuilding it. Textual roles and space types are first copied into lookup tables; the original rows then receive foreign-key identifiers. Approval records are transformed into booking decisions before the old approval table is removed. Usage sessions are reconnected through their decisions, and new policy and notification relations begin empty because Phase 1 contained no equivalent facts.
 
 \begin{table}[H]
   \centering
@@ -96,8 +96,6 @@ Output 10 applies the changes on top of the Phase 1 database rather than rebuild
     Add \texttt{impact\_level} with \texttt{out\_of\_service} as the migration default, preserving the stricter Phase 1 behavior.\\
     Add new concepts &
     Create empty automatic-policy and booking-notification relations because no reliable Phase 1 facts exist to infer.\\
-    Install operational enforcement &
-    Add booking, maintenance, decision, schedule-protection, and usage-session triggers without changing the eleven-relation schema.\\
     Verify &
     Finish with table row counts; expected migrated Phase 1 counts include 20 users, 12 spaces, 30 requests, 25 decisions, 16 sessions, and 12 maintenance records.\\
     \bottomrule
@@ -107,7 +105,7 @@ Output 10 applies the changes on top of the Phase 1 database rather than rebuild
 
 \subsection{Operational Trigger Layer}
 
-The revised migration implements defense in depth. Normal approval processing uses the concurrent-safe stored procedure, while triggers protect the same rules when data is inserted or updated through another path. The booking and approval triggers use the existing \texttt{SPACES} row as the per-space serialization point.
+The standalone \artifact{outputs/triggers.sql} script defines four operational triggers without changing the eleven-relation schema. New-request processing locks the existing \texttt{SPACES} row while checking maintenance, and its automatic-approval branch calls the concurrent-safe approval procedure.
 
 \begin{table}[H]
   \centering
@@ -122,9 +120,6 @@ The revised migration implements defense in depth. Normal approval processing us
     \nolinkurl{trg_G08_MaintenanceBookingNotifications} &
     Maintenance insert/update &
     Records \texttt{ADVISORY} or \texttt{OUT\_OF\_SERVICE} notifications for approved overlapping bookings when maintenance is created, changed, or escalated. The composite notification key and \texttt{NOT EXISTS} check prevent duplicate event types.\\
-    \nolinkurl{trg_G08_ValidateApprovedBooking} &
-    Decision insert/update; 52302--52304 &
-    Validates every approved decision, including direct/manual writes: the space must exist, active out-of-service maintenance must not overlap, and no other approved booking may overlap. It also creates missing advisory notifications.\\
     \nolinkurl{trg_G08_ProtectDecidedBookingSchedule} &
     Request update; 52305 &
     Prevents direct changes to the space or requested interval after a booking has a decision; status-only updates remain allowed.\\
@@ -133,12 +128,12 @@ The revised migration implements defense in depth. Normal approval processing us
     Requires every usage session to reference a decision whose \texttt{is\_approved} value is true.\\
     \bottomrule
   \end{tabularx}
-  \caption{Operational triggers installed by the updated migration.}
+  \caption{Operational triggers defined in \artifact{outputs/triggers.sql}.}
   \label{tab:operational-triggers}
 \end{table}
 
-The trigger set covers both directions of maintenance interaction. A new request is checked against existing maintenance, while a new or changed maintenance record identifies already-approved bookings and preserves a notification for staff follow-up. Approved-decision validation provides a final safety net, and schedule immutability prevents a valid decision from becoming invalid through an unchecked time or space edit.
+The trigger set covers both directions of maintenance interaction. A booking request is checked against existing maintenance, while an inserted or changed maintenance record identifies approved overlapping bookings and preserves a notification for staff follow-up. Schedule immutability prevents a decided booking from changing through an unchecked time or space edit, and usage-session validation requires an approved decision.
 
 \subsection{Integrity Boundary}
 
-Primary keys, foreign keys, uniqueness, and check constraints enforce structural rules such as valid identifiers and time order. Availability, interval overlap, maintenance impact, automatic-policy eligibility, advisory notification, decided-schedule immutability, and usage eligibility require multiple rows or relations. Those rules are enforced through the concurrent-safe procedure and transactional triggers rather than by declarative constraints alone.
+Primary keys, foreign keys, uniqueness, and check constraints enforce structural rules such as valid identifiers and time order. The concurrent-safe procedure enforces approval availability and interval overlap. Transactional triggers handle maintenance-aware request processing, automatic-policy dispatch, booking notifications, decided-schedule immutability, and usage eligibility.

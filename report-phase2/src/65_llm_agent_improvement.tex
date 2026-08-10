@@ -1,0 +1,5 @@
+\section{LLM Model and Agent Improvement Process}
+
+The experiment agents were run with \textbf{DeepSeek V4 Flash} through the \textbf{OpenCode} framework. The model was used to produce benchmark artifacts for evaluation and knowledge refinement; the final Phase 2 design, SQL, experiments, and report were reviewed and finalized by the project members.
+
+Agent improvement followed a human-supervised, three-round cycle for each project section. In each round, the current Global Agent knowledge and the relevant section-specific Skill were used to generate a benchmark. The result was scored against a fixed evaluation rubric, weaknesses and reusable lessons were recorded, and those lessons were incorporated into the Skill and, when generally applicable, the Global Agent before the next round. This process improved requirement traceability, SQL Server correctness, consistency across artifacts, and resistance to unsupported assumptions while keeping final-submission decisions under human control.
