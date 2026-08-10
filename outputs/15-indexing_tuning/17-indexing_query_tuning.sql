@@ -1012,6 +1012,6 @@ PRINT 'G08 RUBRIC-ALIGNED BASELINE - COMPLETE';
 PRINT 'Send back RESULT A1, A2, A3, B, C, D and E.';
 PRINT 'B + C are the key BEFORE-index evidence.';
 PRINT 'Do NOT create any indexes yet.';
-PRINT 'I will generate 18 from these results.';
+PRINT 'Run this whole file 3 times.';
 PRINT '============================================================';
 GO

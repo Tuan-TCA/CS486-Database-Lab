@@ -23,7 +23,7 @@ The objective is to compare **execution plans, logical reads, and execution time
 
 ## 2. Test Methodology
 
-The same generated database was used for the before- and after-index tests.
+The same generated database was used for the before and after index tests.
 
 Relevant table sizes were:
 
