@@ -6,23 +6,23 @@ SET XACT_ABORT ON;
 GO
 
 CREATE OR ALTER PROCEDURE dbo.usp_G08_ApproveBookingConcurrentSafe
-    @booking_id          VARCHAR(20),
-    @is_automatic        BIT,
-    @decided_by_staff    VARCHAR(20),
-    @decision_reason     VARCHAR(MAX) = NULL,
+  @booking_id          VARCHAR(20),
+  @is_automatic        BIT,
+  @decided_by_staff    VARCHAR(20),
+  @decision_reason     VARCHAR(MAX) = NULL,
 
-    -- Test-only parameter used by the two-session demonstration.
-    -- Production calls should leave this value at zero.
-    @test_hold_seconds   TINYINT = 0
+  -- Test-only parameter used by the two-session demonstration.
+  -- Production calls should leave this value at zero.
+  @test_hold_seconds   TINYINT = 0
 AS
 BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
+  SET NOCOUNT ON;
+  SET XACT_ABORT ON;
 
-    IF @test_hold_seconds > 30
+  IF @test_hold_seconds > 30
         THROW 52101, 'test_hold_seconds cannot exceed 30.', 1;
 
-    DECLARE
+  DECLARE
         @space_code       VARCHAR(20),
         @space_lock_code  VARCHAR(20),
         @start_time       DATETIME2(0),
@@ -31,7 +31,7 @@ BEGIN
         @decision_id      VARCHAR(20),
         @delay            CHAR(8);
 
-    BEGIN TRY
+  BEGIN TRY
         BEGIN TRANSACTION;
 
         ------------------------------------------------------------
@@ -42,12 +42,12 @@ BEGIN
         -- Therefore, no second/reload read is required.
         ------------------------------------------------------------
         SELECT
-            @space_code = br.space_code,
-            @start_time = br.start_time,
-            @end_time = br.end_time,
-            @status = br.status
-        FROM dbo.BOOKING_REQUEST AS br WITH (UPDLOCK)
-        WHERE br.booking_id = @booking_id;
+    @space_code = br.space_code,
+    @start_time = br.start_time,
+    @end_time = br.end_time,
+    @status = br.status
+  FROM dbo.BOOKING_REQUEST AS br WITH (UPDLOCK)
+  WHERE br.booking_id = @booking_id;
 
         IF @space_code IS NULL
             THROW 52102, 'Booking request was not found.', 1;
@@ -67,8 +67,8 @@ BEGIN
         SET @space_lock_code = NULL;
 
         SELECT @space_lock_code = s.space_code
-        FROM dbo.SPACES AS s WITH (UPDLOCK)
-        WHERE s.space_code = @space_code;
+  FROM dbo.SPACES AS s WITH (UPDLOCK)
+  WHERE s.space_code = @space_code;
 
         IF @space_lock_code IS NULL
             THROW 52104, 'The booking space does not exist.', 1;
@@ -82,7 +82,7 @@ BEGIN
         ------------------------------------------------------------
         IF @test_hold_seconds > 0
         BEGIN
-            SET @delay = CONCAT(
+    SET @delay = CONCAT(
                 '00:00:',
                 RIGHT(
                     CONCAT('00', CONVERT(VARCHAR(2), @test_hold_seconds)),
@@ -90,8 +90,8 @@ BEGIN
                 )
             );
 
-            WAITFOR DELAY @delay;
-        END;
+    WAITFOR DELAY @delay;
+  END;
 
         ------------------------------------------------------------
         -- 4. Check for an approved overlapping booking.
@@ -102,15 +102,15 @@ BEGIN
         ------------------------------------------------------------
         IF EXISTS (
             SELECT 1
-            FROM dbo.BOOKING_REQUEST AS existing_booking
-            JOIN dbo.BOOKING_DECISION AS existing_decision
-              ON existing_decision.booking_id = existing_booking.booking_id
-             AND existing_decision.is_approved = 1
-            WHERE existing_booking.space_code = @space_code
-              AND existing_booking.booking_id <> @booking_id
-              AND existing_booking.status <> 'cancelled'
-              AND existing_booking.start_time < @end_time
-              AND @start_time < existing_booking.end_time
+  FROM dbo.BOOKING_REQUEST AS existing_booking
+    JOIN dbo.BOOKING_DECISION AS existing_decision
+    ON existing_decision.booking_id = existing_booking.booking_id
+      AND existing_decision.is_approved = 1
+  WHERE existing_booking.space_code = @space_code
+    AND existing_booking.booking_id <> @booking_id
+    AND existing_booking.status <> 'cancelled'
+    AND existing_booking.start_time < @end_time
+    AND @start_time < existing_booking.end_time
         )
         BEGIN
             THROW 52105,
@@ -129,23 +129,25 @@ BEGIN
             )
         );
 
-        INSERT INTO dbo.BOOKING_DECISION (
-            decision_id,
-            booking_id,
-            is_approved,
-            is_automatic,
-            decided_by_staff,
-            decision_reason,
-            decision_time
-        )
-        VALUES (
-            @decision_id,
-            @booking_id,
-            1,
-            @is_automatic,
-            @decided_by_staff,
-            @decision_reason,
-            SYSDATETIME()
+        INSERT INTO dbo.BOOKING_DECISION
+    (
+    decision_id,
+    booking_id,
+    is_approved,
+    is_automatic,
+    decided_by_staff,
+    decision_reason,
+    decision_time
+    )
+  VALUES
+    (
+      @decision_id,
+      @booking_id,
+      1,
+      @is_automatic,
+      @decided_by_staff,
+      @decision_reason,
+      SYSDATETIME()
         );
 
         ------------------------------------------------------------
@@ -163,17 +165,18 @@ BEGIN
         COMMIT TRANSACTION;
 
         SELECT
-            @decision_id AS decision_id,
-            @booking_id AS booking_id,
-            @space_code AS space_code,
-            'approved' AS result;
-    END TRY
+    @decision_id AS decision_id,
+    @booking_id AS booking_id,
+    @space_code AS space_code,
+    'approved' AS result;
+    END
+  TRY
     BEGIN CATCH
-        IF XACT_STATE() <> 0
+  IF XACT_STATE() <> 0
             ROLLBACK TRANSACTION;
 
-        THROW;
-    END CATCH;
+  THROW;
+  END CATCH;
 END;
 GO
 
