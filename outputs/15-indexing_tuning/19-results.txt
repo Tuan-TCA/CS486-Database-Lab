@@ -1,0 +1,59 @@
+
+RUN 3
+============================================
+============================================
+RUN 4
+============================================
+============================================
+RUN 5
+============================================
+
+============================================
+RAW RESULTS
+============================================
+
+============================================
+AVERAGE RESULTS
+============================================
+
+============================================
+INDEX WRITE OVERHEAD
+============================================
+Warning: Null value is eliminated by an aggregate or other SET operation.
+2:24:19 PM
+Total execution time: 00:00:05.022
+
+Result Set Batch 3 - Query 1
+========================================
+
+run_no      test_name               rows_inserted  elapsed_ms
+----------  ----------------------  -------------  ----------
+1           WITH TWO EXTRA INDEXES  100030         938.644
+1           WITHOUT EXTRA INDEXES   100030         141.175
+2           WITH TWO EXTRA INDEXES  100030         935.988
+2           WITHOUT EXTRA INDEXES   100030         136.317
+3           WITH TWO EXTRA INDEXES  100030         820.102
+3           WITHOUT EXTRA INDEXES   100030         128.197
+4           WITH TWO EXTRA INDEXES  100030         812.673
+4           WITHOUT EXTRA INDEXES   100030         128.428
+5           WITH TWO EXTRA INDEXES  100030         803.946
+5           WITHOUT EXTRA INDEXES   100030         132.441
+(10 rows affected)
+
+Result Set Batch 3 - Query 2
+========================================
+
+test_name               measured_runs  rows_per_run  avg_elapsed_ms  min_elapsed_ms  max_elapsed_ms
+----------------------  -------------  ------------  --------------  --------------  --------------
+WITH TWO EXTRA INDEXES  5              100030        862.271         803.946         938.644
+WITHOUT EXTRA INDEXES   5              100030        133.312         128.197         141.175
+(2 rows affected)
+
+Result Set Batch 3 - Query 3
+========================================
+
+avg_without_indexes_ms  avg_with_indexes_ms  additional_write_time_ms  write_overhead_percent
+----------------------  -------------------  ------------------------  ----------------------
+133.312                 862.271              728.959                   546.81
+(1 row affected)
+
