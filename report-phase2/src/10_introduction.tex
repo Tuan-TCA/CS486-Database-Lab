@@ -11,7 +11,7 @@ The implementation therefore has five objectives:
   \item preserve proof that requesters were notified about active advisories;
   \item prevent overlapping approvals even when automatic and staff workflows run concurrently;
   \item support four required operational and analytical reports; and
-  \item demonstrate measurable indexing improvements on at least 100,000 bookings.
+  \item demonstrate measurable indexing improvements and quantify insert overhead on at least 100,000 bookings.
 \end{itemize}
 
 \subsection{Group Members and Contributions}
@@ -52,7 +52,7 @@ The implementation therefore has five objectives:
     triggers.sql & Four operational triggers for booking, maintenance, schedule, and usage rules\\
     11--13 & Concurrency design, protected procedure, and two-session tests\\
     14 & Deterministic three-academic-year data generator\\
-    15 & Indexing experiment and before/after measurements\\
+    15 & Indexing experiment, before/after measurements, storage cost, and insert-overhead test\\
     16 & Four required analytical queries considered in this report\\
     \bottomrule
   \end{tabularx}

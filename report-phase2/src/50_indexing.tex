@@ -123,10 +123,33 @@ The tuning folder contains a read-only index-inventory diagnostic. It lists inde
 
 The strongest change is the room finder: average elapsed time falls from 787.54 ms to 15.42 ms, while logical reads fall by 97.29\%. Query 02 retains a residual \texttt{DATEPART(HOUR, decision\_time)} expression, so its indexing gain is limited by grouping and computation after the semester range has been selected.
 
+\subsection{Measured Insert Overhead}
+
+Output 19 isolates the maintenance cost of the two nonclustered \texttt{BOOKING\_REQUEST} indexes. It creates two empty temporary copies of the request table, gives both the same unique clustered index on \texttt{booking\_id}, and adds \nolinkurl{IX_G08_BR_Space_Start} and \nolinkurl{IX_G08_BR_Start} only to the indexed copy. Each run truncates both targets and inserts the same 100,030 source rows. Five measured runs alternate which configuration executes first to reduce order bias.
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{lrrrrr}
+    \toprule
+    \textbf{Configuration} & \textbf{Runs} & \textbf{Rows/run} & \textbf{Avg. ms} & \textbf{Min. ms} & \textbf{Max. ms}\\
+    \midrule
+    Without extra indexes & 5 & 100,030 & 133.312 & 128.197 & 141.175\\
+    With two request indexes & 5 & 100,030 & 862.271 & 803.946 & 938.644\\
+    \bottomrule
+  \end{tabular}
+  \caption{Bulk-insert elapsed time with and without the two request indexes.}
+  \label{tab:index-write-overhead}
+\end{table}
+
+Maintaining the two indexes adds 728.959 ms to the average bulk insert, which is 546.81\% overhead relative to the 133.312 ms baseline. Equivalently, the indexed insert takes approximately 6.47 times the baseline elapsed time.
+
+This result applies to the measured full-table bulk insert in the test environment. It does not attribute write cost to the other four tuning indexes and does not measure single-row booking latency, updates, or deletes. It nevertheless provides direct evidence that the request-side read improvements have a material ingestion cost.
+
 \subsection{Trade-offs and Recommendation}
 
-All six indexes were selected by SQL Server during measured runs. Together they use approximately 19.07 MB. The two request indexes account for most of the space and increase booking-write maintenance, but their key orders serve different access patterns: same-space interval checks versus semester ranges.
+All six indexes were selected by SQL Server during measured runs. Together they use approximately 19.07 MB. The two request indexes account for most of the space and the measured insert overhead, but their key orders serve different access patterns: same-space interval checks versus semester ranges.
 
 SQL Server also suggested a standalone request-status index. It was rejected because the condition \texttt{status <> 'cancelled'} qualifies roughly 93,029 of 100,030 requests and is therefore not selective. Treating missing-index output as evidence rather than an automatic instruction avoids storage and write overhead with little expected benefit.
 
-The final recommendation is to retain the six measured workload-specific indexes, monitor their write cost and fragmentation, and reconsider them only if booking volume or report patterns change materially.
+The final recommendation is to retain the six measured workload-specific indexes because they improve every target read workload. Booking-ingestion latency, index usage, storage, and fragmentation should be monitored; the request indexes should be reconsidered if write volume becomes dominant or their read usage declines materially.
